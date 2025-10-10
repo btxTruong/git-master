@@ -6,6 +6,7 @@ import (
 	"git-master/backend/git"
 	"git-master/backend/models"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -152,4 +153,108 @@ func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, erro
 	}
 
 	return commits, nil
+}
+
+// GetCommitDetail retrieves detailed information about a specific commit
+func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDetail, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Get commit info
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%d|%s"
+	logResult, err := s.executor.Execute(
+		s.ctx,
+		"log",
+		"-1",
+		commitHash,
+		fmt.Sprintf("--pretty=format:%s", format),
+		"--date=format:%Y-%m-%d %H:%M:%S %z",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit info: %w", err)
+	}
+
+	commits, err := git.ParseCommits(logResult.Stdout)
+	if err != nil || len(commits) == 0 {
+		return nil, fmt.Errorf("failed to parse commit: %w", err)
+	}
+
+	commit := commits[0]
+
+	// Get full commit message
+	msgResult, err := s.executor.Execute(s.ctx, "log", "-1", "--pretty=format:%B", commitHash)
+	if err == nil {
+		commit.Message = msgResult.Stdout
+	}
+
+	// Get diff with file stats
+	diffResult, err := s.executor.Execute(
+		s.ctx,
+		"show",
+		"--pretty=format:",
+		"--numstat",
+		commitHash,
+	)
+
+	files := []models.FileChange{}
+	if err == nil && diffResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(diffResult.Stdout), "\n")
+		for _, line := range lines {
+			if line == "" {
+				continue
+			}
+			parts := strings.Fields(line)
+			if len(parts) < 3 {
+				continue
+			}
+
+			insertions := 0
+			deletions := 0
+			if parts[0] != "-" {
+				fmt.Sscanf(parts[0], "%d", &insertions)
+			}
+			if parts[1] != "-" {
+				fmt.Sscanf(parts[1], "%d", &deletions)
+			}
+
+			filePath := strings.Join(parts[2:], " ")
+			status := models.ChangeModified
+
+			// Check if it's a new file
+			if parts[1] == "0" && insertions > 0 {
+				status = models.ChangeAdded
+			} else if parts[0] == "0" && deletions > 0 {
+				status = models.ChangeDeleted
+			}
+
+			files = append(files, models.FileChange{
+				NewPath:    filePath,
+				OldPath:    filePath,
+				Status:     status,
+				Insertions: insertions,
+				Deletions:  deletions,
+			})
+		}
+	}
+
+	// Get full diff
+	fullDiffResult, err := s.executor.Execute(
+		s.ctx,
+		"show",
+		"--pretty=format:",
+		commitHash,
+	)
+	diff := ""
+	if err == nil {
+		diff = fullDiffResult.Stdout
+	}
+
+	detail := &models.CommitDetail{
+		Commit: commit,
+		Files:  files,
+		Diff:   diff,
+	}
+
+	return detail, nil
 }

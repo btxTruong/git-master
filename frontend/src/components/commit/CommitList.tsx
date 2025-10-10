@@ -3,7 +3,12 @@ import { useCommitStore, type Commit } from '../../stores/commitStore';
 import { GetCommits } from '../../../wailsjs/go/services/RepositoryService';
 import { GitCommit, User, Calendar } from 'lucide-react';
 
-export function CommitList() {
+interface CommitListProps {
+  onSelectCommit?: (hash: string) => void;
+  selectedHash?: string;
+}
+
+export function CommitList({ onSelectCommit, selectedHash }: CommitListProps) {
   const { commits, setCommits, setLoading, setError, isLoading, error } = useCommitStore();
 
   useEffect(() => {
@@ -75,7 +80,12 @@ export function CommitList() {
       {commits.map((commit: Commit) => (
         <div
           key={commit.hash}
-          className="bg-gray-800 hover:bg-gray-750 rounded-lg p-4 cursor-pointer transition-colors"
+          onClick={() => onSelectCommit?.(commit.hash)}
+          className={`rounded-lg p-4 cursor-pointer transition-colors ${
+            selectedHash === commit.hash
+              ? 'bg-blue-900/30 border-2 border-blue-600'
+              : 'bg-gray-800 hover:bg-gray-750'
+          }`}
         >
           <div className="flex items-start gap-3">
             <GitCommit className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />

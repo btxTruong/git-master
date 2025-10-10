@@ -28,6 +28,17 @@
 - [x] Loading and error states
 - [x] Responsive hover effects
 
+#### Phase 3: Commit Detail & Diff Viewer (100% Complete)
+- [x] GetCommitDetail backend method with diff parsing
+- [x] File change stats parsing (insertions/deletions)
+- [x] CommitDetail component with full commit info
+- [x] File list with change indicators (Added/Modified/Deleted)
+- [x] Syntax-highlighted diff viewer using react-syntax-highlighter
+- [x] Split-pane layout (CommitList | CommitDetail)
+- [x] Click-to-select commits with visual feedback
+- [x] Language detection for syntax highlighting
+- [x] Scrollable file list and diff content
+
 ### Application Status
 
 **Build Status**: ✅ Successfully building and running
@@ -78,17 +89,11 @@ frontend/src/
 
 ### Next Development Steps
 
-#### Phase 3: Enhanced Commit Viewing
-- [ ] Add commit detail panel
+#### Phase 4: Enhanced Features
 - [ ] Implement infinite scroll for commit history
 - [ ] Add commit search/filter functionality
-- [ ] Show file changes in commits
-
-#### Phase 4: Diff Viewer
-- [ ] Create DiffViewer component
-- [ ] Add syntax highlighting
-- [ ] Implement split/unified views
-- [ ] Show file tree for changed files
+- [ ] Add split/unified diff view toggle
+- [ ] Implement proper diff hunks with line-by-line view
 
 #### Phase 5: Branch Management
 - [ ] Display branch list
@@ -173,12 +178,12 @@ None currently - application is stable and functional.
 ### Timeline
 
 - **Week 1** (Current): Foundation + Basic Commit Viewing ✅
-- **Week 2** (Next): Diff Viewer + Enhanced Commit Features
-- **Week 3**: Branch Management + File Staging
+- **Week 2** (Current): Diff Viewer + Commit Detail View ✅
+- **Week 3** (Next): Branch Management + File Staging
 - **Week 4**: Advanced Git Operations
 - **Week 5**: Polish + Optimization
 
 ---
 
 **Last Updated**: 2025-10-11
-**Status**: Phase 1 & 2 Complete, Ready for Phase 3
+**Status**: Phase 1, 2 & 3 Complete! Diff viewer fully functional.

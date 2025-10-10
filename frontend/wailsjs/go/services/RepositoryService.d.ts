@@ -3,6 +3,8 @@
 import {models} from '../models';
 import {context} from '../models';
 
+export function GetCommits(arg1:number,arg2:number):Promise<Array<models.Commit>>;
+
 export function GetCurrentRepository():Promise<models.Repository>;
 
 export function GetStatus():Promise<models.RepositoryStatus>;

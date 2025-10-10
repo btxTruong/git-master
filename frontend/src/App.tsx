@@ -3,10 +3,12 @@ import { useRepositoryStore } from './stores/repositoryStore';
 import { OpenRepository } from '../wailsjs/go/services/RepositoryService';
 import { FolderOpen, GitBranch, GitCommit } from 'lucide-react';
 import { CommitList } from './components/commit/CommitList';
+import { CommitDetail } from './components/commit/CommitDetail';
 
 function App() {
   const { currentRepository, setRepository, setLoading, setError } = useRepositoryStore();
   const [isOpening, setIsOpening] = useState(false);
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
 
   const handleOpenRepository = async () => {
     setIsOpening(true);
@@ -75,29 +77,36 @@ function App() {
               </nav>
             </aside>
 
-            {/* Main Area */}
-            <main className="flex-1 p-6">
-              <div className="max-w-4xl">
-                <h2 className="text-2xl font-bold mb-4">Repository Overview</h2>
-                <div className="bg-gray-800 rounded-lg p-6 space-y-3">
-                  <div>
-                    <span className="text-gray-400">Path:</span>
-                    <span className="ml-2 font-mono text-sm">{currentRepository.path}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Current Branch:</span>
-                    <span className="ml-2 text-blue-400">{currentRepository.currentBranch}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Status:</span>
-                    <span className="ml-2 text-green-400">Clean</span>
-                  </div>
+            {/* Main Area - Split View */}
+            <main className="flex-1 flex overflow-hidden">
+              {/* Left: Commit List */}
+              <div className="w-1/2 border-r border-gray-700 flex flex-col">
+                <div className="flex-shrink-0 p-4 border-b border-gray-700">
+                  <h3 className="text-lg font-semibold">Commits</h3>
                 </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <CommitList
+                    onSelectCommit={setSelectedCommitHash}
+                    selectedHash={selectedCommitHash || undefined}
+                  />
+                </div>
+              </div>
 
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold mb-4">Recent Commits</h3>
-                  <CommitList />
-                </div>
+              {/* Right: Commit Detail */}
+              <div className="w-1/2 flex flex-col">
+                {selectedCommitHash ? (
+                  <CommitDetail
+                    commitHash={selectedCommitHash}
+                    onClose={() => setSelectedCommitHash(null)}
+                  />
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <div className="text-center">
+                      <GitCommit className="w-12 h-12 mx-auto mb-2 text-gray-600" />
+                      <p>Select a commit to view details</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </main>
           </>
