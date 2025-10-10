@@ -7,11 +7,11 @@ chore
 Create the complete frontend and backend folder structure as defined in the architecture document. This includes directories for components, stores, views, utilities, types, and backend services.
 
 ## Acceptance Criteria
-- [ ] All frontend directories exist: `api/`, `components/`, `stores/`, `views/`, `hooks/`, `utils/`, `types/`
-- [ ] Component subdirectories created: `commit/`, `diff/`, `branch/`, `staging/`, `merge/`, `repository/`, `common/`, `layout/`
-- [ ] All backend directories exist: `services/`, `models/`, `git/`
-- [ ] Each directory contains a `.gitkeep` or README file (not empty)
-- [ ] Directory structure matches architecture document
+- [x] All frontend directories exist: `api/`, `components/`, `stores/`, `views/`, `hooks/`, `utils/`, `types/`
+- [x] Component subdirectories created: `commit/`, `diff/`, `branch/`, `staging/`, `merge/`, `repository/`, `common/`, `layout/`
+- [x] All backend directories exist: `services/`, `models/`, `git/`
+- [x] Each directory contains a `.gitkeep` or README file (not empty)
+- [x] Directory structure matches architecture document
 
 ## Technical Details
 - **Commands to run**:

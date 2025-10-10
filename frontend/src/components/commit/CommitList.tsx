@@ -13,6 +13,7 @@ export function CommitList({ onSelectCommit, selectedHash }: CommitListProps) {
 
   useEffect(() => {
     loadCommits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCommits = async () => {

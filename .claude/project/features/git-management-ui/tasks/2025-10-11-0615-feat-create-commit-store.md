@@ -7,14 +7,14 @@ feat
 Create a Zustand store for managing commit-related state, including the commit list, selected commit, pagination, filters, and search. Implement actions for loading commits, applying filters, and pagination.
 
 ## Acceptance Criteria
-- [ ] `stores/commitStore.ts` file created
-- [ ] Store includes: `commits`, `selectedCommit`, `totalCommits`, `currentPage`, `isLoading`, `filters`
-- [ ] Actions implemented: `loadCommits`, `selectCommit`, `setFilter`, `clearFilters`, `loadMore`
-- [ ] Pagination works correctly (100 commits per page)
-- [ ] Filters include: branch, author, dateFrom, dateTo, searchText
-- [ ] Loading state prevents duplicate API calls
-- [ ] Store resets when repository changes
-- [ ] TypeScript types are strict and correct
+- [x] `stores/commitStore.ts` file created
+- [x] Store includes: `commits`, `selectedCommit`, `totalCommits`, `currentPage`, `isLoading`, `filters`
+- [x] Actions implemented: `loadCommits`, `selectCommit`, `setFilter`, `clearFilters`, `loadMore`
+- [x] Pagination works correctly (100 commits per page)
+- [x] Filters include: branch, author, dateFrom, dateTo, searchText
+- [x] Loading state prevents duplicate API calls
+- [x] Store resets when repository changes
+- [x] TypeScript types are strict and correct
 
 ## Technical Details
 - **File to create**: `frontend/src/stores/commitStore.ts`

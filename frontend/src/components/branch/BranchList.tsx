@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { GetBranches, CheckoutBranch, CreateBranch, DeleteBranch } from '../../../wailsjs/go/services/RepositoryService';
+import {
+  GetBranches,
+  CheckoutBranch,
+  CreateBranch,
+  DeleteBranch,
+} from '../../../wailsjs/go/services/RepositoryService';
 import { GitBranch, Plus, Trash2, Check, GitMerge, Cloud } from 'lucide-react';
 
 interface Branch {
@@ -73,7 +78,8 @@ export function BranchList() {
     try {
       await DeleteBranch(branchName, false);
       await loadBranches();
-    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       // Try force delete if normal delete fails
       if (confirm(`Branch "${branchName}" has unmerged changes. Force delete?`)) {
         try {
@@ -174,10 +180,14 @@ export function BranchList() {
             }`}
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <GitBranch className={`w-5 h-5 flex-shrink-0 ${branch.isHead ? 'text-blue-400' : 'text-gray-400'}`} />
+              <GitBranch
+                className={`w-5 h-5 flex-shrink-0 ${branch.isHead ? 'text-blue-400' : 'text-gray-400'}`}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={`font-medium truncate ${branch.isHead ? 'text-blue-200' : 'text-gray-200'}`}>
+                  <span
+                    className={`font-medium truncate ${branch.isHead ? 'text-blue-200' : 'text-gray-200'}`}
+                  >
                     {branch.name}
                   </span>
                   {branch.isHead && (

@@ -11,12 +11,12 @@ Create the `backend/models/` package with all data structures that will be used 
 
 ## Acceptance Criteria
 
-- [ ] Directory `backend/models/` created
-- [ ] All model files created with proper struct definitions
-- [ ] All structs have JSON tags for serialization
-- [ ] All timestamp fields use `time.Time` type
-- [ ] All models are documented with comments
-- [ ] Models compile without errors
+- [x] Directory `backend/models/` created
+- [x] All model files created with proper struct definitions
+- [x] All structs have JSON tags for serialization
+- [x] All timestamp fields use `time.Time` type
+- [x] All models are documented with comments
+- [x] Models compile without errors
 
 ## Technical Details
 

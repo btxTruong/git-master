@@ -40,6 +40,7 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
 
   useEffect(() => {
     loadDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitHash]);
 
   const loadDetail = async () => {
@@ -68,21 +69,31 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'A': return 'text-green-400';
-      case 'M': return 'text-blue-400';
-      case 'D': return 'text-red-400';
-      default: return 'text-gray-400';
+      case 'A':
+        return 'text-green-400';
+      case 'M':
+        return 'text-blue-400';
+      case 'D':
+        return 'text-red-400';
+      default:
+        return 'text-gray-400';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'A': return 'Added';
-      case 'M': return 'Modified';
-      case 'D': return 'Deleted';
-      case 'R': return 'Renamed';
-      case 'C': return 'Copied';
-      default: return 'Changed';
+      case 'A':
+        return 'Added';
+      case 'M':
+        return 'Modified';
+      case 'D':
+        return 'Deleted';
+      case 'R':
+        return 'Renamed';
+      case 'C':
+        return 'Copied';
+      default:
+        return 'Changed';
     }
   };
 
@@ -90,26 +101,26 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
     const ext = filename.split('.').pop()?.toLowerCase();
     // Map common extensions to Prism language names
     const languageMap: Record<string, string> = {
-      'js': 'javascript',
-      'jsx': 'jsx',
-      'ts': 'typescript',
-      'tsx': 'tsx',
-      'py': 'python',
-      'go': 'go',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
-      'rs': 'rust',
-      'rb': 'ruby',
-      'php': 'php',
-      'html': 'html',
-      'css': 'css',
-      'scss': 'scss',
-      'json': 'json',
-      'yaml': 'yaml',
-      'yml': 'yaml',
-      'md': 'markdown',
-      'sh': 'bash',
+      js: 'javascript',
+      jsx: 'jsx',
+      ts: 'typescript',
+      tsx: 'tsx',
+      py: 'python',
+      go: 'go',
+      java: 'java',
+      cpp: 'cpp',
+      c: 'c',
+      rs: 'rust',
+      rb: 'ruby',
+      php: 'php',
+      html: 'html',
+      css: 'css',
+      scss: 'scss',
+      json: 'json',
+      yaml: 'yaml',
+      yml: 'yaml',
+      md: 'markdown',
+      sh: 'bash',
     };
     return languageMap[ext || ''] || 'text';
   };
@@ -142,10 +153,7 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
             <GitCommit className="w-5 h-5 text-blue-400" />
             <span className="font-mono text-sm text-gray-400">{detail.commit.shortHash}</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-200"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -180,7 +188,9 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
       <div className="flex-shrink-0 bg-gray-850 border-b border-gray-700 p-3">
         <div className="flex items-center gap-2 mb-2 text-sm text-gray-400">
           <FileText className="w-4 h-4" />
-          <span>{detail.files.length} file{detail.files.length !== 1 ? 's' : ''} changed</span>
+          <span>
+            {detail.files.length} file{detail.files.length !== 1 ? 's' : ''} changed
+          </span>
         </div>
         <div className="space-y-1 max-h-40 overflow-y-auto">
           {detail.files.map((file) => (

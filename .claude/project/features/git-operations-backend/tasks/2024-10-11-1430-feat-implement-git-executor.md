@@ -11,15 +11,15 @@ Create the core `GitExecutor` struct that wraps Git command execution using `os/
 
 ## Acceptance Criteria
 
-- [ ] File `backend/git/executor.go` created
-- [ ] GitExecutor struct implemented with semaphore for concurrency control
-- [ ] NewExecutor constructor validates Git installation and repository
-- [ ] Execute method runs Git commands and captures output
-- [ ] ExecuteStreaming method streams output for long operations
-- [ ] Error parsing implemented for common Git errors
-- [ ] Proper context support for cancellation
-- [ ] Semaphore limits concurrent operations to 5
-- [ ] All methods documented
+- [x] File `backend/git/executor.go` created
+- [x] GitExecutor struct implemented with semaphore for concurrency control
+- [x] NewExecutor constructor validates Git installation and repository
+- [x] Execute method runs Git commands and captures output
+- [x] ExecuteStreaming method streams output for long operations
+- [x] Error parsing implemented for common Git errors
+- [x] Proper context support for cancellation
+- [x] Semaphore limits concurrent operations to 5
+- [x] All methods documented
 
 ## Technical Details
 

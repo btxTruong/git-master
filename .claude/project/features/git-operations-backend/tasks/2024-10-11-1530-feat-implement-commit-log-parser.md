@@ -11,14 +11,14 @@ Create the commit log parser that converts Git log output into structured `Commi
 
 ## Acceptance Criteria
 
-- [ ] File `backend/git/log_parser.go` created
-- [ ] ParseCommitLog function implemented
-- [ ] Handles NULL-delimited format correctly
-- [ ] Parses all commit fields (hash, author, dates, message, parents)
-- [ ] Parses numstat lines for file statistics
-- [ ] Handles edge cases (initial commit, merge commits, empty body)
-- [ ] Comprehensive tests with real Git output
-- [ ] Documentation includes expected format
+- [x] File `backend/git/log_parser.go` created
+- [x] ParseCommitLog function implemented
+- [x] Handles NULL-delimited format correctly
+- [x] Parses all commit fields (hash, author, dates, message, parents)
+- [x] Parses numstat lines for file statistics
+- [x] Handles edge cases (initial commit, merge commits, empty body)
+- [x] Comprehensive tests with real Git output
+- [x] Documentation includes expected format
 
 ## Technical Details
 

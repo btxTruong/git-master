@@ -11,15 +11,15 @@ Create input validation utilities to prevent command injection attacks and ensur
 
 ## Acceptance Criteria
 
-- [ ] File `backend/git/validator.go` created
-- [ ] Branch name validation implemented
-- [ ] Commit hash validation implemented
-- [ ] File path validation implemented
-- [ ] Commit message sanitization implemented
-- [ ] Remote name validation implemented
-- [ ] Tag name validation implemented
-- [ ] All validators have comprehensive tests
-- [ ] Documentation includes validation rules
+- [x] File `backend/git/validator.go` created
+- [x] Branch name validation implemented
+- [x] Commit hash validation implemented
+- [x] File path validation implemented
+- [x] Commit message sanitization implemented
+- [x] Remote name validation implemented
+- [x] Tag name validation implemented
+- [x] All validators have comprehensive tests
+- [x] Documentation includes validation rules
 
 ## Technical Details
 

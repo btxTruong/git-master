@@ -7,13 +7,13 @@ chore
 Set up Tailwind CSS configuration with custom theme colors for Git operations (added, removed, modified), configure content paths for tree shaking, and integrate Tailwind into the application's main CSS file.
 
 ## Acceptance Criteria
-- [ ] `tailwind.config.js` configured with custom colors
-- [ ] Content paths include all TypeScript/TSX files
-- [ ] Tailwind directives added to main CSS file
-- [ ] Custom monospace font family configured
-- [ ] Tailwind utilities work in components (test with `className="bg-primary"`)
-- [ ] PostCSS configuration is correct
-- [ ] Production build removes unused CSS (tree shaking works)
+- [x] `tailwind.config.js` configured with custom colors
+- [x] Content paths include all TypeScript/TSX files
+- [x] Tailwind directives added to main CSS file
+- [x] Custom monospace font family configured
+- [x] Tailwind utilities work in components (test with `className="bg-primary"`)
+- [x] PostCSS configuration is correct
+- [x] Production build removes unused CSS (tree shaking works)
 
 ## Technical Details
 - **Files to create/modify**:

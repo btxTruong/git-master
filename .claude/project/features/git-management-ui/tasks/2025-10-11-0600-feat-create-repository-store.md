@@ -7,14 +7,14 @@ feat
 Create a Zustand store for managing repository state, including the current repository, recent repositories list, and repository-related actions (open, close, add to recent). Implement localStorage persistence for recent repositories.
 
 ## Acceptance Criteria
-- [ ] `stores/repositoryStore.ts` file created
-- [ ] Store includes state: `currentRepo`, `recentRepos`, `isLoading`, `error`
-- [ ] Actions implemented: `openRepository`, `closeRepository`, `addToRecent`
-- [ ] Recent repositories persisted to localStorage (max 10)
-- [ ] Opening a repository calls Wails API and updates state
-- [ ] Errors are caught and stored in `error` state
-- [ ] Store can be imported and used in components
-- [ ] TypeScript types are correct and strict
+- [x] `stores/repositoryStore.ts` file created
+- [x] Store includes state: `currentRepo`, `recentRepos`, `isLoading`, `error`
+- [x] Actions implemented: `openRepository`, `closeRepository`, `addToRecent`
+- [x] Recent repositories persisted to localStorage (max 10)
+- [x] Opening a repository calls Wails API and updates state
+- [x] Errors are caught and stored in `error` state
+- [x] Store can be imported and used in components
+- [x] TypeScript types are correct and strict
 
 ## Technical Details
 - **File to create**: `frontend/src/stores/repositoryStore.ts`

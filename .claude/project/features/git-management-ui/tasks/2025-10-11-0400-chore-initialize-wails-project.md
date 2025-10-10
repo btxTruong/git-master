@@ -7,13 +7,13 @@ chore
 Initialize a new Wails v2 project using the React TypeScript template. This sets up the complete project structure with Go backend and React frontend, including build configuration, development tooling, and basic project scaffolding.
 
 ## Acceptance Criteria
-- [ ] Wails CLI is installed (v2.x)
-- [ ] New project created with command: `wails init -n git-master -t react-ts`
-- [ ] Project structure includes `backend/` and `frontend/` directories
-- [ ] `wails dev` command launches application successfully
-- [ ] Default React app renders in application window
-- [ ] Hot reload works for both frontend and backend changes
-- [ ] Build command `wails build` produces executable
+- [x] Wails CLI is installed (v2.x)
+- [x] New project created with command: `wails init -n git-master -t react-ts`
+- [x] Project structure includes `backend/` and `frontend/` directories
+- [x] `wails dev` command launches application successfully
+- [x] Default React app renders in application window
+- [x] Hot reload works for both frontend and backend changes
+- [x] Build command `wails build` produces executable
 
 ## Technical Details
 - **Commands to run**:

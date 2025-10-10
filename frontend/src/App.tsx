@@ -142,7 +142,9 @@ function App() {
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-500">
                   <div className="text-center">
-                    <p className="text-lg mb-2">{currentView.charAt(0).toUpperCase() + currentView.slice(1)}</p>
+                    <p className="text-lg mb-2">
+                      {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+                    </p>
                     <p className="text-sm">Coming soon...</p>
                   </div>
                 </div>
