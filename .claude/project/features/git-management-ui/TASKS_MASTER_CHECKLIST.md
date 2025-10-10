@@ -9,16 +9,16 @@
 ## Progress Summary
 
 **Total Tasks**: 92
-**Completed**: 18
+**Completed**: 21
 **In Progress**: 0
-**Pending**: 74
-**Overall Progress**: 19.6%
+**Pending**: 71
+**Overall Progress**: 22.8%
 
 ---
 
 ## Phase 1: Foundation & Setup (Tasks 1-23)
 
-**Status**: 18/23 completed (78.3%)
+**Status**: 21/23 completed (91.3%)
 **Goal**: Working application with basic repository opening and commit browsing
 
 ### Wails Project Setup (Tasks 1-3)
@@ -166,14 +166,39 @@
   - [x] Routes for /, /history, /changes, /branches, /merge
   - [x] Sidebar integrated with router
 
-#### ✅ Task 15: Create Common Components
+#### ✅ Task 15a: Create EmptyState Component
 - **File**: `2025-10-11-0730-feat-create-empty-state-component.md`
 - **Status**: DONE
 - **Checklist**:
   - [x] components/common/EmptyState.tsx created
+  - [x] Accepts props: title, description, icon, action
+  - [x] Centered layout with proper styling
+  - [x] No type errors exist
+  - [x] No linting errors exist
+
+#### ✅ Task 15b: Create Spinner Component
+- **File**: `2025-10-11-0745-feat-create-spinner-component.md`
+- **Status**: DONE
+- **Checklist**:
   - [x] components/common/Spinner.tsx created
+  - [x] Size variants: sm, md, lg
+  - [x] Optional text prop
+  - [x] ARIA accessible
+  - [x] No type errors exist
+  - [x] No linting errors exist
+
+#### ✅ Task 15c: Create Button Component
+- **File**: `2025-10-11-0800-feat-create-button-component.md`
+- **Status**: DONE
+- **Checklist**:
   - [x] components/common/Button.tsx created
-  - [x] All components accept props and styled
+  - [x] Variants: primary, secondary, danger, ghost
+  - [x] Sizes: sm, md, lg
+  - [x] Loading state with spinner
+  - [x] Disabled state
+  - [x] Icon support (left/right)
+  - [x] No type errors exist
+  - [x] No linting errors exist
 
 ---
 
