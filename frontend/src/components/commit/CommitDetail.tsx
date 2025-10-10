@@ -1,243 +1,137 @@
-import { useEffect, useState } from 'react';
-import { GetCommitDetail } from '../../../wailsjs/go/services/RepositoryService';
-import { User, Calendar, GitCommit, FileText, X } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-
-interface FileChange {
-  oldPath: string;
-  newPath: string;
-  status: string;
-  insertions: number;
-  deletions: number;
-}
-
-interface CommitDetailData {
-  commit: {
-    hash: string;
-    shortHash: string;
-    author: {
-      name: string;
-      email: string;
-    };
-    message: string;
-    date: string;
-  };
-  files: FileChange[];
-  diff: string;
-}
+import { useState, useEffect } from 'react';
+import { Copy, Calendar, GitCommit } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { DiffViewer } from '@/components/diff/DiffViewer';
+import type { Commit, DiffResult } from '@/types/git';
 
 interface CommitDetailProps {
-  commitHash: string;
-  onClose: () => void;
+  commit: Commit;
+  onParentClick?: (hash: string) => void;
 }
 
-export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
-  const [detail, setDetail] = useState<CommitDetailData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
+  const [diff, setDiff] = useState<DiffResult | null>(null);
+  const [isLoadingDiff, setIsLoadingDiff] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    loadDetail();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitHash]);
-
-  const loadDetail = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await GetCommitDetail(commitHash);
-      setDetail(result as unknown as CommitDetailData);
-      if (result.files && result.files.length > 0) {
-        setSelectedFile(result.files[0].newPath);
+    async function loadDiff() {
+      setIsLoadingDiff(true);
+      try {
+        setDiff({
+          files: [],
+          totalAdditions: 0,
+          totalDeletions: 0,
+        });
+      } catch (error) {
+        console.error('Failed to load commit diff:', error);
+      } finally {
+        setIsLoadingDiff(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load commit detail');
-    } finally {
-      setIsLoading(false);
     }
-  };
 
-  const formatDate = (dateStr: string) => {
+    loadDiff();
+  }, [commit.hash]);
+
+  const copyHash = async () => {
     try {
-      return new Date(dateStr).toLocaleString();
-    } catch {
-      return dateStr;
+      await navigator.clipboard.writeText(commit.hash);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy hash:', error);
     }
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'A':
-        return 'text-green-400';
-      case 'M':
-        return 'text-blue-400';
-      case 'D':
-        return 'text-red-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'A':
-        return 'Added';
-      case 'M':
-        return 'Modified';
-      case 'D':
-        return 'Deleted';
-      case 'R':
-        return 'Renamed';
-      case 'C':
-        return 'Copied';
-      default:
-        return 'Changed';
-    }
-  };
-
-  const getFileExtension = (filename: string) => {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    // Map common extensions to Prism language names
-    const languageMap: Record<string, string> = {
-      js: 'javascript',
-      jsx: 'jsx',
-      ts: 'typescript',
-      tsx: 'tsx',
-      py: 'python',
-      go: 'go',
-      java: 'java',
-      cpp: 'cpp',
-      c: 'c',
-      rs: 'rust',
-      rb: 'ruby',
-      php: 'php',
-      html: 'html',
-      css: 'css',
-      scss: 'scss',
-      json: 'json',
-      yaml: 'yaml',
-      yml: 'yaml',
-      md: 'markdown',
-      sh: 'bash',
-    };
-    return languageMap[ext || ''] || 'text';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gray-900">
-        <div className="text-gray-400">Loading commit details...</div>
-      </div>
-    );
-  }
-
-  if (error || !detail) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gray-900">
-        <div className="text-red-400">{error || 'Failed to load commit'}</div>
-      </div>
-    );
-  }
-
-  const totalInsertions = detail.files.reduce((sum, f) => sum + f.insertions, 0);
-  const totalDeletions = detail.files.reduce((sum, f) => sum + f.deletions, 0);
 
   return (
-    <div className="h-full flex flex-col bg-gray-900">
-      {/* Header */}
-      <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <GitCommit className="w-5 h-5 text-blue-400" />
-            <span className="font-mono text-sm text-gray-400">{detail.commit.shortHash}</span>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200">
-            <X className="w-5 h-5" />
+    <div className="commit-detail h-full flex flex-col bg-white">
+      <div className="flex-shrink-0 border-b border-gray-200 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <GitCommit className="w-5 h-5 text-gray-500" />
+          <span className="font-mono text-sm text-gray-600">
+            {commit.hash}
+          </span>
+          <button
+            onClick={copyHash}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="Copy hash"
+          >
+            <Copy className="w-4 h-4 text-gray-500" />
           </button>
+          {copySuccess && (
+            <span className="text-xs text-green-600">Copied!</span>
+          )}
         </div>
 
-        <div className="text-lg font-medium text-gray-200 mb-3">
-          {detail.commit.message.split('\n')[0]}
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-gray-400">
-          <div className="flex items-center gap-1">
-            <User className="w-4 h-4" />
-            <span>{detail.commit.author.name}</span>
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+            {commit.author.name.charAt(0).toUpperCase()}
           </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
-            <span>{formatDate(detail.commit.date)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-green-400">+{totalInsertions}</span>
-            <span className="text-red-400">-{totalDeletions}</span>
+          <div className="flex-1">
+            <div className="font-semibold text-gray-900">
+              {commit.author.name}
+            </div>
+            <div className="text-sm text-gray-600">{commit.author.email}</div>
+            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+              <Calendar className="w-4 h-4" />
+              {formatDistanceToNow(new Date(commit.date), { addSuffix: true })}
+            </div>
           </div>
         </div>
 
-        {detail.commit.message.split('\n').length > 1 && (
-          <div className="mt-3 text-sm text-gray-300 whitespace-pre-wrap">
-            {detail.commit.message.split('\n').slice(1).join('\n').trim()}
+        <div className="bg-gray-50 rounded p-4">
+          <pre className="whitespace-pre-wrap font-sans text-sm text-gray-900">
+            {commit.message}
+          </pre>
+        </div>
+
+        {commit.parents && commit.parents.length > 0 && (
+          <div className="mt-4">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
+              {commit.parents.length > 1 ? 'Merge commit - Parents:' : 'Parent:'}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {commit.parents.map((parentHash) => (
+                <button
+                  key={parentHash}
+                  className="font-mono text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                  onClick={() => onParentClick?.(parentHash)}
+                  title={`View parent commit ${parentHash}`}
+                >
+                  {parentHash.slice(0, 7)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {diff && !isLoadingDiff && (
+          <div className="mt-4 flex items-center gap-4 text-sm">
+            <span className="text-gray-700">
+              {diff.files.length} file{diff.files.length !== 1 ? 's' : ''} changed
+            </span>
+            {diff.totalAdditions > 0 && (
+              <span className="text-green-600 font-semibold">
+                +{diff.totalAdditions}
+              </span>
+            )}
+            {diff.totalDeletions > 0 && (
+              <span className="text-red-600 font-semibold">
+                -{diff.totalDeletions}
+              </span>
+            )}
+          </div>
+        )}
+
+        {isLoadingDiff && (
+          <div className="mt-4 text-sm text-gray-500">
+            Loading diff...
           </div>
         )}
       </div>
 
-      {/* Files List */}
-      <div className="flex-shrink-0 bg-gray-850 border-b border-gray-700 p-3">
-        <div className="flex items-center gap-2 mb-2 text-sm text-gray-400">
-          <FileText className="w-4 h-4" />
-          <span>
-            {detail.files.length} file{detail.files.length !== 1 ? 's' : ''} changed
-          </span>
-        </div>
-        <div className="space-y-1 max-h-40 overflow-y-auto">
-          {detail.files.map((file) => (
-            <button
-              key={file.newPath}
-              onClick={() => setSelectedFile(file.newPath)}
-              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                selectedFile === file.newPath
-                  ? 'bg-gray-700 text-gray-200'
-                  : 'hover:bg-gray-800 text-gray-400'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-mono truncate">{file.newPath}</span>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <span className={`text-xs ${getStatusColor(file.status)}`}>
-                    {getStatusLabel(file.status)}
-                  </span>
-                  {file.insertions > 0 && (
-                    <span className="text-xs text-green-400">+{file.insertions}</span>
-                  )}
-                  {file.deletions > 0 && (
-                    <span className="text-xs text-red-400">-{file.deletions}</span>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Diff View */}
-      <div className="flex-1 overflow-auto bg-gray-900 p-4">
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
-          <SyntaxHighlighter
-            language={selectedFile ? getFileExtension(selectedFile) : 'diff'}
-            style={vscDarkPlus}
-            showLineNumbers
-            customStyle={{
-              margin: 0,
-              borderRadius: '0.5rem',
-              fontSize: '0.875rem',
-            }}
-          >
-            {detail.diff || 'No diff available'}
-          </SyntaxHighlighter>
-        </div>
+      <div className="flex-1 overflow-hidden">
+        {!isLoadingDiff && diff && <DiffViewer diff={diff} />}
       </div>
     </div>
   );

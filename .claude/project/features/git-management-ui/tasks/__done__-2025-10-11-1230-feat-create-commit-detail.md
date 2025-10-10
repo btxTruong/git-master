@@ -7,17 +7,17 @@ feat
 Create the CommitDetail component that displays comprehensive information about a selected commit, including full message, author details, timestamp, parent commits, changed files statistics, and embedded diff viewer.
 
 ## Acceptance Criteria
-- [ ] `components/commit/CommitDetail.tsx` component created
-- [ ] Displays full commit hash with copy button
-- [ ] Shows author name, email, and avatar
-- [ ] Displays commit date and time (formatted)
-- [ ] Shows full commit message with proper formatting
-- [ ] Lists parent commits as clickable links
-- [ ] Displays file change statistics (+X -Y)
-- [ ] Lists all changed files with status badges
-- [ ] Integrates DiffViewer for viewing changes
-- [ ] Handles merge commits (multiple parents)
-- [ ] Loading state while fetching details
+- [x] `components/commit/CommitDetail.tsx` component created
+- [x] Displays full commit hash with copy button
+- [x] Shows author name, email, and avatar
+- [x] Displays commit date and time (formatted)
+- [x] Shows full commit message with proper formatting
+- [x] Lists parent commits as clickable links
+- [x] Displays file change statistics (+X -Y)
+- [x] Lists all changed files with status badges
+- [x] Integrates DiffViewer for viewing changes
+- [x] Handles merge commits (multiple parents)
+- [x] Loading state while fetching details
 
 ## Technical Details
 - **File to create**: `frontend/src/components/commit/CommitDetail.tsx`
