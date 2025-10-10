@@ -3,6 +3,16 @@
 import {models} from '../models';
 import {context} from '../models';
 
+export function CheckoutBranch(arg1:string):Promise<void>;
+
+export function CreateBranch(arg1:string):Promise<void>;
+
+export function DeleteBranch(arg1:string,arg2:boolean):Promise<void>;
+
+export function GetBranches():Promise<models.BranchList>;
+
+export function GetCommitDetail(arg1:string):Promise<models.CommitDetail>;
+
 export function GetCommits(arg1:number,arg2:number):Promise<Array<models.Commit>>;
 
 export function GetCurrentRepository():Promise<models.Repository>;

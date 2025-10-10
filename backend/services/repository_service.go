@@ -258,3 +258,149 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 
 	return detail, nil
 }
+
+// GetBranches retrieves all branches (local and remote)
+func (s *RepositoryService) GetBranches() (*models.BranchList, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Get current branch
+	currentResult, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return nil, err
+	}
+	currentBranch := strings.TrimSpace(currentResult.Stdout)
+
+	// Get local branches
+	localResult, err := s.executor.Execute(s.ctx, "branch", "--format=%(refname:short)|%(objectname)|%(upstream:short)")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get local branches: %w", err)
+	}
+
+	localBranches := []models.Branch{}
+	if localResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(localResult.Stdout), "\n")
+		for _, line := range lines {
+			parts := strings.Split(line, "|")
+			if len(parts) < 2 {
+				continue
+			}
+
+			name := strings.TrimSpace(parts[0])
+			commitHash := strings.TrimSpace(parts[1])
+			upstream := ""
+			if len(parts) > 2 {
+				upstream = strings.TrimSpace(parts[2])
+			}
+
+			branch := models.Branch{
+				Name:       name,
+				IsHead:     name == currentBranch,
+				IsRemote:   false,
+				CommitHash: commitHash,
+				Upstream:   upstream,
+			}
+			localBranches = append(localBranches, branch)
+		}
+	}
+
+	// Get remote branches
+	remoteResult, err := s.executor.Execute(s.ctx, "branch", "-r", "--format=%(refname:short)|%(objectname)")
+	remoteBranches := []models.Branch{}
+	if err == nil && remoteResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(remoteResult.Stdout), "\n")
+		for _, line := range lines {
+			parts := strings.Split(line, "|")
+			if len(parts) < 2 {
+				continue
+			}
+
+			fullName := strings.TrimSpace(parts[0])
+			commitHash := strings.TrimSpace(parts[1])
+
+			// Skip HEAD references
+			if strings.Contains(fullName, "HEAD") {
+				continue
+			}
+
+			// Parse remote and branch name
+			remoteParts := strings.SplitN(fullName, "/", 2)
+			remote := remoteParts[0]
+			name := fullName
+			if len(remoteParts) > 1 {
+				name = remoteParts[1]
+			}
+
+			branch := models.Branch{
+				Name:       name,
+				IsHead:     false,
+				IsRemote:   true,
+				Remote:     remote,
+				CommitHash: commitHash,
+			}
+			remoteBranches = append(remoteBranches, branch)
+		}
+	}
+
+	return &models.BranchList{
+		Current: currentBranch,
+		Local:   localBranches,
+		Remote:  remoteBranches,
+	}, nil
+}
+
+// CreateBranch creates a new branch from the current HEAD
+func (s *RepositoryService) CreateBranch(branchName string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "branch", branchName)
+	if err != nil {
+		return fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteBranch deletes a branch
+func (s *RepositoryService) DeleteBranch(branchName string, force bool) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	args := []string{"branch"}
+	if force {
+		args = append(args, "-D")
+	} else {
+		args = append(args, "-d")
+	}
+	args = append(args, branchName)
+
+	_, err := s.executor.Execute(s.ctx, args...)
+	if err != nil {
+		return fmt.Errorf("failed to delete branch: %w", err)
+	}
+
+	return nil
+}
+
+// CheckoutBranch switches to a different branch
+func (s *RepositoryService) CheckoutBranch(branchName string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "checkout", branchName)
+	if err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	// Update repository info
+	if s.repo != nil {
+		s.repo.CurrentBranch = branchName
+	}
+
+	return nil
+}

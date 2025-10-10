@@ -4,11 +4,15 @@ import { OpenRepository } from '../wailsjs/go/services/RepositoryService';
 import { FolderOpen, GitBranch, GitCommit } from 'lucide-react';
 import { CommitList } from './components/commit/CommitList';
 import { CommitDetail } from './components/commit/CommitDetail';
+import { BranchList } from './components/branch/BranchList';
+
+type View = 'commits' | 'branches' | 'changes' | 'stashes';
 
 function App() {
   const { currentRepository, setRepository, setLoading, setError } = useRepositoryStore();
   const [isOpening, setIsOpening] = useState(false);
   const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<View>('commits');
 
   const handleOpenRepository = async () => {
     setIsOpening(true);
@@ -62,52 +66,87 @@ function App() {
             {/* Sidebar */}
             <aside className="w-64 bg-gray-800 border-r border-gray-700 p-4">
               <nav className="space-y-2">
-                <button className="w-full text-left px-3 py-2 rounded bg-gray-700 hover:bg-gray-600">
+                <button
+                  onClick={() => setCurrentView('commits')}
+                  className={`w-full text-left px-3 py-2 rounded ${
+                    currentView === 'commits' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
                   Commits
                 </button>
-                <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700">
+                <button
+                  onClick={() => setCurrentView('branches')}
+                  className={`w-full text-left px-3 py-2 rounded ${
+                    currentView === 'branches' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
                   Branches
                 </button>
-                <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700">
+                <button
+                  onClick={() => setCurrentView('changes')}
+                  className={`w-full text-left px-3 py-2 rounded ${
+                    currentView === 'changes' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
                   Changes
                 </button>
-                <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-700">
+                <button
+                  onClick={() => setCurrentView('stashes')}
+                  className={`w-full text-left px-3 py-2 rounded ${
+                    currentView === 'stashes' ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  }`}
+                >
                   Stashes
                 </button>
               </nav>
             </aside>
 
-            {/* Main Area - Split View */}
+            {/* Main Area */}
             <main className="flex-1 flex overflow-hidden">
-              {/* Left: Commit List */}
-              <div className="w-1/2 border-r border-gray-700 flex flex-col">
-                <div className="flex-shrink-0 p-4 border-b border-gray-700">
-                  <h3 className="text-lg font-semibold">Commits</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <CommitList
-                    onSelectCommit={setSelectedCommitHash}
-                    selectedHash={selectedCommitHash || undefined}
-                  />
-                </div>
-              </div>
-
-              {/* Right: Commit Detail */}
-              <div className="w-1/2 flex flex-col">
-                {selectedCommitHash ? (
-                  <CommitDetail
-                    commitHash={selectedCommitHash}
-                    onClose={() => setSelectedCommitHash(null)}
-                  />
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-gray-500">
-                    <div className="text-center">
-                      <GitCommit className="w-12 h-12 mx-auto mb-2 text-gray-600" />
-                      <p>Select a commit to view details</p>
+              {currentView === 'commits' ? (
+                <>
+                  {/* Left: Commit List */}
+                  <div className="w-1/2 border-r border-gray-700 flex flex-col">
+                    <div className="flex-shrink-0 p-4 border-b border-gray-700">
+                      <h3 className="text-lg font-semibold">Commits</h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4">
+                      <CommitList
+                        onSelectCommit={setSelectedCommitHash}
+                        selectedHash={selectedCommitHash || undefined}
+                      />
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Right: Commit Detail */}
+                  <div className="w-1/2 flex flex-col">
+                    {selectedCommitHash ? (
+                      <CommitDetail
+                        commitHash={selectedCommitHash}
+                        onClose={() => setSelectedCommitHash(null)}
+                      />
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <GitCommit className="w-12 h-12 mx-auto mb-2 text-gray-600" />
+                          <p>Select a commit to view details</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : currentView === 'branches' ? (
+                <div className="flex-1 overflow-y-auto p-6">
+                  <BranchList />
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <p className="text-lg mb-2">{currentView.charAt(0).toUpperCase() + currentView.slice(1)}</p>
+                    <p className="text-sm">Coming soon...</p>
+                  </div>
+                </div>
+              )}
             </main>
           </>
         ) : (
