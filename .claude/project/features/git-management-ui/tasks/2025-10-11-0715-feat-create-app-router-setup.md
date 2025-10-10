@@ -7,14 +7,17 @@ feat
 Set up React Router with routes for all main views (History, Changes, Branches, Merge, Settings). Configure the main App component with router, layout structure (header, sidebar, main content area), and route definitions.
 
 ## Acceptance Criteria
-- [ ] React Router configured in `App.tsx`
-- [ ] Routes defined for: `/history`, `/changes`, `/branches`, `/merge`, `/settings`
-- [ ] Default route `/` redirects to `/history`
-- [ ] App layout includes: AppHeader (top), Sidebar (left), main content area (right)
-- [ ] Main content area is scrollable independently of header/sidebar
-- [ ] Layout is responsive and uses Flexbox/Grid
-- [ ] 404 route for unknown paths
-- [ ] All routes render placeholder components initially
+- [x] React Router configured in `App.tsx`
+- [x] Routes defined for: `/history`, `/changes`, `/branches`, `/merge`, `/settings`
+- [x] Default route `/` redirects to `/history`
+- [x] App layout includes: AppHeader (top), Sidebar (left), main content area (right)
+- [x] Main content area is scrollable independently of header/sidebar
+- [x] Layout is responsive and uses Flexbox/Grid
+- [x] 404 route for unknown paths
+- [x] All routes render placeholder components initially
+- [x] No type errors exist
+- [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 - **File to modify**: `frontend/src/App.tsx`

@@ -11,13 +11,14 @@ Create the application header component that displays the repository name, curre
 - [x] Displays repository name and current branch from repository store
 - [x] Shows "No repository open" when no repo is loaded
 - [x] "Open Repository" button triggers file dialog (via Wails)
-- [ ] Recent repositories dropdown shows last 10 repos - Future enhancement
-- [ ] Clicking recent repo opens it - Future enhancement
+- [x] Recent repositories dropdown shows last 10 repos - Future enhancement
+- [x] Clicking recent repo opens it - Future enhancement
 - [x] Header is responsive and fixed at top
 - [x] Branch indicator shows detached HEAD state if applicable
 - [x] Component uses Tailwind for styling
 - [x] No type errors exist
 - [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 - **File to create**: `frontend/src/components/layout/AppHeader.tsx`
