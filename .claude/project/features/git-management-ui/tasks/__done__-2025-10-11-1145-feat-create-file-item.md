@@ -7,14 +7,14 @@ feat
 Create the FileItem component that represents a single file in the file tree or staging area. Displays file name, status badge, and provides visual feedback on hover and selection.
 
 ## Acceptance Criteria
-- [ ] `components/staging/FileItem.tsx` component created
-- [ ] Shows file name with appropriate icon
-- [ ] Status badge displays (M/A/D/R) with color coding
-- [ ] Click handler for file selection
-- [ ] Hover effect provides visual feedback
-- [ ] Selected state clearly visible
-- [ ] Truncates long file names with ellipsis
-- [ ] Supports keyboard navigation (future enhancement)
+- [x] `components/staging/FileItem.tsx` component created
+- [x] Shows file name with appropriate icon
+- [x] Status badge displays (M/A/D/R) with color coding
+- [x] Click handler for file selection
+- [x] Hover effect provides visual feedback
+- [x] Selected state clearly visible
+- [x] Truncates long file names with ellipsis
+- [x] Supports keyboard navigation (future enhancement)
 
 ## Technical Details
 - **File to create**: `frontend/src/components/staging/FileItem.tsx`

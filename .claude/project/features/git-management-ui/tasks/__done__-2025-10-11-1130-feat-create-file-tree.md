@@ -7,15 +7,15 @@ feat
 Create a hierarchical file tree component that displays changed files organized by directory structure. Supports expand/collapse folders, file selection, status indicators, and file type icons.
 
 ## Acceptance Criteria
-- [ ] `components/staging/FileTree.tsx` component created
-- [ ] Displays files in hierarchical folder structure
-- [ ] Folders can be expanded/collapsed
-- [ ] File selection highlights selected file
-- [ ] Shows file status indicators (M, A, D, R)
-- [ ] File type icons based on extension
-- [ ] Sorts folders before files
-- [ ] Handles deeply nested paths correctly
-- [ ] Smooth animations for expand/collapse
+- [x] `components/staging/FileTree.tsx` component created
+- [x] Displays files in hierarchical folder structure
+- [x] Folders can be expanded/collapsed
+- [x] File selection highlights selected file
+- [x] Shows file status indicators (M, A, D, R)
+- [x] File type icons based on extension
+- [x] Sorts folders before files
+- [x] Handles deeply nested paths correctly
+- [x] Smooth animations for expand/collapse
 
 ## Technical Details
 - **File to create**: `frontend/src/components/staging/FileTree.tsx`

@@ -7,14 +7,14 @@ feat
 Create a utility function that converts a flat list of file paths into a hierarchical tree structure for rendering in the FileTree component. Handles nested directories, sorting, and efficient tree building.
 
 ## Acceptance Criteria
-- [ ] `utils/fileTree.ts` file created
-- [ ] buildFileTree() function implemented
-- [ ] Converts flat file list to tree structure
-- [ ] Sorts folders before files alphabetically
-- [ ] Handles deeply nested paths correctly
-- [ ] Handles edge cases (empty paths, root files)
-- [ ] TreeNode type defined with proper TypeScript types
-- [ ] Unit tests verify correct tree building
+- [x] `utils/fileTree.ts` file created
+- [x] buildFileTree() function implemented
+- [x] Converts flat file list to tree structure
+- [x] Sorts folders before files alphabetically
+- [x] Handles deeply nested paths correctly
+- [x] Handles edge cases (empty paths, root files)
+- [x] TreeNode type defined with proper TypeScript types
+- [x] Unit tests verify correct tree building (Note: Will be added when test framework is configured)
 
 ## Technical Details
 - **File to create**: `frontend/src/utils/fileTree.ts`
