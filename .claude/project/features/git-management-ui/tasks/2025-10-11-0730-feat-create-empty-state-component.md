@@ -7,14 +7,17 @@ feat
 Create a reusable EmptyState component to display when there's no data to show (e.g., no commits, no repository open, no changes). Component should accept title, description, icon, and optional action button.
 
 ## Acceptance Criteria
-- [ ] `components/common/EmptyState.tsx` component created
-- [ ] Accepts props: `title`, `description`, `icon` (React element), `action` (optional button)
-- [ ] Centered vertically and horizontally in container
-- [ ] Icon, title, description layout is visually balanced
-- [ ] Optional action button with customizable text and onClick
-- [ ] Responsive design works on all screen sizes
-- [ ] Component is reusable across different views
-- [ ] Follows Tailwind styling conventions
+- [x] `components/common/EmptyState.tsx` component created
+- [x] Accepts props: `title`, `description`, `icon` (React element), `action` (optional button)
+- [x] Centered vertically and horizontally in container
+- [x] Icon, title, description layout is visually balanced
+- [x] Optional action button with customizable text and onClick
+- [x] Responsive design works on all screen sizes
+- [x] Component is reusable across different views
+- [x] Follows Tailwind styling conventions
+- [x] No type errors exist
+- [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 - **File to create**: `frontend/src/components/common/EmptyState.tsx`
