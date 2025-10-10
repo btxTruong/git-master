@@ -7,16 +7,19 @@ feat
 Create the CommitItem component that displays a single commit row in the commit list. Shows abbreviated hash, author name, relative time, and commit message with proper styling and hover effects.
 
 ## Acceptance Criteria
-- [ ] `components/commit/CommitItem.tsx` created
-- [ ] Displays commit hash (first 7 characters)
-- [ ] Displays author name
-- [ ] Displays relative time (e.g., "2 hours ago")
-- [ ] Displays commit subject (truncated if too long)
-- [ ] Click handler to select commit
-- [ ] Selected state shows different background color
-- [ ] Hover effect for better UX
-- [ ] Height is exactly 60px to match virtualization estimate
-- [ ] Responsive layout that handles long messages
+- [x] `components/commit/CommitItem.tsx` created
+- [x] Displays commit hash (first 7 characters)
+- [x] Displays author name
+- [x] Displays relative time (e.g., "2 hours ago")
+- [x] Displays commit subject (truncated if too long)
+- [x] Click handler to select commit
+- [x] Selected state shows different background color
+- [x] Hover effect for better UX
+- [x] Height is exactly 60px to match virtualization estimate
+- [x] Responsive layout that handles long messages
+- [x] No types errors exist
+- [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 

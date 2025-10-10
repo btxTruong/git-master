@@ -7,15 +7,18 @@ feat
 Create the CommitList component that displays commits using virtualization for optimal performance with large repositories. Uses @tanstack/react-virtual to render only visible items and supports infinite scroll pagination.
 
 ## Acceptance Criteria
-- [ ] `components/commit/CommitList.tsx` created
-- [ ] Uses @tanstack/react-virtual for virtualization
-- [ ] Renders only visible commits (10-20 at a time)
-- [ ] Handles 10,000+ commits with smooth 60fps scrolling
-- [ ] Infinite scroll loads more commits when scrolled to bottom
-- [ ] Shows loading indicator when fetching more commits
-- [ ] Clicking a commit selects it in the store
-- [ ] Selected commit is visually highlighted
-- [ ] Estimates row height correctly (60px per commit)
+- [x] `components/commit/CommitList.tsx` created
+- [x] Uses @tanstack/react-virtual for virtualization
+- [x] Renders only visible commits (10-20 at a time)
+- [x] Handles 10,000+ commits with smooth 60fps scrolling
+- [x] Infinite scroll loads more commits when scrolled to bottom
+- [x] Shows loading indicator when fetching more commits
+- [x] Clicking a commit selects it in the store
+- [x] Selected commit is visually highlighted
+- [x] Estimates row height correctly (60px per commit)
+- [x] No types errors exist
+- [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 

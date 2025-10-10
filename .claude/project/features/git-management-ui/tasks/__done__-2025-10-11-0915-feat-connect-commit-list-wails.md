@@ -7,14 +7,17 @@ feat
 Implement the Wails API bindings for commit operations and integrate them with the commit store. This connects the frontend CommitList to the Go backend's CommitService.
 
 ## Acceptance Criteria
-- [ ] `api/commit.ts` created with all commit API functions
-- [ ] `fetchCommits()` calls Go backend GetCommits method
-- [ ] `fetchCommitDetails()` calls Go backend GetCommitDetails method
-- [ ] Error handling wraps all API calls
-- [ ] `commitStore.loadCommits()` uses the API functions
-- [ ] Pagination parameters passed correctly (limit, offset)
-- [ ] Loading states managed properly
-- [ ] Errors displayed to user via toast notifications
+- [x] `api/commit.ts` created with all commit API functions
+- [x] `fetchCommits()` calls Go backend GetCommits method
+- [x] `fetchCommitDetails()` calls Go backend GetCommitDetails method
+- [x] Error handling wraps all API calls
+- [x] `commitStore.loadCommits()` uses the API functions
+- [x] Pagination parameters passed correctly (limit, offset)
+- [x] Loading states managed properly
+- [x] Errors displayed to user via toast notifications
+- [x] No types errors exist
+- [x] No linting errors exist
+- [x] All acceptance criteria are met
 
 ## Technical Details
 

@@ -1,28 +1,3 @@
-# Create CommitSearch Component
-
-## Type
-feat
-
-## Description
-Create the CommitSearch component that provides search and filter controls for commits. Includes a search input with debouncing to avoid excessive API calls and filter dropdowns for author and date range.
-
-## Acceptance Criteria
-- [ ] `components/commit/CommitSearch.tsx` created
-- [ ] Search input with debouncing (300ms delay)
-- [ ] Calls `commitStore.setFilter('searchText', value)`
-- [ ] Clear button appears when search has text
-- [ ] Filter dropdown for author selection
-- [ ] Filter dropdown for date range
-- [ ] Clear all filters button
-- [ ] Filter state persists in URL query params (future enhancement noted)
-- [ ] Responsive layout
-
-## Technical Details
-
-**File to create**: `frontend/src/components/commit/CommitSearch.tsx`
-
-**Implementation**:
-```typescript
 import { useState, useEffect } from 'react';
 import { Search, X, Filter } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
@@ -44,11 +19,7 @@ export function CommitSearch() {
   };
 
   const hasActiveFilters =
-    filters.searchText ||
-    filters.author ||
-    filters.branch ||
-    filters.dateFrom ||
-    filters.dateTo;
+    filters.searchText || filters.author || filters.branch || filters.dateFrom || filters.dateTo;
 
   return (
     <div className="h-14 border-b border-gray-200 px-4 flex items-center gap-3">
@@ -114,44 +85,3 @@ export function CommitSearch() {
     </div>
   );
 }
-```
-
-**Create useDebounce hook**:
-
-Create `frontend/src/hooks/useDebounce.ts`:
-```typescript
-import { useState, useEffect } from 'react';
-
-export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    // Set up timeout to update debounced value after delay
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    // Cleanup timeout if value changes before delay
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-```
-
-## Estimated Time
-2 hours
-
-## Dependencies
-- Depends on: 2025-10-11-0615-feat-create-commit-store.md
-
-## Notes
-- Debouncing prevents API calls on every keystroke
-- 300ms delay is a good balance between responsiveness and performance
-- Filter dropdown is marked as "coming soon" - will be implemented in Phase 2
-- Clear button only shows when there's text in search input
-- "Clear all" button shows when any filter is active
-- Search is case-insensitive (handled by backend)
-- Future enhancement: Add advanced filters (author, date, branch)
