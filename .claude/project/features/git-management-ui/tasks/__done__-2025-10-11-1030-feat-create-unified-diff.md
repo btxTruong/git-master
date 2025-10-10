@@ -7,15 +7,15 @@ feat
 Create the UnifiedDiff component that displays code changes in unified format (traditional +/- line-by-line diff). Includes syntax highlighting, line numbers, and visual indicators for additions, deletions, and unchanged lines.
 
 ## Acceptance Criteria
-- [ ] `components/diff/UnifiedDiff.tsx` component created
-- [ ] Line-by-line rendering with proper formatting
-- [ ] Green background for added lines (with + prefix)
-- [ ] Red background for removed lines (with - prefix)
-- [ ] Gray background for unchanged context lines
-- [ ] Line numbers displayed on left side
-- [ ] Syntax highlighting applied based on file extension
-- [ ] Handles multi-line hunks correctly
-- [ ] Responsive layout with horizontal scroll for long lines
+- [x] `components/diff/UnifiedDiff.tsx` component created
+- [x] Line-by-line rendering with proper formatting
+- [x] Green background for added lines (with + prefix)
+- [x] Red background for removed lines (with - prefix)
+- [x] Gray background for unchanged context lines
+- [x] Line numbers displayed on left side
+- [x] Syntax highlighting applied based on file extension
+- [x] Handles multi-line hunks correctly
+- [x] Responsive layout with horizontal scroll for long lines
 
 ## Technical Details
 - **File to create**: `frontend/src/components/diff/UnifiedDiff.tsx`

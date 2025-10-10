@@ -7,12 +7,12 @@ chore
 Install react-syntax-highlighter and Prism themes for displaying code diffs with syntax highlighting across 200+ programming languages. Configure lazy loading for optimal performance.
 
 ## Acceptance Criteria
-- [ ] react-syntax-highlighter installed (version 15.x+)
-- [ ] Prism syntax highlighter styles imported
-- [ ] Test component renders highlighted code correctly
-- [ ] Types from @types/react-syntax-highlighter installed
-- [ ] Package.json updated with new dependencies
-- [ ] Dev server runs without errors after installation
+- [x] react-syntax-highlighter installed (version 15.x+)
+- [x] Prism syntax highlighter styles imported
+- [x] Test component renders highlighted code correctly
+- [x] Types from @types/react-syntax-highlighter installed
+- [x] Package.json updated with new dependencies
+- [x] Dev server runs without errors after installation
 
 ## Technical Details
 - **Installation command**:

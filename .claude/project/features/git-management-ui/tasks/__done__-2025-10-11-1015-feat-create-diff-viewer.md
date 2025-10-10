@@ -7,15 +7,15 @@ feat
 Create the main DiffViewer component that displays code changes with syntax highlighting. Supports toggling between unified and split diff views, collapsible sections for unchanged code, and multiple file diffs.
 
 ## Acceptance Criteria
-- [ ] `components/diff/DiffViewer.tsx` component created
-- [ ] Toggle between unified and split view modes
-- [ ] Displays multiple file diffs in sequence
-- [ ] Each file has collapsible header with stats
-- [ ] Syntax highlighting integrated
-- [ ] Handles binary files gracefully
-- [ ] Loading state displayed while fetching diffs
-- [ ] Empty state for "No changes" scenario
-- [ ] Uses Tailwind for styling
+- [x] `components/diff/DiffViewer.tsx` component created
+- [x] Toggle between unified and split view modes
+- [x] Displays multiple file diffs in sequence
+- [x] Each file has collapsible header with stats
+- [x] Syntax highlighting integrated
+- [x] Handles binary files gracefully
+- [x] Loading state displayed while fetching diffs
+- [x] Empty state for "No changes" scenario
+- [x] Uses Tailwind for styling
 
 ## Technical Details
 - **File to create**: `frontend/src/components/diff/DiffViewer.tsx`
