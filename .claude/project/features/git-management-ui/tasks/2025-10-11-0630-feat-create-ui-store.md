@@ -7,13 +7,13 @@ feat
 Create a Zustand store for managing UI-related state such as sidebar visibility, current view, diff view mode (unified/split), and theme preferences. Persist user preferences to localStorage.
 
 ## Acceptance Criteria
-- [ ] `stores/uiStore.ts` file created
-- [ ] Store includes: `sidebarOpen`, `currentView`, `diffViewMode`, `theme`
-- [ ] Actions implemented: `toggleSidebar`, `setView`, `setDiffViewMode`, `setTheme`
-- [ ] UI preferences persisted to localStorage
-- [ ] Default values are sensible (sidebar open, unified diff, system theme)
-- [ ] Store works independently of other stores
-- [ ] TypeScript types include enums for views and modes
+- [x] `stores/uiStore.ts` file created
+- [x] Store includes: `sidebarOpen`, `currentView`, `diffViewMode`, `theme`
+- [x] Actions implemented: `toggleSidebar`, `setView`, `setDiffViewMode`, `setTheme`
+- [x] UI preferences persisted to localStorage
+- [x] Default values are sensible (sidebar open, unified diff, system theme)
+- [x] Store works independently of other stores
+- [x] TypeScript types include enums for views and modes
 
 ## Technical Details
 - **File to create**: `frontend/src/stores/uiStore.ts`

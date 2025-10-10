@@ -5,3 +5,7 @@
 export function GetRepositoryService() {
   return window['go']['main']['App']['GetRepositoryService']();
 }
+
+export function OpenDirectoryDialog() {
+  return window['go']['main']['App']['OpenDirectoryDialog']();
+}

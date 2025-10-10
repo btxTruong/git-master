@@ -7,15 +7,15 @@ feat
 Create a collapsible sidebar navigation component with links to main views (History, Changes, Branches, Merge, Settings). Sidebar state is controlled by the UI store and persists across sessions.
 
 ## Acceptance Criteria
-- [ ] `components/layout/Sidebar.tsx` component created
-- [ ] Navigation links for: History, Changes, Branches, Merge, Settings
-- [ ] Active view is visually highlighted
-- [ ] Icons from Lucide React for each navigation item
-- [ ] Sidebar collapse/expand toggle button
-- [ ] Sidebar state synced with UI store (persisted)
-- [ ] Responsive design (collapsed sidebar shows only icons)
-- [ ] Uses React Router for navigation
-- [ ] Keyboard accessible (tab navigation, enter to select)
+- [x] `components/layout/Sidebar.tsx` component created
+- [x] Navigation links for: History, Changes, Branches, Merge, Settings
+- [x] Active view is visually highlighted
+- [x] Icons from Lucide React for each navigation item
+- [x] Sidebar collapse/expand toggle button
+- [x] Sidebar state synced with UI store (persisted)
+- [x] Responsive design (collapsed sidebar shows only icons)
+- [x] Uses React Router for navigation
+- [x] Keyboard accessible (tab navigation, enter to select)
 
 ## Technical Details
 - **File to create**: `frontend/src/components/layout/Sidebar.tsx`

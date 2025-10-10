@@ -7,15 +7,17 @@ feat
 Create the application header component that displays the repository name, current branch, and action buttons (open repository, recent repositories dropdown). This is a persistent header visible across all views.
 
 ## Acceptance Criteria
-- [ ] `components/layout/AppHeader.tsx` component created
-- [ ] Displays repository name and current branch from repository store
-- [ ] Shows "No repository open" when no repo is loaded
-- [ ] "Open Repository" button triggers file dialog (via Wails)
-- [ ] Recent repositories dropdown shows last 10 repos
-- [ ] Clicking recent repo opens it
-- [ ] Header is responsive and fixed at top
-- [ ] Branch indicator shows detached HEAD state if applicable
-- [ ] Component uses Tailwind for styling
+- [x] `components/layout/AppHeader.tsx` component created
+- [x] Displays repository name and current branch from repository store
+- [x] Shows "No repository open" when no repo is loaded
+- [x] "Open Repository" button triggers file dialog (via Wails)
+- [ ] Recent repositories dropdown shows last 10 repos - Future enhancement
+- [ ] Clicking recent repo opens it - Future enhancement
+- [x] Header is responsive and fixed at top
+- [x] Branch indicator shows detached HEAD state if applicable
+- [x] Component uses Tailwind for styling
+- [x] No type errors exist
+- [x] No linting errors exist
 
 ## Technical Details
 - **File to create**: `frontend/src/components/layout/AppHeader.tsx`
