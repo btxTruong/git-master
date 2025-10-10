@@ -1,10 +1,25 @@
+import { useMemo } from 'react';
 import type { FileDiff } from '@/types/git';
+import { VirtualizedUnifiedDiff } from './VirtualizedUnifiedDiff';
 
 interface UnifiedDiffProps {
   fileDiff: FileDiff;
 }
 
+const VIRTUALIZATION_THRESHOLD = 1000;
+
 export function UnifiedDiff({ fileDiff }: UnifiedDiffProps) {
+  // Calculate total number of lines
+  const totalLines = useMemo(() => {
+    return fileDiff.hunks.reduce((sum, hunk) => sum + hunk.lines.length, 0);
+  }, [fileDiff.hunks]);
+
+  // Use virtualization for large diffs
+  if (totalLines > VIRTUALIZATION_THRESHOLD) {
+    return <VirtualizedUnifiedDiff fileDiff={fileDiff} />;
+  }
+
+  // Regular rendering for smaller diffs
   return (
     <div className="unified-diff font-mono text-sm">
       {fileDiff.hunks.map((hunk, hunkIndex) => (

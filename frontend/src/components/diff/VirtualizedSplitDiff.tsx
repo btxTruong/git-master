@@ -1,21 +1,47 @@
 import { useRef, useEffect, useMemo } from 'react';
-import type { FileDiff } from '@/types/git';
-import { VirtualizedSplitDiff } from './VirtualizedSplitDiff';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import type { FileDiff, DiffLine } from '@/types/git';
 
-interface SplitDiffProps {
+interface VirtualizedSplitDiffProps {
   fileDiff: FileDiff;
 }
 
-const VIRTUALIZATION_THRESHOLD = 1000;
-
-export function SplitDiff({ fileDiff }: SplitDiffProps) {
-  // Calculate total number of lines
-  const totalLines = useMemo(() => {
-    return fileDiff.hunks.reduce((sum, hunk) => sum + hunk.lines.length, 0);
-  }, [fileDiff.hunks]);
-
+export function VirtualizedSplitDiff({ fileDiff }: VirtualizedSplitDiffProps) {
   const leftPaneRef = useRef<HTMLDivElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
+
+  // Flatten hunks and lines into arrays for left and right panes
+  const { leftLines, rightLines } = useMemo(() => {
+    const left: DiffLine[] = [];
+    const right: DiffLine[] = [];
+
+    fileDiff.hunks.forEach((hunk) => {
+      hunk.lines.forEach((line) => {
+        if (line.type !== 'add') {
+          left.push(line);
+        }
+        if (line.type !== 'delete') {
+          right.push(line);
+        }
+      });
+    });
+
+    return { leftLines: left, rightLines: right };
+  }, [fileDiff.hunks]);
+
+  const leftVirtualizer = useVirtualizer({
+    count: leftLines.length,
+    getScrollElement: () => leftPaneRef.current,
+    estimateSize: () => 24,
+    overscan: 20,
+  });
+
+  const rightVirtualizer = useVirtualizer({
+    count: rightLines.length,
+    getScrollElement: () => rightPaneRef.current,
+    estimateSize: () => 24,
+    overscan: 20,
+  });
 
   // Synchronized scrolling
   useEffect(() => {
@@ -49,12 +75,6 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
     };
   }, []);
 
-  // Use virtualization for large diffs
-  if (totalLines > VIRTUALIZATION_THRESHOLD) {
-    return <VirtualizedSplitDiff fileDiff={fileDiff} />;
-  }
-
-  // Regular rendering for smaller diffs
   return (
     <div className="split-diff grid grid-cols-2 gap-px bg-gray-300">
       {/* Left pane: Old file */}
@@ -62,13 +82,27 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
         <div className="sticky top-0 bg-red-100 text-red-900 px-4 py-2 text-xs font-semibold border-b border-red-200 z-10">
           Old {fileDiff.oldPath && `(${fileDiff.oldPath})`}
         </div>
-        {fileDiff.hunks.map((hunk, hunkIndex) => (
-          <div key={hunkIndex}>
-            {hunk.lines
-              .filter((line) => line.type !== 'add')
-              .map((line, lineIndex) => (
+        <div
+          style={{
+            height: `${leftVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {leftVirtualizer.getVirtualItems().map((virtualRow) => {
+            const line = leftLines[virtualRow.index];
+            return (
+              <div
+                key={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
                 <div
-                  key={lineIndex}
                   className={`flex ${
                     line.type === 'delete'
                       ? 'bg-red-50 hover:bg-red-100'
@@ -80,9 +114,10 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
                   </div>
                   <div className="flex-1 px-4 whitespace-pre overflow-x-auto">{line.content}</div>
                 </div>
-              ))}
-          </div>
-        ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Right pane: New file */}
@@ -90,13 +125,27 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
         <div className="sticky top-0 bg-green-100 text-green-900 px-4 py-2 text-xs font-semibold border-b border-green-200 z-10">
           New ({fileDiff.path})
         </div>
-        {fileDiff.hunks.map((hunk, hunkIndex) => (
-          <div key={hunkIndex}>
-            {hunk.lines
-              .filter((line) => line.type !== 'delete')
-              .map((line, lineIndex) => (
+        <div
+          style={{
+            height: `${rightVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rightVirtualizer.getVirtualItems().map((virtualRow) => {
+            const line = rightLines[virtualRow.index];
+            return (
+              <div
+                key={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
                 <div
-                  key={lineIndex}
                   className={`flex ${
                     line.type === 'add'
                       ? 'bg-green-50 hover:bg-green-100'
@@ -108,9 +157,10 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
                   </div>
                   <div className="flex-1 px-4 whitespace-pre overflow-x-auto">{line.content}</div>
                 </div>
-              ))}
-          </div>
-        ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
