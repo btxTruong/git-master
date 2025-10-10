@@ -122,3 +122,34 @@ func (s *RepositoryService) GetStatus() (*models.RepositoryStatus, error) {
 func (s *RepositoryService) GetCurrentRepository() *models.Repository {
 	return s.repo
 }
+
+// GetCommits retrieves commit history with pagination
+func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Git log format
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%d|%s"
+
+	args := []string{
+		"log",
+		fmt.Sprintf("--max-count=%d", limit),
+		fmt.Sprintf("--skip=%d", offset),
+		fmt.Sprintf("--pretty=format:%s", format),
+		"--date=format:%Y-%m-%d %H:%M:%S %z",
+		"--all",
+	}
+
+	result, err := s.executor.Execute(s.ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commits: %w", err)
+	}
+
+	commits, err := git.ParseCommits(result.Stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	return commits, nil
+}
