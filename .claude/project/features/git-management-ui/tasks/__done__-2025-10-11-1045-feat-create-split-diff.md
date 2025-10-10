@@ -7,15 +7,15 @@ feat
 Create the SplitDiff component that displays code changes in split view (side-by-side comparison of old vs new). Features synchronized scrolling, syntax highlighting, and visual highlighting of changed sections within lines.
 
 ## Acceptance Criteria
-- [ ] `components/diff/SplitDiff.tsx` component created
-- [ ] Side-by-side layout with old file on left, new file on right
-- [ ] Synchronized scrolling between both panes
-- [ ] Line numbers displayed for both sides
-- [ ] Changed sections within lines highlighted
-- [ ] Empty space for added-only or deleted-only lines
-- [ ] Syntax highlighting applied independently to both sides
-- [ ] Responsive design with minimum widths
-- [ ] Handles multi-line hunks correctly
+- [x] `components/diff/SplitDiff.tsx` component created
+- [x] Side-by-side layout with old file on left, new file on right
+- [x] Synchronized scrolling between both panes
+- [x] Line numbers displayed for both sides
+- [x] Changed sections within lines highlighted
+- [x] Empty space for added-only or deleted-only lines
+- [x] Syntax highlighting applied independently to both sides
+- [x] Responsive design with minimum widths
+- [x] Handles multi-line hunks correctly
 
 ## Technical Details
 - **File to create**: `frontend/src/components/diff/SplitDiff.tsx`

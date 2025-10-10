@@ -7,15 +7,15 @@ feat
 Create the FileDiffHeader component that displays file path, change statistics (+X -Y lines), file status (modified/added/deleted/renamed), and collapse/expand controls for each file in a diff view.
 
 ## Acceptance Criteria
-- [ ] `components/diff/FileDiffHeader.tsx` component created
-- [ ] Displays file path prominently
-- [ ] Shows +X -Y line change statistics with color coding
-- [ ] Displays file status badge (M/A/D/R)
-- [ ] Collapse/expand button toggles file diff visibility
-- [ ] Handles renamed files (shows old → new path)
-- [ ] Icon changes based on file status
-- [ ] Hover state provides visual feedback
-- [ ] Uses Tailwind for styling
+- [x] `components/diff/FileDiffHeader.tsx` component created
+- [x] Displays file path prominently
+- [x] Shows +X -Y line change statistics with color coding
+- [x] Displays file status badge (M/A/D/R)
+- [x] Collapse/expand button toggles file diff visibility
+- [x] Handles renamed files (shows old → new path)
+- [x] Icon changes based on file status
+- [x] Hover state provides visual feedback
+- [x] Uses Tailwind for styling
 
 ## Technical Details
 - **File to create**: `frontend/src/components/diff/FileDiffHeader.tsx`

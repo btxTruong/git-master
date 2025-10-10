@@ -2,34 +2,8 @@ import { useState } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 import { UnifiedDiff } from './UnifiedDiff';
 import { SplitDiff } from './SplitDiff';
-import type { DiffResult, FileDiff } from '@/types/git';
-
-// Placeholder components - to be implemented in subsequent tasks
-
-const FileDiffHeader = ({
-  fileDiff,
-  collapsed,
-  onToggle,
-}: {
-  fileDiff: FileDiff;
-  collapsed: boolean;
-  onToggle: () => void;
-}) => (
-  <div
-    className="p-3 bg-gray-100 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
-    onClick={onToggle}
-  >
-    <div className="flex items-center justify-between">
-      <div className="font-mono text-sm font-medium">{fileDiff.path}</div>
-      <div className="text-xs text-gray-600">
-        <span className="text-green-600">+{fileDiff.additions}</span>
-        {' / '}
-        <span className="text-red-600">-{fileDiff.deletions}</span>
-        <span className="ml-2">{collapsed ? '▶' : '▼'}</span>
-      </div>
-    </div>
-  </div>
-);
+import { FileDiffHeader } from './FileDiffHeader';
+import type { DiffResult } from '@/types/git';
 
 interface DiffViewerProps {
   diff: DiffResult | null;
