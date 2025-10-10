@@ -7,13 +7,13 @@ feat
 Define TypeScript interfaces and types for all Git domain entities (Commit, Branch, DiffResult, FileChange, Repository, etc.). These types will be used throughout the application and must match the Go backend models.
 
 ## Acceptance Criteria
-- [ ] `types/git.ts` file created with all Git domain types
-- [ ] Types include: Commit, Branch, Repository, DiffResult, DiffHunk, FileChange, ConflictFile
-- [ ] All required fields are non-nullable
-- [ ] Optional fields properly marked with `?`
-- [ ] Date fields use `Date` type (will be converted from string)
-- [ ] Enums created for file status and change type
-- [ ] Types are exported and available for import
+- [x] `types/git.ts` file created with all Git domain types
+- [x] Types include: Commit, Branch, Repository, DiffResult, DiffHunk, FileChange, ConflictFile
+- [x] All required fields are non-nullable
+- [x] Optional fields properly marked with `?`
+- [x] Date fields use `Date` type (will be converted from string)
+- [x] Enums created for file status and change type
+- [x] Types are exported and available for import
 
 ## Technical Details
 - **File to create**: `frontend/src/types/git.ts`

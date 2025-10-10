@@ -7,13 +7,13 @@ feat
 Create TypeScript wrapper functions for all Wails backend service calls. These wrappers provide type-safe access to Go backend functions, handle errors, and convert data types (e.g., string dates to Date objects).
 
 ## Acceptance Criteria
-- [ ] API wrapper files created for each service: `repository.ts`, `commit.ts`, `branch.ts`, `diff.ts`, `merge.ts`
-- [ ] Each function wraps a Wails backend call with proper error handling
-- [ ] Return types match TypeScript Git domain types
-- [ ] Date strings converted to Date objects
-- [ ] All errors are caught and re-thrown with context
-- [ ] Functions are async and return Promises
-- [ ] JSDoc comments added for all functions
+- [x] API wrapper files created for each service: `repository.ts`, `commit.ts`, `branch.ts`, `diff.ts`, `merge.ts`
+- [x] Each function wraps a Wails backend call with proper error handling
+- [x] Return types match TypeScript Git domain types
+- [x] Date strings converted to Date objects
+- [x] All errors are caught and re-thrown with context
+- [x] Functions are async and return Promises
+- [x] JSDoc comments added for all functions
 
 ## Technical Details
 - **Files to create**:

@@ -7,14 +7,14 @@ feat
 Implement the HistoryView component with a two-column layout: commit list on the left and commit detail panel on the right. Include search/filter controls above the commit list and handle empty states (no repository, no commits).
 
 ## Acceptance Criteria
-- [ ] `views/HistoryView.tsx` fully implemented
-- [ ] Two-column layout: commit list (left 40%), commit detail (right 60%)
-- [ ] Search bar and filter controls above commit list
-- [ ] Empty state shown when no repository is open
-- [ ] Empty state shown when repository has no commits
-- [ ] Resizable split pane (future enhancement noted, not required now)
-- [ ] Layout is responsive and handles window resizing
-- [ ] Loading state displayed while commits are being fetched
+- [x] `views/HistoryView.tsx` fully implemented
+- [x] Two-column layout: commit list (left 40%), commit detail (right 60%)
+- [x] Search bar and filter controls above commit list
+- [x] Empty state shown when no repository is open
+- [x] Empty state shown when repository has no commits
+- [x] Resizable split pane (future enhancement noted, not required now)
+- [x] Layout is responsive and handles window resizing
+- [x] Loading state displayed while commits are being fetched
 
 ## Technical Details
 - **File to modify**: `frontend/src/views/HistoryView.tsx`

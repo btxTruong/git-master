@@ -48,7 +48,7 @@ export function CommitDetail({ commitHash, onClose }: CommitDetailProps) {
     setError(null);
     try {
       const result = await GetCommitDetail(commitHash);
-      setDetail(result as CommitDetailData);
+      setDetail(result as unknown as CommitDetailData);
       if (result.files && result.files.length > 0) {
         setSelectedFile(result.files[0].newPath);
       }

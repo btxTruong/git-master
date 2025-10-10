@@ -7,12 +7,12 @@ chore
 Configure TypeScript with strict mode enabled to maximize type safety. Update `tsconfig.json` with strict compiler options, path aliases for cleaner imports, and appropriate module resolution settings.
 
 ## Acceptance Criteria
-- [ ] `strict: true` enabled in `tsconfig.json`
-- [ ] Path aliases configured for `@/` pointing to `src/`
-- [ ] All strict-related flags explicitly enabled
-- [ ] `skipLibCheck: true` to avoid third-party type errors
-- [ ] Build completes without TypeScript errors
-- [ ] Import aliases work (e.g., `import { Button } from '@/components/common/Button'`)
+- [x] `strict: true` enabled in `tsconfig.json`
+- [x] Path aliases configured for `@/` pointing to `src/`
+- [x] All strict-related flags explicitly enabled
+- [x] `skipLibCheck: true` to avoid third-party type errors
+- [x] Build completes without TypeScript errors
+- [x] Import aliases work (e.g., `import { Button } from '@/components/common/Button'`)
 
 ## Technical Details
 - **File to modify**: `frontend/tsconfig.json`
