@@ -7,13 +7,13 @@ feat
 Create the BranchTree component that organizes branches hierarchically into collapsible groups (Local Branches, Remote Branches) with search and filter capabilities.
 
 ## Acceptance Criteria
-- [ ] `components/branch/BranchTree.tsx` component created
-- [ ] Groups: Local Branches, Remote Branches
-- [ ] Each group expandable/collapsible
-- [ ] Search box filters branches by name
-- [ ] Group headers show branch counts
-- [ ] Current branch auto-expanded
-- [ ] Remote branches grouped by remote name
+- [x] `components/branch/BranchTree.tsx` component created
+- [x] Groups: Local Branches, Remote Branches
+- [x] Each group expandable/collapsible
+- [x] Search box filters branches by name
+- [x] Group headers show branch counts
+- [x] Current branch auto-expanded
+- [x] Remote branches grouped by remote name
 
 ## Technical Details
 - **File to create**: `frontend/src/components/branch/BranchTree.tsx`

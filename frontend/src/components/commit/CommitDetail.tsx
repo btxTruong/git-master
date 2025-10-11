@@ -1,30 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Copy, Calendar, GitCommit } from 'lucide-react';
+import { Copy, Calendar, GitCommit, ArrowLeft, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DiffViewer } from '@/components/diff/DiffViewer';
+import { fetchCommitDiff } from '@/api/commit';
+import { useUIStore } from '@/stores/uiStore';
 import type { Commit, DiffResult } from '@/types/git';
 
 interface CommitDetailProps {
   commit: Commit;
   onParentClick?: (hash: string) => void;
+  onBack?: () => void;
 }
 
-export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
+export function CommitDetail({ commit, onParentClick, onBack }: CommitDetailProps) {
   const [diff, setDiff] = useState<DiffResult | null>(null);
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const { diffViewMode, setDiffViewMode } = useUIStore();
 
   useEffect(() => {
     async function loadDiff() {
       setIsLoadingDiff(true);
+      setError(null);
       try {
-        setDiff({
-          files: [],
-          totalAdditions: 0,
-          totalDeletions: 0,
-        });
+        const diffData = await fetchCommitDiff(commit.hash);
+        setDiff(diffData);
       } catch (error) {
         console.error('Failed to load commit diff:', error);
+        setError('Failed to load diff. Please try again.');
       } finally {
         setIsLoadingDiff(false);
       }
@@ -43,14 +48,41 @@ export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
     }
   };
 
+  const retryFetch = () => {
+    loadDiff();
+  };
+
+  async function loadDiff() {
+    setIsLoadingDiff(true);
+    setError(null);
+    try {
+      const diffData = await fetchCommitDiff(commit.hash);
+      setDiff(diffData);
+    } catch (error) {
+      console.error('Failed to load commit diff:', error);
+      setError('Failed to load diff. Please try again.');
+    } finally {
+      setIsLoadingDiff(false);
+    }
+  }
+
   return (
     <div className="commit-detail h-full flex flex-col bg-white">
       <div className="flex-shrink-0 border-b border-gray-200 p-6">
+        {/* Back button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to commits
+          </button>
+        )}
+
         <div className="flex items-center gap-2 mb-4">
           <GitCommit className="w-5 h-5 text-gray-500" />
-          <span className="font-mono text-sm text-gray-600">
-            {commit.hash}
-          </span>
+          <span className="font-mono text-sm text-gray-600">{commit.hash}</span>
           <button
             onClick={copyHash}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -58,9 +90,7 @@ export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
           >
             <Copy className="w-4 h-4 text-gray-500" />
           </button>
-          {copySuccess && (
-            <span className="text-xs text-green-600">Copied!</span>
-          )}
+          {copySuccess && <span className="text-xs text-green-600">Copied!</span>}
         </div>
 
         <div className="flex items-start gap-3 mb-4">
@@ -68,9 +98,7 @@ export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
             {commit.author.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
-            <div className="font-semibold text-gray-900">
-              {commit.author.name}
-            </div>
+            <div className="font-semibold text-gray-900">{commit.author.name}</div>
             <div className="text-sm text-gray-600">{commit.author.email}</div>
             <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
               <Calendar className="w-4 h-4" />
@@ -110,28 +138,109 @@ export function CommitDetail({ commit, onParentClick }: CommitDetailProps) {
             <span className="text-gray-700">
               {diff.files.length} file{diff.files.length !== 1 ? 's' : ''} changed
             </span>
-            {diff.totalAdditions > 0 && (
-              <span className="text-green-600 font-semibold">
-                +{diff.totalAdditions}
-              </span>
-            )}
-            {diff.totalDeletions > 0 && (
-              <span className="text-red-600 font-semibold">
-                -{diff.totalDeletions}
-              </span>
-            )}
+            {(() => {
+              const totalAdditions = diff.files.reduce((sum, f) => sum + f.additions, 0);
+              const totalDeletions = diff.files.reduce((sum, f) => sum + f.deletions, 0);
+              return (
+                <>
+                  {totalAdditions > 0 && (
+                    <span className="text-green-600 font-semibold">+{totalAdditions}</span>
+                  )}
+                  {totalDeletions > 0 && (
+                    <span className="text-red-600 font-semibold">-{totalDeletions}</span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 
-        {isLoadingDiff && (
-          <div className="mt-4 text-sm text-gray-500">
-            Loading diff...
-          </div>
-        )}
+        {isLoadingDiff && <div className="mt-4 text-sm text-gray-500">Loading diff...</div>}
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        {!isLoadingDiff && diff && <DiffViewer diff={diff} />}
+      {/* View Mode Toggle */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {error && (
+          <div className="flex items-center justify-center gap-3 p-6 bg-red-50 border border-red-200">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <span className="text-sm text-red-800">{error}</span>
+            <button
+              onClick={retryFetch}
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!error && diff && diff.files.length > 0 && (
+          <>
+            {/* View mode toggle */}
+            <div className="flex items-center gap-2 p-2 border-b border-gray-200">
+              <span className="text-sm text-gray-600">View:</span>
+              <button
+                onClick={() => setDiffViewMode('unified')}
+                className={`px-3 py-1 text-sm rounded ${
+                  diffViewMode === 'unified'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Unified
+              </button>
+              <button
+                onClick={() => setDiffViewMode('split')}
+                className={`px-3 py-1 text-sm rounded ${
+                  diffViewMode === 'split'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Split
+              </button>
+            </div>
+
+            {/* File navigation and diff viewer */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* File sidebar */}
+              <div className="w-64 border-r border-gray-200 overflow-auto bg-gray-50">
+                <div className="p-2">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                    Changed Files ({diff.files.length})
+                  </div>
+                  {diff.files.map((file, index) => (
+                    <button
+                      key={file.path}
+                      onClick={() => setSelectedFileIndex(index)}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 ${
+                        selectedFileIndex === index
+                          ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'
+                          : ''
+                      }`}
+                    >
+                      <div className="font-mono truncate text-xs">{file.path}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className="text-green-600">+{file.additions || 0}</span>{' '}
+                        <span className="text-red-600">-{file.deletions || 0}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Diff viewer */}
+              <div className="flex-1 overflow-auto">
+                {!isLoadingDiff && <DiffViewer diff={diff} />}
+              </div>
+            </div>
+          </>
+        )}
+
+        {!error && !isLoadingDiff && diff && diff.files.length === 0 && (
+          <div className="flex items-center justify-center p-6 text-gray-500">
+            No changes in this commit
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,11 +6,17 @@ export interface Repository {
   isDetached: boolean;
 }
 
+// Author
+export interface Author {
+  name: string;
+  email: string;
+}
+
 // Commit
 export interface Commit {
   hash: string;
   shortHash: string;
-  author: string;
+  author: Author;
   authorEmail: string;
   date: Date;
   message: string;
@@ -28,6 +34,8 @@ export interface Branch {
   current: boolean;
   upstream: string | null;
   lastCommit: Commit | null;
+  ahead?: number;
+  behind?: number;
 }
 
 // Diff

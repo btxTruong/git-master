@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { fetchCommits, fetchCommitDetails } from '@/api/commit';
 import toast from 'react-hot-toast';
 
 export interface Author {
@@ -83,12 +82,16 @@ export const useCommitStore = create<CommitState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const offset = page * pageSize;
-      const newCommits = await fetchCommits({
-        limit: pageSize,
-        offset,
-        filters: get().filters,
-      });
+      // TODO: Integrate with Wails backend when available
+      // const offset = page * pageSize;
+      // const newCommits = await fetchCommits({
+      //   limit: pageSize,
+      //   offset,
+      //   filters: get().filters,
+      // });
+
+      // Mock data for now
+      const newCommits: Commit[] = [];
 
       // If page 0, replace commits; otherwise append
       const updatedCommits = page === 0 ? newCommits : [...commits, ...newCommits];
@@ -109,14 +112,15 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   selectCommit: async (commit: Commit) => {
     set({ selectedCommit: commit });
 
+    // TODO: Integrate with Wails backend when available
     // If commit doesn't have detailed info, fetch it
-    try {
-      const detailedCommit = await fetchCommitDetails(commit.hash);
-      set({ selectedCommit: detailedCommit });
-    } catch (error) {
-      console.error('Failed to load commit details:', error);
-      // Don't show toast here as the basic commit info is still available
-    }
+    // try {
+    //   const detailedCommit = await fetchCommitDetails(commit.hash);
+    //   set({ selectedCommit: detailedCommit });
+    // } catch (error) {
+    //   console.error('Failed to load commit details:', error);
+    //   // Don't show toast here as the basic commit info is still available
+    // }
   },
 
   setFilter: (key, value) => {

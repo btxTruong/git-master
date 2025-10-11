@@ -7,15 +7,15 @@ feat
 Integrate the DiffViewer component into the CommitDetail view with proper data fetching, loading states, error handling, and file navigation. Allow switching between files and toggling diff view modes.
 
 ## Acceptance Criteria
-- [ ] DiffViewer embedded in CommitDetail component
-- [ ] Fetches commit diff from backend via Wails
-- [ ] Loading spinner shown while fetching diff
-- [ ] Error state displayed if diff fetch fails
-- [ ] File list sidebar for quick navigation
-- [ ] Clicking file scrolls to that file's diff
-- [ ] Diff view mode toggle (unified/split) works
-- [ ] Large diffs load progressively
-- [ ] Back button returns to commit list
+- [x] DiffViewer embedded in CommitDetail component
+- [x] Fetches commit diff from backend via Wails
+- [x] Loading spinner shown while fetching diff
+- [x] Error state displayed if diff fetch fails
+- [x] File list sidebar for quick navigation
+- [x] Clicking file scrolls to that file's diff
+- [x] Diff view mode toggle (unified/split) works
+- [x] Large diffs load progressively
+- [x] Back button returns to commit list
 
 ## Technical Details
 

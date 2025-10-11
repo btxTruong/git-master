@@ -7,14 +7,14 @@ feat
 Create the BranchItem component representing a single branch in the list with name, tracking status, ahead/behind indicators, and context menu for branch operations.
 
 ## Acceptance Criteria
-- [ ] `components/branch/BranchItem.tsx` component created
-- [ ] Shows branch name and icon
-- [ ] Displays tracking remote branch
-- [ ] Shows ahead/behind commit indicators
-- [ ] Current branch badge visible
-- [ ] Right-click context menu
-- [ ] Click to checkout branch
-- [ ] Hover effects
+- [x] `components/branch/BranchItem.tsx` component created
+- [x] Shows branch name and icon
+- [x] Displays tracking remote branch
+- [x] Shows ahead/behind commit indicators
+- [x] Current branch badge visible
+- [x] Right-click context menu
+- [x] Click to checkout branch
+- [x] Hover effects
 
 ## Technical Details
 - **File to create**: `frontend/src/components/branch/BranchItem.tsx`

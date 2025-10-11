@@ -7,15 +7,15 @@ feat
 Create the BranchList component that displays all local and remote branches with current branch highlighting, ahead/behind indicators, and branch status information.
 
 ## Acceptance Criteria
-- [ ] `components/branch/BranchList.tsx` component created
-- [ ] Lists local branches
-- [ ] Lists remote branches separately
-- [ ] Current branch highlighted
-- [ ] Shows ahead/behind commit counts
-- [ ] Branch context menu on right-click
-- [ ] Loading state while fetching branches
-- [ ] Empty state for no branches
-- [ ] Search/filter functionality
+- [x] `components/branch/BranchList.tsx` component created
+- [x] Lists local branches
+- [x] Lists remote branches separately
+- [x] Current branch highlighted
+- [x] Shows ahead/behind commit counts
+- [x] Branch context menu on right-click
+- [x] Loading state while fetching branches
+- [x] Empty state for no branches
+- [x] Search/filter functionality
 
 ## Technical Details
 - **File to create**: `frontend/src/components/branch/BranchList.tsx`
