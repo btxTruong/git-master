@@ -15,7 +15,7 @@ import {
   GitCompare,
   Trash2,
   Check,
-  Globe
+  Globe,
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 // Import from services will be added after backend implementation
@@ -37,15 +37,9 @@ function BranchesView() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
-  const [_showRebaseDialog, setShowRebaseDialog] = useState(false);
+  const [showRebaseDialog, setShowRebaseDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-
-  useEffect(() => {
-    if (currentRepository) {
-      loadBranches();
-    }
-  }, [currentRepository]);
 
   const loadBranches = async () => {
     if (!currentRepository) return;
@@ -60,6 +54,12 @@ function BranchesView() {
       toast.error(`Failed to load branches: ${error}`);
     }
   };
+
+  useEffect(() => {
+    if (currentRepository) {
+      loadBranches();
+    }
+  }, [currentRepository]);
 
   const handleMerge = (branch: Branch) => {
     setSelectedBranch(branch);
@@ -88,8 +88,8 @@ function BranchesView() {
     );
   }
 
-  const localBranches = branches.filter(b => !b.isRemote);
-  const remoteBranches = branches.filter(b => b.isRemote);
+  const localBranches = branches.filter((b) => !b.isRemote);
+  const remoteBranches = branches.filter((b) => b.isRemote);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
@@ -171,6 +171,7 @@ function BranchesView() {
         }}
       />
       <RebaseDialog
+        isOpen={showRebaseDialog}
         onClose={() => {
           setShowRebaseDialog(false);
           setSelectedBranch(null);
@@ -213,11 +214,13 @@ function BranchItem({ branch, onMerge, onRebase, onDelete, isRemote }: BranchIte
           {branch.isCurrent && (
             <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
           )}
-          <span className={`font-medium truncate ${
-            branch.isCurrent
-              ? 'text-blue-700 dark:text-blue-300'
-              : 'text-gray-900 dark:text-gray-100'
-          }`}>
+          <span
+            className={`font-medium truncate ${
+              branch.isCurrent
+                ? 'text-blue-700 dark:text-blue-300'
+                : 'text-gray-900 dark:text-gray-100'
+            }`}
+          >
             {branch.name}
           </span>
           {isRemote && (

@@ -4,11 +4,12 @@ import { X, GitBranch, Loader2 } from 'lucide-react';
 import { RebaseCommitList } from './RebaseCommitList';
 
 interface RebaseDialogProps {
+  isOpen: boolean;
   onClose: () => void;
   targetBranch?: string;
 }
 
-export function RebaseDialog({ onClose, targetBranch }: RebaseDialogProps) {
+export function RebaseDialog({ isOpen, onClose, targetBranch }: RebaseDialogProps) {
   const { loadRebaseCommits, startRebase, isLoading, commits } = useRebaseStore();
   const [selectedBranch, setSelectedBranch] = useState(targetBranch || '');
   const [isStarting, setIsStarting] = useState(false);
@@ -34,6 +35,8 @@ export function RebaseDialog({ onClose, targetBranch }: RebaseDialogProps) {
       onClose();
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div

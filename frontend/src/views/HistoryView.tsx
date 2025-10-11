@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useCommitStore } from '@/stores/commitStore';
 import { CommitList } from '@/components/commit/CommitList';
-import { CommitDetail } from '@/components/commit/CommitDetail';
 import { CommitSearch } from '@/components/commit/CommitSearch';
 import { CommitFilters } from '@/components/commit/CommitFilters';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -9,7 +9,15 @@ import { FolderOpen, History } from 'lucide-react';
 
 function HistoryView() {
   const { currentRepository } = useRepositoryStore();
-  const [selectedCommit, _setSelectedCommit] = useState<any>(null);
+  const { loadCommits, reset } = useCommitStore();
+
+  useEffect(() => {
+    if (currentRepository) {
+      loadCommits(0);
+    } else {
+      reset();
+    }
+  }, [currentRepository, loadCommits, reset]);
 
   if (!currentRepository) {
     return (
@@ -37,27 +45,9 @@ function HistoryView() {
         <CommitFilters />
       </div>
 
-      {/* Main content: commit list + detail */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Commit list (left side) */}
-        <div className="w-1/2 border-r border-gray-200 dark:border-gray-700 overflow-hidden">
-          <CommitList />
-        </div>
-
-        {/* Commit detail (right side) */}
-        <div className="w-1/2 overflow-hidden">
-          {selectedCommit ? (
-            <CommitDetail commit={selectedCommit} />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <EmptyState
-                icon={<History className="w-12 h-12 text-gray-400" />}
-                title="No Commit Selected"
-                description="Select a commit from the list to view its details"
-              />
-            </div>
-          )}
-        </div>
+      {/* Main content: commit list */}
+      <div className="flex-1 overflow-hidden">
+        <CommitList />
       </div>
     </div>
   );

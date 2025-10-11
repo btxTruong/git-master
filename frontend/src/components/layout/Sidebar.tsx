@@ -1,18 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import {
-  History,
-  FileText,
-  GitBranch,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { History, FileText, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 
 const navItems = [
   { path: '/history', label: 'History', icon: History },
   { path: '/changes', label: 'Changes', icon: FileText },
-  { path: '/branches', label: 'Branches', icon: GitBranch },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
