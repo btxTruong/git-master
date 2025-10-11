@@ -12,14 +12,26 @@ import (
 
 // RepositoryService handles repository operations
 type RepositoryService struct {
-	ctx      context.Context
-	executor *git.Executor
-	repo     *models.Repository
+	ctx            context.Context
+	executor       *git.Executor
+	repo           *models.Repository
+	remoteService  *RemoteService
+	stagingService *StagingService
 }
 
 // NewRepositoryService creates a new repository service
 func NewRepositoryService() *RepositoryService {
 	return &RepositoryService{}
+}
+
+// SetRemoteService sets the remote service reference
+func (s *RepositoryService) SetRemoteService(remoteService *RemoteService) {
+	s.remoteService = remoteService
+}
+
+// SetStagingService sets the staging service reference
+func (s *RepositoryService) SetStagingService(stagingService *StagingService) {
+	s.stagingService = stagingService
 }
 
 // Startup is called when the app starts
@@ -42,6 +54,11 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 
 	// Create executor for this repository
 	s.executor = git.NewExecutor(rootPath)
+
+	// Update remote service with new executor
+	if s.remoteService != nil {
+		s.remoteService.SetExecutor(s.executor)
+	}
 
 	// Get current branch
 	result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", "HEAD")

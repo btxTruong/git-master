@@ -38,6 +38,14 @@ export function OpenRepository(arg1) {
   return window['go']['services']['RepositoryService']['OpenRepository'](arg1);
 }
 
+export function SetRemoteService(arg1) {
+  return window['go']['services']['RepositoryService']['SetRemoteService'](arg1);
+}
+
+export function SetStagingService(arg1) {
+  return window['go']['services']['RepositoryService']['SetStagingService'](arg1);
+}
+
 export function Startup(arg1) {
   return window['go']['services']['RepositoryService']['Startup'](arg1);
 }

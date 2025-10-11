@@ -1,3 +1,20 @@
+export namespace git {
+	
+	export class Executor {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new Executor(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+
+}
+
 export namespace models {
 	
 	export class Author {
@@ -287,6 +304,34 @@ export namespace services {
 	        this.status = source["status"];
 	        this.staged = source["staged"];
 	        this.modified = source["modified"];
+	    }
+	}
+	export class Remote {
+	    name: string;
+	    url: string;
+	    pushUrl?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Remote(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.url = source["url"];
+	        this.pushUrl = source["pushUrl"];
+	    }
+	}
+	export class RemoteService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new RemoteService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
 	    }
 	}
 	export class RepositoryService {

@@ -3,7 +3,7 @@
  * Bindings for Git remote operations (pull, push, fetch)
  */
 
-// Placeholder functions - will be connected to Wails backend when RemoteService is implemented
+import * as RemoteService from '../../wailsjs/go/services/RemoteService';
 
 export interface PullOptions {
   remote?: string;
@@ -44,51 +44,53 @@ export interface PushProgress {
 /**
  * Pull changes from remote repository
  */
-export async function pull(_options: PullOptions = {}): Promise<void> {
-  // TODO: Connect to Wails backend RemoteService.Pull when implemented
-  // For now, this is a placeholder that will throw an error
-  throw new Error('Pull operation not yet implemented in backend');
+export async function pull(options: PullOptions = {}): Promise<void> {
+  const remote = options.remote || '';
+  const branch = options.branch || '';
+  const rebase = options.rebase || false;
+
+  await RemoteService.Pull(remote, branch, rebase);
 }
 
 /**
  * Push changes to remote repository
  */
-export async function push(_options: PushOptions = {}): Promise<void> {
-  // TODO: Connect to Wails backend RemoteService.Push when implemented
-  // For now, this is a placeholder that will throw an error
-  throw new Error('Push operation not yet implemented in backend');
+export async function push(options: PushOptions = {}): Promise<void> {
+  const remote = options.remote || '';
+  const branch = options.branch || '';
+  const force = options.force || false;
+  const setUpstream = options.setUpstream || false;
+
+  await RemoteService.Push(remote, branch, force, setUpstream);
 }
 
 /**
  * Fetch changes from remote repository without merging
  */
-export async function fetch(_options: FetchOptions = {}): Promise<void> {
-  // TODO: Connect to Wails backend RemoteService.Fetch when implemented
-  // For now, this is a placeholder that will throw an error
-  throw new Error('Fetch operation not yet implemented in backend');
+export async function fetch(options: FetchOptions = {}): Promise<void> {
+  const remote = options.remote || '';
+  const prune = options.prune || false;
+
+  await RemoteService.Fetch(remote, prune);
 }
 
 /**
  * Get list of remotes
  */
 export async function getRemotes(): Promise<Remote[]> {
-  // TODO: Connect to Wails backend RemoteService.GetRemotes when implemented
-  // For now, return empty array
-  return [];
+  return await RemoteService.GetRemotes();
 }
 
 /**
  * Add a new remote
  */
-export async function addRemote(_name: string, _url: string): Promise<void> {
-  // TODO: Connect to Wails backend RemoteService.AddRemote when implemented
-  throw new Error('Add remote operation not yet implemented in backend');
+export async function addRemote(name: string, url: string): Promise<void> {
+  await RemoteService.AddRemote(name, url);
 }
 
 /**
  * Remove a remote
  */
-export async function removeRemote(_name: string): Promise<void> {
-  // TODO: Connect to Wails backend RemoteService.RemoveRemote when implemented
-  throw new Error('Remove remote operation not yet implemented in backend');
+export async function removeRemote(name: string): Promise<void> {
+  await RemoteService.RemoveRemote(name);
 }

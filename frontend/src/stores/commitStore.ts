@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
+import { GetCommits } from '../../wailsjs/go/services/RepositoryService';
 
 export interface Author {
   name: string;
@@ -82,16 +83,8 @@ export const useCommitStore = create<CommitState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // TODO: Integrate with Wails backend when available
-      // const offset = page * pageSize;
-      // const newCommits = await fetchCommits({
-      //   limit: pageSize,
-      //   offset,
-      //   filters: get().filters,
-      // });
-
-      // Mock data for now
-      const newCommits: Commit[] = [];
+      const offset = page * pageSize;
+      const newCommits = await GetCommits(pageSize, offset);
 
       // If page 0, replace commits; otherwise append
       const updatedCommits = page === 0 ? newCommits : [...commits, ...newCommits];

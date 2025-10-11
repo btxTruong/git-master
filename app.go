@@ -14,14 +14,23 @@ type App struct {
 	repositoryService *services.RepositoryService
 	commitService     *services.CommitService
 	stagingService    *services.StagingService
+	remoteService     *services.RemoteService
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	repoService := services.NewRepositoryService()
+	stagingService := services.NewStagingService(repoService)
+	remoteService := services.NewRemoteService(repoService)
+
+	// Link services together so they can share the executor
+	repoService.SetStagingService(stagingService)
+	repoService.SetRemoteService(remoteService)
+
 	return &App{
 		repositoryService: repoService,
-		stagingService:    services.NewStagingService(repoService),
+		stagingService:    stagingService,
+		remoteService:     remoteService,
 	}
 }
 
@@ -30,6 +39,9 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.repositoryService.Startup(ctx)
+	if a.remoteService != nil {
+		a.remoteService.Startup(ctx)
+	}
 }
 
 // GetRepositoryService returns the repository service for Wails binding

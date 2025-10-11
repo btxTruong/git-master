@@ -29,6 +29,7 @@ func main() {
 			app,
 			app.repositoryService,
 			app.stagingService,
+			app.remoteService,
 		},
 	})
 
