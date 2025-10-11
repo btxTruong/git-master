@@ -29,8 +29,8 @@ export const CommitItem = memo(function CommitItem({
     <div
       onClick={onClick}
       className={`
-        group relative px-4 py-3 cursor-pointer transition-all duration-200
-        border-b border-gray-200 dark:border-gray-700
+        group relative h-[72px] px-4 py-2 cursor-pointer transition-all duration-200
+        border-b border-gray-200 dark:border-gray-700 overflow-hidden
         ${
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
@@ -48,8 +48,8 @@ export const CommitItem = memo(function CommitItem({
           />
         </div>
 
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-0 space-y-1 h-full flex flex-col">
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">
               {commit.shortHash}
             </span>
@@ -69,14 +69,14 @@ export const CommitItem = memo(function CommitItem({
             )}
           </div>
 
-          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
+          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-3 break-words">
             {commit.shortMessage || commit.message}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 mt-auto shrink-0">
             <div className="flex items-center gap-1.5 font-medium">
               <User className="w-3.5 h-3.5" />
-              <span>{commit.author.name}</span>
+              <span className="truncate">{commit.author.name}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
