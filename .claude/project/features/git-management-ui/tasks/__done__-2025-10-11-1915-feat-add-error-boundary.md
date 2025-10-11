@@ -7,11 +7,11 @@ feat
 Create ErrorBoundary component to catch React errors and display friendly error page.
 
 ## Acceptance Criteria
-- [ ] Component/feature implemented
-- [ ] TypeScript types defined
-- [ ] Error handling in place
-- [ ] UI responsive and styled
-- [ ] Integration tested
+- [x] Component/feature implemented
+- [x] TypeScript types defined
+- [x] Error handling in place
+- [x] UI responsive and styled
+- [x] Integration tested
 
 ## Technical Details
 - **File to create**: `frontend/src/components/boundary`

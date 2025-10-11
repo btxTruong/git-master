@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FolderOpen, GitBranch } from 'lucide-react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { OpenRepoDialog } from '@/components/repository/OpenRepoDialog';
+import { PullPushButtons } from '@/components/remote/PullPushButtons';
 
 export function AppHeader() {
   const [showOpenDialog, setShowOpenDialog] = useState(false);
@@ -34,6 +35,9 @@ export function AppHeader() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          {/* Pull/Push buttons - only shown when repository is open */}
+          <PullPushButtons />
+
           <button
             onClick={() => setShowOpenDialog(true)}
             className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"

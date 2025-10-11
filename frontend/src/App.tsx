@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { HistoryView } from '@/views/HistoryView';
@@ -27,6 +28,52 @@ function App() {
           </main>
         </div>
       </div>
+
+      {/* Toast notifications */}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          // Success notifications
+          success: {
+            duration: 3000,
+            style: {
+              background: '#10b981',
+              color: '#fff',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#10b981',
+            },
+          },
+          // Error notifications
+          error: {
+            duration: 5000,
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#ef4444',
+            },
+          },
+          // Loading notifications
+          loading: {
+            duration: Infinity,
+            style: {
+              background: '#3b82f6',
+              color: '#fff',
+            },
+          },
+          // Default style for all toasts
+          style: {
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+        }}
+      />
     </BrowserRouter>
   );
 }

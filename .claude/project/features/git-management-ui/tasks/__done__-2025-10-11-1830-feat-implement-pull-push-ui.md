@@ -1,25 +1,25 @@
-# Create Toast Notification System
+# Implement Pull/Push UI
 
 ## Type
 feat
 
 ## Description
-Install and configure react-hot-toast for displaying success, error, and loading notifications.
+Implement UI for pull and push operations with progress indicators and success/error notifications.
 
 ## Acceptance Criteria
-- [ ] Component/feature implemented
-- [ ] TypeScript types defined
-- [ ] Error handling in place
-- [ ] UI responsive and styled
-- [ ] Integration tested
+- [x] Component/feature implemented
+- [x] TypeScript types defined
+- [x] Error handling in place
+- [x] UI responsive and styled
+- [x] Integration tested
 
 ## Technical Details
-- **File to create**: `frontend/src/components/system`
+- **File to create**: `frontend/src/components/ui`
 - **Implementation**: See Implementation.md for architecture details
 - **Dependencies**: Check TASKS_MASTER_CHECKLIST.md
 
 ## Estimated Time
-1 hour
+3 hours
 
 ## Dependencies
 - See TASKS_MASTER_CHECKLIST.md for dependencies
