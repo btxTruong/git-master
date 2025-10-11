@@ -196,3 +196,29 @@ func (s *StagingService) UnstageAll() error {
 
 	return nil
 }
+
+// GetFileDiff returns the diff for a specific file
+func (s *StagingService) GetFileDiff(path string, staged bool) (string, error) {
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return "", fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	var cmd *exec.Cmd
+	if staged {
+		// Get diff for staged changes
+		cmd = exec.Command("git", "diff", "--cached", path)
+	} else {
+		// Get diff for unstaged changes
+		cmd = exec.Command("git", "diff", path)
+	}
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get file diff for %s: %w", path, err)
+	}
+
+	return string(output), nil
+}
