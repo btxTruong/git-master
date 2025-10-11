@@ -3,7 +3,6 @@ import { FolderOpen, Loader2 } from 'lucide-react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { Button } from '@/components/common/Button';
 import { OpenDirectoryDialog } from '../../../wailsjs/go/main/App';
-import { OpenRepository } from '../../../wailsjs/go/services/RepositoryService';
 
 interface OpenRepoDialogProps {
   isOpen: boolean;
@@ -21,19 +20,18 @@ export function OpenRepoDialog({ isOpen, onClose }: OpenRepoDialogProps) {
       setIsOpening(true);
       setLoading(true);
 
-      // Use Wails native directory picker
-      const selectedPath = await OpenDirectoryDialog();
+      // Use Wails native directory picker - this already opens the repository
+      // and returns the Repository object
+      const repo = await OpenDirectoryDialog();
 
       // User cancelled
-      if (!selectedPath) {
+      if (!repo) {
         setIsOpening(false);
         setLoading(false);
         return;
       }
 
-      // Open repository via backend and get repository info
-      // @ts-expect-error - Zustand type inference issue with models.Repository
-      const repo = await OpenRepository(selectedPath);
+      // Store the repository info
       setRepository(repo);
 
       // Success - close dialog
