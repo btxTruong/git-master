@@ -430,3 +430,17 @@ func (s *RepositoryService) CheckoutBranch(branchName string) error {
 
 	return nil
 }
+
+// GetFileContentAtCommit retrieves the full content of a file at a specific commit
+func (s *RepositoryService) GetFileContentAtCommit(commitHash string, filePath string) (string, error) {
+	if s.executor == nil {
+		return "", fmt.Errorf("no repository opened")
+	}
+
+	result, err := s.executor.Execute(s.ctx, "show", fmt.Sprintf("%s:%s", commitHash, filePath))
+	if err != nil {
+		return "", fmt.Errorf("failed to get file content: %w", err)
+	}
+
+	return result.Stdout, nil
+}

@@ -30,6 +30,10 @@ export function GetCurrentRepository() {
   return window['go']['services']['RepositoryService']['GetCurrentRepository']();
 }
 
+export function GetFileContentAtCommit(arg1, arg2) {
+  return window['go']['services']['RepositoryService']['GetFileContentAtCommit'](arg1, arg2);
+}
+
 export function GetStatus() {
   return window['go']['services']['RepositoryService']['GetStatus']();
 }

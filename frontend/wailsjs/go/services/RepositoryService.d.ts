@@ -18,6 +18,8 @@ export function GetCommits(arg1:number,arg2:number):Promise<Array<models.Commit>
 
 export function GetCurrentRepository():Promise<models.Repository>;
 
+export function GetFileContentAtCommit(arg1:string,arg2:string):Promise<string>;
+
 export function GetStatus():Promise<models.RepositoryStatus>;
 
 export function OpenRepository(arg1:string):Promise<models.Repository>;

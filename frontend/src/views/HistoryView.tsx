@@ -7,7 +7,10 @@ import { FileTreePanel } from '@/components/commit/FileTreePanel';
 import { DiffModal } from '@/components/commit/DiffModal';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FolderOpen, History } from 'lucide-react';
-import { GetCommitDetail } from '../../wailsjs/go/services/RepositoryService';
+import {
+  GetCommitDetail,
+  GetFileContentAtCommit,
+} from '../../wailsjs/go/services/RepositoryService';
 import { parseDiff } from '@/utils/diffParser';
 import type { models } from '../../wailsjs/go/models';
 import type { DiffResult } from '@/types/git';
@@ -18,6 +21,10 @@ function HistoryView() {
   const [commitDetail, setCommitDetail] = useState<models.CommitDetail | null>(null);
   const [selectedFile, setSelectedFile] = useState<models.FileChange | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [fileContent, setFileContent] = useState<{ oldContent: string; newContent: string } | null>(
+    null
+  );
+  const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
 
   useEffect(() => {
     if (currentRepository) {
@@ -51,11 +58,54 @@ function HistoryView() {
 
   const handleFileSelect = (file: models.FileChange) => {
     setSelectedFile(file);
+    setFileContent(null);
   };
 
   const handleCloseDiffModal = () => {
     setSelectedFile(null);
+    setFileContent(null);
   };
+
+  // Load full file content when a file is selected
+  useEffect(() => {
+    if (!selectedCommit || !selectedFile || !commitDetail) {
+      return;
+    }
+
+    const loadFileContent = async () => {
+      setIsLoadingFileContent(true);
+      try {
+        const filePath = selectedFile.newPath || selectedFile.oldPath;
+        const parentCommit =
+          commitDetail.parentHashes && commitDetail.parentHashes.length > 0
+            ? commitDetail.parentHashes[0]
+            : null;
+
+        // Fetch new content (at current commit)
+        const newContentPromise =
+          selectedFile.status !== 'D'
+            ? GetFileContentAtCommit(selectedCommit.hash, filePath)
+            : Promise.resolve('');
+
+        // Fetch old content (at parent commit)
+        const oldContentPromise =
+          parentCommit && selectedFile.status !== 'A'
+            ? GetFileContentAtCommit(parentCommit, selectedFile.oldPath || filePath)
+            : Promise.resolve('');
+
+        const [newContent, oldContent] = await Promise.all([newContentPromise, oldContentPromise]);
+
+        setFileContent({ oldContent, newContent });
+      } catch (error) {
+        console.error('Failed to load file content:', error);
+        setFileContent(null);
+      } finally {
+        setIsLoadingFileContent(false);
+      }
+    };
+
+    loadFileContent();
+  }, [selectedCommit, selectedFile, commitDetail]);
 
   // Parse the diff for the selected file
   const selectedFileDiff = useMemo<DiffResult | null>(() => {
@@ -133,7 +183,8 @@ function HistoryView() {
         onClose={handleCloseDiffModal}
         selectedFile={selectedFile}
         diff={selectedFileDiff}
-        isLoading={isLoadingDetail}
+        isLoading={isLoadingDetail || isLoadingFileContent}
+        fileContent={fileContent}
       />
     </div>
   );

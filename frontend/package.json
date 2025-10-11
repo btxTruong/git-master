@@ -19,6 +19,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@tanstack/react-virtual": "^3.13.12",
     "date-fns": "^4.1.0",
+    "diff-match-patch": "^1.0.5",
     "lucide-react": "^0.545.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/vite": "^4.1.14",
+    "@types/diff-match-patch": "^1.0.36",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@types/react-syntax-highlighter": "^15.5.13",

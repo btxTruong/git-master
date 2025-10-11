@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { DiffViewer } from '@/components/diff/DiffViewer';
+import { FullFileDiffViewer } from '@/components/diff/FullFileDiffViewer';
 import type { DiffResult } from '@/types/git';
 import type { models } from '../../../wailsjs/go/models';
 
@@ -9,9 +10,17 @@ interface DiffModalProps {
   selectedFile: models.FileChange | null;
   diff: DiffResult | null;
   isLoading: boolean;
+  fileContent?: { oldContent: string; newContent: string } | null;
 }
 
-export function DiffModal({ isOpen, onClose, selectedFile, diff, isLoading }: DiffModalProps) {
+export function DiffModal({
+  isOpen,
+  onClose,
+  selectedFile,
+  diff,
+  isLoading,
+  fileContent,
+}: DiffModalProps) {
   if (!isOpen || !selectedFile) {
     return null;
   }
@@ -24,7 +33,7 @@ export function DiffModal({ isOpen, onClose, selectedFile, diff, isLoading }: Di
       onClick={onClose}
     >
       <div
-        className="w-[90vw] h-[85vh] max-w-7xl rounded-lg bg-white dark:bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
+        className="w-[95vw] h-[90vh] max-w-[1800px] rounded-lg bg-white dark:bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -48,7 +57,15 @@ export function DiffModal({ isOpen, onClose, selectedFile, diff, isLoading }: Di
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
-          <DiffViewer diff={diff} isLoading={isLoading} />
+          {fileContent ? (
+            <FullFileDiffViewer
+              oldContent={fileContent.oldContent}
+              newContent={fileContent.newContent}
+              isLoading={isLoading}
+            />
+          ) : (
+            <DiffViewer diff={diff} isLoading={isLoading} />
+          )}
         </div>
       </div>
     </div>

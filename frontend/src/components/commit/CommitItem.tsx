@@ -30,7 +30,7 @@ export const CommitItem = memo(function CommitItem({
       onClick={onClick}
       className={`
         group relative ${isSelected ? 'min-h-[88px]' : 'h-[88px]'} px-4 py-3 cursor-pointer transition-all duration-200
-        border-b border-gray-200 dark:border-gray-700
+        border-b border-gray-200 dark:border-gray-700 flex-shrink-0
         ${
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
