@@ -4,6 +4,7 @@ import { useRepositoryStore } from '@/stores/repositoryStore';
 import { PullPushButtons } from '@/components/remote/PullPushButtons';
 import { BranchDropdown } from '@/components/branch/BranchDropdown';
 import { OpenDirectoryDialog } from '../../../wailsjs/go/main/App';
+import { OpenRepository } from '../../../wailsjs/go/services/RepositoryService';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import toast from 'react-hot-toast';
 
@@ -57,12 +58,20 @@ export function AppHeader() {
     }
   };
 
-  const handleOpenRepository = async (_path?: string) => {
+  const handleOpenRepository = async (path?: string) => {
     try {
       setIsOpening(true);
       setLoading(true);
 
-      const repo = await OpenDirectoryDialog();
+      let repo;
+
+      if (path) {
+        // Open repository directly from path (recent repo clicked)
+        repo = await OpenRepository(path);
+      } else {
+        // Show directory dialog for new repository
+        repo = await OpenDirectoryDialog();
+      }
 
       if (!repo) {
         setIsOpening(false);
@@ -74,8 +83,9 @@ export function AppHeader() {
       toast.success(`Opened repository: ${repo.name}`);
     } catch (error) {
       console.error('Failed to open repository:', error);
-      setError(`Failed to open repository: ${error}`);
-      toast.error(`Failed to open repository: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError(`Failed to open repository: ${errorMessage}`);
+      toast.error(`Failed to open repository: ${errorMessage}`);
     } finally {
       setIsOpening(false);
       setLoading(false);

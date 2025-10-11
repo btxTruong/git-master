@@ -18,7 +18,7 @@ func ParseCommits(output string) ([]models.Commit, error) {
 
 	for _, line := range lines {
 		parts := strings.Split(line, "|")
-		if len(parts) < 8 {
+		if len(parts) < 9 {
 			continue
 		}
 
@@ -36,6 +36,9 @@ func ParseCommits(output string) ([]models.Commit, error) {
 			}
 		}
 
+		// Join all parts from index 8 onwards to handle commit messages with | characters
+		message := strings.Join(parts[8:], "|")
+
 		commit := models.Commit{
 			Hash:      parts[0],
 			ShortHash: parts[1],
@@ -49,8 +52,8 @@ func ParseCommits(output string) ([]models.Commit, error) {
 			},
 			Date:         timestamp,
 			Refs:         refs,
-			ShortMessage: parts[8],
-			Message:      parts[8],
+			ShortMessage: message,
+			Message:      message,
 		}
 
 		commits = append(commits, commit)

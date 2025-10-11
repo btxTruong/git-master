@@ -3,6 +3,8 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCommitStore, type Commit } from '@/stores/commitStore';
 import { CommitItem } from './CommitItem';
 import { Spinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
+import { GitCommit } from 'lucide-react';
 
 /**
  * Optimized commit list with virtualization and memoized callbacks
@@ -41,8 +43,21 @@ export function CommitList() {
     }
   }, [virtualItems, commits.length, hasMore, isLoading, currentPage, loadCommits]);
 
+  // Show empty state when no commits and not loading
+  if (commits.length === 0 && !isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <EmptyState
+          icon={<GitCommit className="w-16 h-16 text-gray-400" />}
+          title="No Commits Found"
+          description="This repository doesn't have any commits yet, or the selected filters returned no results."
+        />
+      </div>
+    );
+  }
+
   return (
-    <div ref={parentRef} className="flex-1 overflow-auto" style={{ contain: 'strict' }}>
+    <div ref={parentRef} className="flex-1 overflow-auto">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
