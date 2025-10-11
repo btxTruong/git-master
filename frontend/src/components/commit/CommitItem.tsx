@@ -1,5 +1,8 @@
+import { memo, useMemo } from 'react';
 import { type Commit } from '@/stores/commitStore';
 import { GitCommit, User, Calendar } from 'lucide-react';
+import { useUIStore } from '@/stores/uiStore';
+import { formatDate } from '@/utils/dateFormat';
 
 interface CommitItemProps {
   commit: Commit;
@@ -7,27 +10,20 @@ interface CommitItemProps {
   onClick: () => void;
 }
 
-export function CommitItem({ commit, isSelected, onClick }: CommitItemProps) {
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+/**
+ * Memoized commit item component
+ * Optimized to prevent unnecessary re-renders in long commit lists
+ */
+export const CommitItem = memo(function CommitItem({
+  commit,
+  isSelected,
+  onClick,
+}: CommitItemProps) {
+  const dateFormat = useUIStore((state) => state.dateFormat);
 
-      if (diffDays === 0) {
-        return 'Today';
-      } else if (diffDays === 1) {
-        return 'Yesterday';
-      } else if (diffDays < 7) {
-        return `${diffDays} days ago`;
-      } else {
-        return date.toLocaleDateString();
-      }
-    } catch {
-      return dateStr;
-    }
-  };
+  const formattedDate = useMemo(() => {
+    return formatDate(commit.date, dateFormat);
+  }, [commit.date, dateFormat]);
 
   return (
     <div
@@ -65,7 +61,7 @@ export function CommitItem({ commit, isSelected, onClick }: CommitItemProps) {
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              <span>{formatDate(commit.date)}</span>
+              <span>{formattedDate}</span>
             </div>
             {(commit.insertions > 0 || commit.deletions > 0) && (
               <div className="flex items-center gap-2">
@@ -80,4 +76,4 @@ export function CommitItem({ commit, isSelected, onClick }: CommitItemProps) {
       </div>
     </div>
   );
-}
+});

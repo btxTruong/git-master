@@ -1,9 +1,12 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCommitStore } from '@/stores/commitStore';
+import { useCommitStore, type Commit } from '@/stores/commitStore';
 import { CommitItem } from './CommitItem';
 import { Spinner } from '@/components/common/Spinner';
 
+/**
+ * Optimized commit list with virtualization and memoized callbacks
+ */
 export function CommitList() {
   const parentRef = useRef<HTMLDivElement>(null);
   const { commits, selectedCommit, isLoading, hasMore, currentPage, loadCommits, selectCommit } =
@@ -17,6 +20,14 @@ export function CommitList() {
   });
 
   const virtualItems = virtualizer.getVirtualItems();
+
+  // Memoize the select handler to prevent re-creating on each render
+  const handleSelectCommit = useCallback(
+    (commit: Commit) => {
+      selectCommit(commit);
+    },
+    [selectCommit]
+  );
 
   // Infinite scroll - load more when near bottom
   useEffect(() => {
@@ -58,7 +69,7 @@ export function CommitList() {
               <CommitItem
                 commit={commit}
                 isSelected={isSelected}
-                onClick={() => selectCommit(commit)}
+                onClick={() => handleSelectCommit(commit)}
               />
             </div>
           );

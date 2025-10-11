@@ -8,8 +8,12 @@ import { ChangesView } from '@/views/ChangesView';
 import { BranchesView } from '@/views/BranchesView';
 import { MergeView } from '@/views/MergeView';
 import { SettingsView } from '@/views/SettingsView';
+import { useTheme } from '@/hooks/useTheme';
 
 function App() {
+  // Initialize theme
+  useTheme();
+
   return (
     <BrowserRouter>
       <GlobalShortcuts />
@@ -17,7 +21,7 @@ function App() {
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto bg-white">
+          <main className="flex-1 overflow-auto bg-white dark:bg-gray-900">
             <Routes>
               <Route path="/" element={<Navigate to="/history" replace />} />
               <Route path="/history" element={<HistoryView />} />

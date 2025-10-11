@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { File, FilePlus, FileMinus, FileEdit } from 'lucide-react';
 import type { FileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
@@ -8,41 +9,46 @@ interface FileItemProps {
   onSelect: (file: FileChange) => void;
 }
 
-export function FileItem({ file, selected, onSelect }: FileItemProps) {
-  const statusConfig = {
-    [FileStatus.Modified]: {
-      icon: <FileEdit className="w-4 h-4 text-blue-600" />,
-      badge: 'M',
-      badgeClass: 'bg-blue-100 text-blue-800',
-    },
-    [FileStatus.Added]: {
-      icon: <FilePlus className="w-4 h-4 text-green-600" />,
-      badge: 'A',
-      badgeClass: 'bg-green-100 text-green-800',
-    },
-    [FileStatus.Deleted]: {
-      icon: <FileMinus className="w-4 h-4 text-red-600" />,
-      badge: 'D',
-      badgeClass: 'bg-red-100 text-red-800',
-    },
-    [FileStatus.Renamed]: {
-      icon: <File className="w-4 h-4 text-purple-600" />,
-      badge: 'R',
-      badgeClass: 'bg-purple-100 text-purple-800',
-    },
-    [FileStatus.Copied]: {
-      icon: <File className="w-4 h-4 text-purple-600" />,
-      badge: 'C',
-      badgeClass: 'bg-purple-100 text-purple-800',
-    },
-    [FileStatus.Untracked]: {
-      icon: <File className="w-4 h-4 text-gray-600" />,
-      badge: 'U',
-      badgeClass: 'bg-gray-100 text-gray-800',
-    },
-  };
+// Status configuration moved outside component to avoid recreation
+const STATUS_CONFIG = {
+  [FileStatus.Modified]: {
+    icon: <FileEdit className="w-4 h-4 text-blue-600" />,
+    badge: 'M',
+    badgeClass: 'bg-blue-100 text-blue-800',
+  },
+  [FileStatus.Added]: {
+    icon: <FilePlus className="w-4 h-4 text-green-600" />,
+    badge: 'A',
+    badgeClass: 'bg-green-100 text-green-800',
+  },
+  [FileStatus.Deleted]: {
+    icon: <FileMinus className="w-4 h-4 text-red-600" />,
+    badge: 'D',
+    badgeClass: 'bg-red-100 text-red-800',
+  },
+  [FileStatus.Renamed]: {
+    icon: <File className="w-4 h-4 text-purple-600" />,
+    badge: 'R',
+    badgeClass: 'bg-purple-100 text-purple-800',
+  },
+  [FileStatus.Copied]: {
+    icon: <File className="w-4 h-4 text-purple-600" />,
+    badge: 'C',
+    badgeClass: 'bg-purple-100 text-purple-800',
+  },
+  [FileStatus.Untracked]: {
+    icon: <File className="w-4 h-4 text-gray-600" />,
+    badge: 'U',
+    badgeClass: 'bg-gray-100 text-gray-800',
+  },
+};
 
-  const config = statusConfig[file.status];
+/**
+ * Memoized file item component
+ * Optimized to prevent unnecessary re-renders in file lists
+ */
+export const FileItem = memo(function FileItem({ file, selected, onSelect }: FileItemProps) {
+  const config = useMemo(() => STATUS_CONFIG[file.status], [file.status]);
 
   return (
     <div
@@ -67,4 +73,4 @@ export function FileItem({ file, selected, onSelect }: FileItemProps) {
       </span>
     </div>
   );
-}
+});
