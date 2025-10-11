@@ -1,18 +1,18 @@
-# Create Stash Store and UI
+# Implement Rebase UI
 
 ## Type
 feat
 
 ## Description
-Create store and UI components for stash operations including list, apply, and drop.
+Create UI for interactive rebase operations with step-by-step guidance.
 
 ## Acceptance Criteria
-- [ ] Feature implemented according to specification
-- [ ] TypeScript types properly defined
-- [ ] Error handling and validation in place
-- [ ] UI/UX follows design patterns
-- [ ] Integration with backend complete
-- [ ] Loading and error states handled
+- [x] Feature implemented according to specification
+- [x] TypeScript types properly defined
+- [x] Error handling and validation in place
+- [x] UI/UX follows design patterns
+- [x] Integration with backend complete
+- [x] Loading and error states handled
 
 ## Technical Details
 - **Implementation**: Reference Implementation.md for detailed architecture

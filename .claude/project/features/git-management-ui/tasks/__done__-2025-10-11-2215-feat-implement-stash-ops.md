@@ -1,18 +1,18 @@
-# Implement Rebase UI
+# Implement Stash Operations
 
 ## Type
 feat
 
 ## Description
-Create UI for interactive rebase operations with step-by-step guidance.
+Implement stash save, apply, pop, and drop operations with backend integration.
 
 ## Acceptance Criteria
-- [ ] Feature implemented according to specification
-- [ ] TypeScript types properly defined
-- [ ] Error handling and validation in place
-- [ ] UI/UX follows design patterns
-- [ ] Integration with backend complete
-- [ ] Loading and error states handled
+- [x] Feature implemented according to specification
+- [x] TypeScript types properly defined
+- [x] Error handling and validation in place
+- [x] UI/UX follows design patterns
+- [x] Integration with backend complete
+- [x] Loading and error states handled
 
 ## Technical Details
 - **Implementation**: Reference Implementation.md for detailed architecture
@@ -20,7 +20,7 @@ Create UI for interactive rebase operations with step-by-step guidance.
 - **State Management**: Use appropriate Zustand store
 
 ## Estimated Time
-3 hours
+2 hours
 
 ## Dependencies
 - Depends on: Previous tasks in phase

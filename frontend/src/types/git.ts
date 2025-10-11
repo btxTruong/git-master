@@ -114,3 +114,27 @@ export interface Remote {
   fetchUrl: string;
   pushUrl: string;
 }
+
+// Rebase
+export enum RebaseAction {
+  Pick = 'pick',
+  Reword = 'reword',
+  Edit = 'edit',
+  Squash = 'squash',
+  Fixup = 'fixup',
+  Drop = 'drop',
+}
+
+export interface RebaseCommit {
+  hash: string;
+  shortHash: string;
+  message: string;
+  action: RebaseAction;
+}
+
+export interface RebaseState {
+  isRebasing: boolean;
+  commits: RebaseCommit[];
+  currentCommit: string | null;
+  targetBranch: string | null;
+}
