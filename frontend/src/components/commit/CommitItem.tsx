@@ -13,6 +13,9 @@ interface CommitItemProps {
 /**
  * Memoized commit item component
  * Optimized to prevent unnecessary re-renders in long commit lists
+ * Responsive:
+ * - Large screens: Show all information (hash, refs, message, author, timestamp)
+ * - Small screens: Show only message with ellipsis, expand all info when selected without overlap
  */
 export const CommitItem = memo(function CommitItem({
   commit,
@@ -29,8 +32,8 @@ export const CommitItem = memo(function CommitItem({
     <div
       onClick={onClick}
       className={`
-        group relative ${isSelected ? 'min-h-[88px]' : 'h-[88px]'} px-4 py-3 cursor-pointer transition-all duration-200
-        border-b border-gray-200 dark:border-gray-700 flex-shrink-0
+        group relative px-4 py-3 cursor-pointer transition-all duration-200
+        border-b border-gray-200 dark:border-gray-700
         ${
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
@@ -49,7 +52,10 @@ export const CommitItem = memo(function CommitItem({
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Hash and refs - show on large screens always, on small screens only when selected */}
+          <div
+            className={`flex items-center gap-2 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
+          >
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
@@ -69,18 +75,18 @@ export const CommitItem = memo(function CommitItem({
             )}
           </div>
 
+          {/* Commit message - truncate on small screens when not selected, show full when selected */}
           <div
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
-              isSelected ? 'break-words' : 'truncate'
+              isSelected ? 'break-words' : 'truncate lg:break-words'
             }`}
           >
             {commit.shortMessage || commit.message}
           </div>
 
+          {/* Author and timestamp - show on large screens always, on small screens only when selected */}
           <div
-            className={`flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 ${
-              isSelected ? 'flex-wrap' : 'overflow-hidden'
-            }`}
+            className={`flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
           >
             <div className="flex items-center gap-1.5 font-medium min-w-0">
               <User className="w-3.5 h-3.5 shrink-0" />

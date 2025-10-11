@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
+import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
 
 interface FullFileDiffViewerProps {
   oldContent: string;
@@ -7,11 +8,7 @@ interface FullFileDiffViewerProps {
   isLoading?: boolean;
 }
 
-interface DiffLine {
-  type: 'add' | 'delete' | 'context';
-  oldLineNumber: number | null;
-  newLineNumber: number | null;
-  content: string;
+interface DiffLine extends DiffChange {
   segments?: InlineDiffSegment[];
 }
 
@@ -21,70 +18,35 @@ export function FullFileDiffViewer({ oldContent, newContent, isLoading }: FullFi
       return [];
     }
 
-    const oldLines = oldContent.split('\n');
-    const newLines = newContent.split('\n');
+    // Use proper LCS-based diff algorithm
+    const changes = computeLineDiff(oldContent, newContent);
 
-    // Simple line-by-line diff
-    const result: DiffLine[] = [];
-    let oldIndex = 0;
-    let newIndex = 0;
+    // Find groups of consecutive changes for inline diff computation
+    const changeGroups = findChangeGroups(changes);
 
-    while (oldIndex < oldLines.length || newIndex < newLines.length) {
-      const oldLine = oldIndex < oldLines.length ? oldLines[oldIndex] : null;
-      const newLine = newIndex < newLines.length ? newLines[newIndex] : null;
+    // Enhance changes with inline diffs for modified lines
+    const result: DiffLine[] = changes.map((change) => ({ ...change }));
 
-      if (oldLine === newLine && oldLine !== null) {
-        // Context line (unchanged)
-        result.push({
-          type: 'context',
-          oldLineNumber: oldIndex + 1,
-          newLineNumber: newIndex + 1,
-          content: oldLine,
-        });
-        oldIndex++;
-        newIndex++;
-      } else if (oldLine !== null && newLine !== null) {
-        // Changed line - compute inline diff
-        const { oldSegments, newSegments } = computeInlineDiff(oldLine, newLine);
+    changeGroups.forEach((group) => {
+      const { deleteIndices, addIndices } = group;
 
-        result.push({
-          type: 'delete',
-          oldLineNumber: oldIndex + 1,
-          newLineNumber: null,
-          content: oldLine,
-          segments: oldSegments,
-        });
+      // Pair up delete and add lines for inline diff
+      const pairCount = Math.min(deleteIndices.length, addIndices.length);
 
-        result.push({
-          type: 'add',
-          oldLineNumber: null,
-          newLineNumber: newIndex + 1,
-          content: newLine,
-          segments: newSegments,
-        });
+      for (let i = 0; i < pairCount; i++) {
+        const deleteIdx = deleteIndices[i];
+        const addIdx = addIndices[i];
 
-        oldIndex++;
-        newIndex++;
-      } else if (oldLine !== null) {
-        // Deleted line
-        result.push({
-          type: 'delete',
-          oldLineNumber: oldIndex + 1,
-          newLineNumber: null,
-          content: oldLine,
-        });
-        oldIndex++;
-      } else if (newLine !== null) {
-        // Added line
-        result.push({
-          type: 'add',
-          oldLineNumber: null,
-          newLineNumber: newIndex + 1,
-          content: newLine,
-        });
-        newIndex++;
+        const deleteLine = result[deleteIdx];
+        const addLine = result[addIdx];
+
+        // Compute inline diff between these two lines
+        const { oldSegments, newSegments } = computeInlineDiff(deleteLine.content, addLine.content);
+
+        result[deleteIdx].segments = oldSegments;
+        result[addIdx].segments = newSegments;
       }
-    }
+    });
 
     return result;
   }, [oldContent, newContent]);
