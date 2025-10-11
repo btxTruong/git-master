@@ -22,6 +22,8 @@ export function GetStatus():Promise<models.RepositoryStatus>;
 
 export function OpenRepository(arg1:string):Promise<models.Repository>;
 
+export function SetCommitService(arg1:services.CommitService):Promise<void>;
+
 export function SetRemoteService(arg1:services.RemoteService):Promise<void>;
 
 export function SetStagingService(arg1:services.StagingService):Promise<void>;

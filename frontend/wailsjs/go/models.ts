@@ -288,6 +288,18 @@ export namespace models {
 
 export namespace services {
 	
+	export class CommitService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new CommitService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class FileStatus {
 	    path: string;
 	    status: string;

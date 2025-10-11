@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
-import type { FileChange } from '@/types/git';
+import type { StagingFileChange } from '@/types/git';
 import {
   getWorkingDirectoryStatus,
   stageFile as stageFileAPI,
@@ -11,10 +11,10 @@ import {
 } from '@/api/staging';
 
 interface StagingState {
-  stagedFiles: FileChange[];
-  unstagedFiles: FileChange[];
-  untrackedFiles: FileChange[];
-  selectedFile: FileChange | null;
+  stagedFiles: StagingFileChange[];
+  unstagedFiles: StagingFileChange[];
+  untrackedFiles: StagingFileChange[];
+  selectedFile: StagingFileChange | null;
   commitMessage: string;
   isCommitting: boolean;
   isLoading: boolean;
@@ -27,7 +27,7 @@ interface StagingState {
   stageAll: () => Promise<void>;
   unstageAll: () => Promise<void>;
   commit: (message: string, amend?: boolean) => Promise<void>;
-  setSelectedFile: (file: FileChange | null) => void;
+  setSelectedFile: (file: StagingFileChange | null) => void;
   setCommitMessage: (message: string) => void;
   reset: () => void;
 }

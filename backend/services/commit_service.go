@@ -104,7 +104,7 @@ func (s *CommitService) GetCommitDetail(commitHash string) (*models.CommitDetail
 	}
 
 	// Get files changed in this commit
-	_, err = s.executor.Execute(
+	filesResult, err := s.executor.Execute(
 		s.ctx,
 		"diff-tree",
 		"--no-commit-id",
@@ -116,14 +116,48 @@ func (s *CommitService) GetCommitDetail(commitHash string) (*models.CommitDetail
 		return nil, fmt.Errorf("failed to get changed files: %w", err)
 	}
 
-	// TODO: Parse file changes
-	files := []models.FileChange{}
+	files, err := git.ParseFileChanges(filesResult.Stdout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse file changes: %w", err)
+	}
 
 	detail := &models.CommitDetail{
 		Commit: commit,
 		Files:  files,
-		Diff:   "", // TODO: Get full diff
+		Diff:   "",
 	}
 
 	return detail, nil
+}
+
+// GetFileDiff retrieves the diff for a specific file in a commit
+func (s *CommitService) GetFileDiff(commitHash, filePath string) (string, error) {
+	if s.executor == nil {
+		return "", fmt.Errorf("no repository opened")
+	}
+
+	// Get the diff for the specific file
+	diffResult, err := s.executor.Execute(
+		s.ctx,
+		"show",
+		fmt.Sprintf("%s:%s", commitHash, filePath),
+		"--",
+		filePath,
+	)
+	if err != nil {
+		// Try with parent commit comparison
+		diffResult, err = s.executor.Execute(
+			s.ctx,
+			"diff",
+			fmt.Sprintf("%s^", commitHash),
+			commitHash,
+			"--",
+			filePath,
+		)
+		if err != nil {
+			return "", fmt.Errorf("failed to get file diff: %w", err)
+		}
+	}
+
+	return diffResult.Stdout, nil
 }

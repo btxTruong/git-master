@@ -1,15 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useCommitStore } from '@/stores/commitStore';
 import { CommitList } from '@/components/commit/CommitList';
 import { CommitSearch } from '@/components/commit/CommitSearch';
-import { CommitFilters } from '@/components/commit/CommitFilters';
+import { FileTreePanel } from '@/components/commit/FileTreePanel';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FolderOpen, History } from 'lucide-react';
+import { GetCommitDetail } from '../../wailsjs/go/services/RepositoryService';
+import type { models } from '../../wailsjs/go/models';
 
 function HistoryView() {
   const { currentRepository } = useRepositoryStore();
-  const { loadCommits, reset } = useCommitStore();
+  const { selectedCommit, loadCommits, reset } = useCommitStore();
+  const [commitDetail, setCommitDetail] = useState<models.CommitDetail | null>(null);
+  const [selectedFile, setSelectedFile] = useState<models.FileChange | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   useEffect(() => {
     if (currentRepository) {
@@ -18,6 +23,32 @@ function HistoryView() {
       reset();
     }
   }, [currentRepository, loadCommits, reset]);
+
+  // Load commit details when a commit is selected
+  useEffect(() => {
+    if (selectedCommit) {
+      setIsLoadingDetail(true);
+      GetCommitDetail(selectedCommit.hash)
+        .then((detail) => {
+          setCommitDetail(detail);
+          setSelectedFile(null); // Reset selected file when commit changes
+        })
+        .catch((error) => {
+          console.error('Failed to load commit details:', error);
+          setCommitDetail(null);
+        })
+        .finally(() => {
+          setIsLoadingDetail(false);
+        });
+    } else {
+      setCommitDetail(null);
+      setSelectedFile(null);
+    }
+  }, [selectedCommit]);
+
+  const handleFileSelect = (file: models.FileChange) => {
+    setSelectedFile(file);
+  };
 
   if (!currentRepository) {
     return (
@@ -42,12 +73,33 @@ function HistoryView() {
           </h1>
         </div>
         <CommitSearch />
-        <CommitFilters />
       </div>
 
-      {/* Main content: commit list */}
-      <div className="flex-1 overflow-hidden">
-        <CommitList />
+      {/* Main content: commit list and detail panel */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Commit list */}
+        <div
+          className={`${selectedCommit ? 'w-1/2' : 'w-full'} overflow-hidden border-r border-gray-200 dark:border-gray-700`}
+        >
+          <CommitList />
+        </div>
+
+        {/* Right: File tree panel */}
+        {selectedCommit && (
+          <div className="w-1/2 overflow-hidden">
+            {isLoadingDetail ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500 dark:text-gray-400">Loading commit details...</div>
+              </div>
+            ) : (
+              <FileTreePanel
+                commitDetail={commitDetail}
+                onFileSelect={handleFileSelect}
+                selectedFile={selectedFile}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

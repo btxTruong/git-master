@@ -20,15 +20,18 @@ type App struct {
 // NewApp creates a new App application struct
 func NewApp() *App {
 	repoService := services.NewRepositoryService()
+	commitService := services.NewCommitService(nil)
 	stagingService := services.NewStagingService(repoService)
 	remoteService := services.NewRemoteService(repoService)
 
 	// Link services together so they can share the executor
 	repoService.SetStagingService(stagingService)
 	repoService.SetRemoteService(remoteService)
+	repoService.SetCommitService(commitService)
 
 	return &App{
 		repositoryService: repoService,
+		commitService:     commitService,
 		stagingService:    stagingService,
 		remoteService:     remoteService,
 	}
@@ -39,6 +42,9 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.repositoryService.Startup(ctx)
+	if a.commitService != nil {
+		a.commitService.Startup(ctx)
+	}
 	if a.remoteService != nil {
 		a.remoteService.Startup(ctx)
 	}
@@ -52,6 +58,11 @@ func (a *App) GetRepositoryService() *services.RepositoryService {
 // GetStagingService returns the staging service for Wails binding
 func (a *App) GetStagingService() *services.StagingService {
 	return a.stagingService
+}
+
+// GetCommitService returns the commit service for Wails binding
+func (a *App) GetCommitService() *services.CommitService {
+	return a.commitService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository

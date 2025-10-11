@@ -1,12 +1,12 @@
 import { memo, useMemo } from 'react';
 import { File, FilePlus, FileMinus, FileEdit } from 'lucide-react';
-import type { FileChange } from '@/types/git';
+import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
 
 interface FileItemProps {
-  file: FileChange;
+  file: StagingFileChange;
   selected: boolean;
-  onSelect: (file: FileChange) => void;
+  onSelect: (file: StagingFileChange) => void;
 }
 
 // Status configuration moved outside component to avoid recreation

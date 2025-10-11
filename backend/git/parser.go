@@ -107,6 +107,71 @@ func ParseBranches(output string, isRemote bool) ([]models.Branch, error) {
 	return branches, nil
 }
 
+// ParseFileChanges parses git diff-tree output into FileChange objects
+// Expected format: status\toldPath\tnewPath (for renames) OR status\tpath
+func ParseFileChanges(output string) ([]models.FileChange, error) {
+	if output == "" {
+		return []models.FileChange{}, nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	changes := make([]models.FileChange, 0, len(lines))
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, "\t")
+		if len(parts) < 2 {
+			continue
+		}
+
+		status := parts[0]
+		var changeType models.ChangeType
+		var oldPath, newPath string
+
+		switch status[0] {
+		case 'A':
+			changeType = models.ChangeAdded
+			newPath = parts[1]
+			oldPath = ""
+		case 'M':
+			changeType = models.ChangeModified
+			newPath = parts[1]
+			oldPath = parts[1]
+		case 'D':
+			changeType = models.ChangeDeleted
+			oldPath = parts[1]
+			newPath = ""
+		case 'R':
+			changeType = models.ChangeRenamed
+			if len(parts) >= 3 {
+				oldPath = parts[1]
+				newPath = parts[2]
+			}
+		case 'C':
+			changeType = models.ChangeCopied
+			if len(parts) >= 3 {
+				oldPath = parts[1]
+				newPath = parts[2]
+			}
+		default:
+			continue
+		}
+
+		change := models.FileChange{
+			Status:  changeType,
+			OldPath: oldPath,
+			NewPath: newPath,
+		}
+
+		changes = append(changes, change)
+	}
+
+	return changes, nil
+}
+
 // ParseFileStatus parses git status porcelain output
 func ParseFileStatus(output string) (staged, unstaged, untracked []string) {
 	if output == "" {

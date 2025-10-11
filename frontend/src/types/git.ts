@@ -48,7 +48,8 @@ export enum FileStatus {
   Untracked = 'untracked',
 }
 
-export interface FileChange {
+// Staging area file change (for working directory)
+export interface StagingFileChange {
   path: string;
   oldPath: string | null;
   status: FileStatus;
@@ -56,6 +57,32 @@ export interface FileChange {
   deletions: number;
   isBinary: boolean;
   staged: boolean;
+}
+
+// Commit file change (for commit history)
+export interface FileChange {
+  oldPath: string;
+  newPath: string;
+  status: 'A' | 'M' | 'D' | 'R' | 'C';
+  insertions: number;
+  deletions: number;
+}
+
+export interface CommitDetail {
+  hash: string;
+  shortHash: string;
+  author: Author;
+  committer: Author;
+  message: string;
+  shortMessage: string;
+  date: string;
+  parentHashes: string[];
+  refs: string[];
+  filesChanged: number;
+  insertions: number;
+  deletions: number;
+  files: FileChange[];
+  diff: string;
 }
 
 export interface DiffLine {

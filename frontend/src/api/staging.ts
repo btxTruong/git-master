@@ -1,4 +1,4 @@
-import { FileStatus, type FileChange } from '@/types/git';
+import { FileStatus, type StagingFileChange } from '@/types/git';
 
 // Import Wails-generated bindings
 // These will be available after running `wails dev` or `wails build`
@@ -44,8 +44,8 @@ async function loadBindings() {
   }
 }
 
-// Convert backend FileStatusInfo to frontend FileChange
-function convertFileStatus(fileStatus: FileStatusInfo, staged: boolean): FileChange {
+// Convert backend FileStatusInfo to frontend StagingFileChange
+function convertFileStatus(fileStatus: FileStatusInfo, staged: boolean): StagingFileChange {
   const status = fileStatus.status.trim();
   let changeType: FileStatus;
 
@@ -73,9 +73,9 @@ function convertFileStatus(fileStatus: FileStatusInfo, staged: boolean): FileCha
 }
 
 export async function getWorkingDirectoryStatus(): Promise<{
-  stagedFiles: FileChange[];
-  unstagedFiles: FileChange[];
-  untrackedFiles: FileChange[];
+  stagedFiles: StagingFileChange[];
+  unstagedFiles: StagingFileChange[];
+  untrackedFiles: StagingFileChange[];
 }> {
   await loadBindings();
 

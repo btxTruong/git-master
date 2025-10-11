@@ -17,6 +17,7 @@ type RepositoryService struct {
 	repo           *models.Repository
 	remoteService  *RemoteService
 	stagingService *StagingService
+	commitService  *CommitService
 }
 
 // NewRepositoryService creates a new repository service
@@ -32,6 +33,11 @@ func (s *RepositoryService) SetRemoteService(remoteService *RemoteService) {
 // SetStagingService sets the staging service reference
 func (s *RepositoryService) SetStagingService(stagingService *StagingService) {
 	s.stagingService = stagingService
+}
+
+// SetCommitService sets the commit service reference
+func (s *RepositoryService) SetCommitService(commitService *CommitService) {
+	s.commitService = commitService
 }
 
 // Startup is called when the app starts
@@ -55,9 +61,12 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 	// Create executor for this repository
 	s.executor = git.NewExecutor(rootPath)
 
-	// Update remote service with new executor
+	// Update services with new executor
 	if s.remoteService != nil {
 		s.remoteService.SetExecutor(s.executor)
+	}
+	if s.commitService != nil {
+		s.commitService.SetExecutor(s.executor)
 	}
 
 	// Get current branch

@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { DiffViewer } from '@/components/diff/DiffViewer';
 import { getFileDiff } from '@/api/staging';
 import { parseDiff } from '@/utils/diffParser';
-import type { FileChange, DiffResult } from '@/types/git';
+import type { StagingFileChange, DiffResult } from '@/types/git';
 
 interface StagingDiffProps {
-  selectedFile: FileChange | null;
+  selectedFile: StagingFileChange | null;
 }
 
 export function StagingDiff({ selectedFile }: StagingDiffProps) {

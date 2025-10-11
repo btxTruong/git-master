@@ -3,6 +3,8 @@
 import {services} from '../models';
 import {models} from '../models';
 
+export function GetCommitService():Promise<services.CommitService>;
+
 export function GetRepositoryService():Promise<services.RepositoryService>;
 
 export function GetStagingService():Promise<services.StagingService>;

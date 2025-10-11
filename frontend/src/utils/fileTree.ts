@@ -1,18 +1,22 @@
-import type { FileChange } from '@/types/git';
+import type { models } from '../../wailsjs/go/models';
 
 export type TreeNode = {
   name: string;
   path: string;
   type: 'file' | 'folder';
-  file?: FileChange;
+  file?: models.FileChange;
   children?: TreeNode[];
 };
 
-export function buildFileTree(files: FileChange[]): TreeNode[] {
+export function buildFileTree(files: models.FileChange[]): TreeNode[] {
   const root: Map<string, TreeNode> = new Map();
 
   for (const file of files) {
-    const parts = file.path.split('/').filter(Boolean);
+    // Use newPath for added/modified, oldPath for deleted
+    const filePath = file.newPath || file.oldPath;
+    if (!filePath) continue;
+
+    const parts = filePath.split('/').filter(Boolean);
     let currentPath = '';
     let currentLevel = root;
 
@@ -80,8 +84,8 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
     });
 }
 
-export function flattenTree(nodes: TreeNode[]): FileChange[] {
-  const files: FileChange[] = [];
+export function flattenTree(nodes: TreeNode[]): models.FileChange[] {
+  const files: models.FileChange[] = [];
 
   function traverse(nodes: TreeNode[]) {
     for (const node of nodes) {
@@ -95,4 +99,38 @@ export function flattenTree(nodes: TreeNode[]): FileChange[] {
 
   traverse(nodes);
   return files;
+}
+
+export function getFileStatusColor(status: string): string {
+  switch (status) {
+    case 'A':
+      return 'text-green-600 dark:text-green-400';
+    case 'M':
+      return 'text-blue-600 dark:text-blue-400';
+    case 'D':
+      return 'text-red-600 dark:text-red-400';
+    case 'R':
+      return 'text-purple-600 dark:text-purple-400';
+    case 'C':
+      return 'text-yellow-600 dark:text-yellow-400';
+    default:
+      return 'text-gray-600 dark:text-gray-400';
+  }
+}
+
+export function getFileStatusLabel(status: string): string {
+  switch (status) {
+    case 'A':
+      return 'Added';
+    case 'M':
+      return 'Modified';
+    case 'D':
+      return 'Deleted';
+    case 'R':
+      return 'Renamed';
+    case 'C':
+      return 'Copied';
+    default:
+      return 'Unknown';
+  }
 }

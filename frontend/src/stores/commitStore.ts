@@ -104,16 +104,6 @@ export const useCommitStore = create<CommitState>((set, get) => ({
 
   selectCommit: async (commit: Commit) => {
     set({ selectedCommit: commit });
-
-    // TODO: Integrate with Wails backend when available
-    // If commit doesn't have detailed info, fetch it
-    // try {
-    //   const detailedCommit = await fetchCommitDetails(commit.hash);
-    //   set({ selectedCommit: detailedCommit });
-    // } catch (error) {
-    //   console.error('Failed to load commit details:', error);
-    //   // Don't show toast here as the basic commit info is still available
-    // }
   },
 
   setFilter: (key, value) => {

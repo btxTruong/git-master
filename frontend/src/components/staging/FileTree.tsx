@@ -1,18 +1,93 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react';
-import type { FileChange } from '@/types/git';
+import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
-import { buildFileTree, type TreeNode } from '@/utils/fileTree';
 
 interface FileTreeProps {
-  files: FileChange[];
-  selectedFile: FileChange | null;
-  onFileSelect: (file: FileChange) => void;
+  files: StagingFileChange[];
+  selectedFile: StagingFileChange | null;
+  onFileSelect: (file: StagingFileChange) => void;
+}
+
+// Simple tree node for staging area
+interface StagingTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'folder';
+  file?: StagingFileChange;
+  children?: StagingTreeNode[];
+}
+
+// Build tree for staging files
+function buildStagingFileTree(files: StagingFileChange[]): StagingTreeNode[] {
+  const root: Map<string, StagingTreeNode> = new Map();
+
+  for (const file of files) {
+    const parts = file.path.split('/').filter(Boolean);
+    let currentPath = '';
+    let currentLevel = root;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isLastPart = i === parts.length - 1;
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+      if (!currentLevel.has(part)) {
+        if (isLastPart) {
+          currentLevel.set(part, {
+            name: part,
+            path: currentPath,
+            type: 'file',
+            file: file,
+          });
+        } else {
+          currentLevel.set(part, {
+            name: part,
+            path: currentPath,
+            type: 'folder',
+            children: [],
+          });
+        }
+      }
+
+      if (!isLastPart) {
+        const node = currentLevel.get(part)!;
+        if (node.type === 'folder' && node.children) {
+          const childrenMap = new Map<string, StagingTreeNode>();
+          for (const child of node.children) {
+            childrenMap.set(child.name, child);
+          }
+          currentLevel = childrenMap;
+        }
+      }
+    }
+  }
+
+  return sortNodes(Array.from(root.values()));
+}
+
+function sortNodes(nodes: StagingTreeNode[]): StagingTreeNode[] {
+  return nodes
+    .sort((a, b) => {
+      if (a.type !== b.type) {
+        return a.type === 'folder' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .map((node) => {
+      if (node.type === 'folder' && node.children) {
+        return {
+          ...node,
+          children: sortNodes(node.children),
+        };
+      }
+      return node;
+    });
 }
 
 export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
-  const tree = buildFileTree(files);
+  const tree = buildStagingFileTree(files);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
@@ -26,7 +101,7 @@ export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
     });
   };
 
-  const renderNode = (node: TreeNode, depth: number = 0) => {
+  const renderNode = (node: StagingTreeNode, depth: number = 0) => {
     if (node.type === 'file') {
       const isSelected = selectedFile?.path === node.file?.path;
       const statusColor = {
