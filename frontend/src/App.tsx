@@ -23,7 +23,7 @@ function App() {
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto bg-white dark:bg-gray-900">
+          <main className="flex-1 overflow-auto bg-white dark:bg-gray-900 pb-4">
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Navigate to="/history" replace />} />

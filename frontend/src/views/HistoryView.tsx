@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useCommitStore } from '@/stores/commitStore';
 import { CommitList } from '@/components/commit/CommitList';
 import { CommitSearch } from '@/components/commit/CommitSearch';
 import { FileTreePanel } from '@/components/commit/FileTreePanel';
+import { DiffViewer } from '@/components/diff/DiffViewer';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FolderOpen, History } from 'lucide-react';
 import { GetCommitDetail } from '../../wailsjs/go/services/RepositoryService';
+import { parseDiff } from '@/utils/diffParser';
 import type { models } from '../../wailsjs/go/models';
+import type { DiffResult } from '@/types/git';
 
 function HistoryView() {
   const { currentRepository } = useRepositoryStore();
@@ -50,6 +53,24 @@ function HistoryView() {
     setSelectedFile(file);
   };
 
+  // Parse the diff for the selected file
+  const selectedFileDiff = useMemo<DiffResult | null>(() => {
+    if (!commitDetail || !selectedFile || !commitDetail.diff) {
+      return null;
+    }
+
+    // Parse the full diff
+    const fullDiff = parseDiff(commitDetail.diff);
+
+    // Filter to show only the selected file
+    const fileToMatch = selectedFile.newPath || selectedFile.oldPath;
+    const matchedFile = fullDiff.files.find(
+      (f) => f.path === fileToMatch || f.oldPath === fileToMatch
+    );
+
+    return matchedFile ? { files: [matchedFile] } : null;
+  }, [commitDetail, selectedFile]);
+
   if (!currentRepository) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -79,14 +100,18 @@ function HistoryView() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Commit list */}
         <div
-          className={`${selectedCommit ? 'w-1/2' : 'w-full'} overflow-hidden border-r border-gray-200 dark:border-gray-700`}
+          className={`${
+            selectedCommit ? (selectedFile ? 'w-1/4' : 'w-1/2') : 'w-full'
+          } overflow-hidden border-r border-gray-200 dark:border-gray-700`}
         >
           <CommitList />
         </div>
 
-        {/* Right: File tree panel */}
+        {/* Middle: File tree panel */}
         {selectedCommit && (
-          <div className="w-1/2 overflow-hidden">
+          <div
+            className={`${selectedFile ? 'w-1/4' : 'w-1/2'} overflow-hidden border-r border-gray-200 dark:border-gray-700`}
+          >
             {isLoadingDetail ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-gray-500 dark:text-gray-400">Loading commit details...</div>
@@ -98,6 +123,13 @@ function HistoryView() {
                 selectedFile={selectedFile}
               />
             )}
+          </div>
+        )}
+
+        {/* Right: Diff viewer */}
+        {selectedCommit && selectedFile && (
+          <div className="w-1/2 overflow-hidden">
+            <DiffViewer diff={selectedFileDiff} isLoading={isLoadingDetail} />
           </div>
         )}
       </div>

@@ -147,17 +147,17 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
             <div className="w-4 h-4" /> {/* Spacer for chevron alignment */}
             <File className={`w-4 h-4 ${statusColor} flex-shrink-0`} />
             <span className={`text-sm ${statusColor} flex-1 min-w-0 truncate`}>{node.name}</span>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${statusColor}`}>
                 {statusLabel[0]}
               </span>
               {node.file.insertions > 0 && (
-                <span className="text-xs text-green-600 dark:text-green-400 font-mono w-10 text-right">
+                <span className="text-xs text-green-600 dark:text-green-400 font-mono">
                   +{node.file.insertions}
                 </span>
               )}
               {node.file.deletions > 0 && (
-                <span className="text-xs text-red-600 dark:text-red-400 font-mono w-10 text-right">
+                <span className="text-xs text-red-600 dark:text-red-400 font-mono">
                   -{node.file.deletions}
                 </span>
               )}
