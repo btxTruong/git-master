@@ -17,7 +17,7 @@ export function CommitList() {
   const virtualizer = useVirtualizer({
     count: commits.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60, // Each commit row is ~60px tall
+    estimateSize: () => 80, // Each commit row is ~80px tall with new design
     overscan: 10, // Render 10 extra rows above/below viewport
   });
 
@@ -57,7 +57,7 @@ export function CommitList() {
   }
 
   return (
-    <div ref={parentRef} className="flex-1 overflow-auto">
+    <div ref={parentRef} className="flex-1 overflow-auto scroll-smooth">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
