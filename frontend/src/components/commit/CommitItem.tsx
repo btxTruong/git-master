@@ -49,7 +49,7 @@ export const CommitItem = memo(function CommitItem({
         </div>
 
         <div className="flex-1 min-w-0 space-y-1 flex flex-col">
-          <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 flex-nowrap overflow-hidden shrink-0">
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">
               {commit.shortHash}
             </span>
