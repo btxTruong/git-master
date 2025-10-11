@@ -7,15 +7,15 @@ feat
 Implement comprehensive commit filtering functionality including filters by author, date range, branch, and search text. Filters should work independently and in combination.
 
 ## Acceptance Criteria
-- [ ] Filter by author dropdown populated from commit data
-- [ ] Date range picker for from/to dates
-- [ ] Branch filter dropdown
-- [ ] Search text filter (commit message)
-- [ ] Multiple filters combine with AND logic
-- [ ] Clear all filters button
-- [ ] Filter state persists in URL params
-- [ ] Loading state while applying filters
-- [ ] Results update in real-time
+- [x] Filter by author dropdown populated from commit data
+- [x] Date range picker for from/to dates
+- [x] Branch filter dropdown
+- [x] Search text filter (commit message)
+- [x] Multiple filters combine with AND logic
+- [x] Clear all filters button
+- [x] Filter state persists in URL params
+- [x] Loading state while applying filters
+- [x] Results update in real-time
 
 ## Technical Details
 - **Implementation**:

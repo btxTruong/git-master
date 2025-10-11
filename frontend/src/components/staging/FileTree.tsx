@@ -35,6 +35,7 @@ export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
         [FileStatus.Deleted]: 'text-red-600',
         [FileStatus.Renamed]: 'text-purple-600',
         [FileStatus.Copied]: 'text-purple-600',
+        [FileStatus.Untracked]: 'text-gray-600',
       }[node.file!.status];
 
       const statusLabel = {
@@ -43,6 +44,7 @@ export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
         [FileStatus.Deleted]: 'D',
         [FileStatus.Renamed]: 'R',
         [FileStatus.Copied]: 'C',
+        [FileStatus.Untracked]: 'U',
       }[node.file!.status];
 
       return (

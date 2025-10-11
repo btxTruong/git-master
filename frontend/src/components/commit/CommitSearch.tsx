@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, X, Filter } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
 import { useDebounce } from '@/hooks/useDebounce';
+import { CommitFilters } from './CommitFilters';
 
 export function CommitSearch() {
   const { filters, setFilter, clearFilters } = useCommitStore();
@@ -53,20 +54,8 @@ export function CommitSearch() {
         )}
       </div>
 
-      {/* Filter button - placeholder for future filter dropdown */}
-      <button
-        className="
-          px-3 py-2 border border-gray-300 rounded-md
-          text-sm font-medium text-gray-700
-          hover:bg-gray-50
-          transition-colors
-          flex items-center gap-2
-        "
-        title="More filters (coming soon)"
-      >
-        <Filter className="w-4 h-4" />
-        Filters
-      </button>
+      {/* Filter dropdown */}
+      <CommitFilters />
 
       {/* Clear all filters */}
       {hasActiveFilters && (

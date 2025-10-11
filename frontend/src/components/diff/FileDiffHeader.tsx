@@ -14,6 +14,7 @@ export function FileDiffHeader({ fileDiff, collapsed, onToggle }: FileDiffHeader
     modified: <FileEdit className="w-4 h-4 text-blue-600" />,
     renamed: <FileIcon className="w-4 h-4 text-purple-600" />,
     copied: <FileIcon className="w-4 h-4 text-purple-600" />,
+    untracked: <FileIcon className="w-4 h-4 text-gray-600" />,
   }[fileDiff.status];
 
   const statusBadge = {
@@ -22,6 +23,7 @@ export function FileDiffHeader({ fileDiff, collapsed, onToggle }: FileDiffHeader
     modified: 'M',
     renamed: 'R',
     copied: 'C',
+    untracked: 'U',
   }[fileDiff.status];
 
   const statusBadgeColor = {
@@ -30,6 +32,7 @@ export function FileDiffHeader({ fileDiff, collapsed, onToggle }: FileDiffHeader
     modified: 'bg-blue-100 text-blue-800',
     renamed: 'bg-purple-100 text-purple-800',
     copied: 'bg-purple-100 text-purple-800',
+    untracked: 'bg-gray-100 text-gray-800',
   }[fileDiff.status];
 
   return (

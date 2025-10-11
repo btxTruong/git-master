@@ -7,15 +7,15 @@ feat
 Create the main StagingArea component that displays changed files organized into three sections: Staged, Unstaged, and Untracked. Includes actions for staging/unstaging files and committing changes.
 
 ## Acceptance Criteria
-- [ ] `components/staging/StagingArea.tsx` component created
-- [ ] Three collapsible sections: Staged, Unstaged, Untracked
-- [ ] Each section shows file count
-- [ ] Stage all / Unstage all buttons
-- [ ] Individual file stage/unstage actions
-- [ ] Commit button (enabled when staged files exist)
-- [ ] File selection shows diff preview
-- [ ] Loading states for operations
-- [ ] Uses FileTree for each section
+- [x] `components/staging/StagingArea.tsx` component created
+- [x] Three collapsible sections: Staged, Unstaged, Untracked
+- [x] Each section shows file count
+- [x] Stage all / Unstage all buttons
+- [x] Individual file stage/unstage actions
+- [x] Commit button (enabled when staged files exist)
+- [x] File selection shows diff preview
+- [x] Loading states for operations
+- [x] Uses FileTree for each section
 
 ## Technical Details
 - **File to create**: `frontend/src/components/staging/StagingArea.tsx`

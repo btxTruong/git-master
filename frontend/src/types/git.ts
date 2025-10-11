@@ -45,6 +45,7 @@ export enum FileStatus {
   Deleted = 'deleted',
   Renamed = 'renamed',
   Copied = 'copied',
+  Untracked = 'untracked',
 }
 
 export interface FileChange {

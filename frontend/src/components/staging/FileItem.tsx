@@ -35,6 +35,11 @@ export function FileItem({ file, selected, onSelect }: FileItemProps) {
       badge: 'C',
       badgeClass: 'bg-purple-100 text-purple-800',
     },
+    [FileStatus.Untracked]: {
+      icon: <File className="w-4 h-4 text-gray-600" />,
+      badge: 'U',
+      badgeClass: 'bg-gray-100 text-gray-800',
+    },
   };
 
   const config = statusConfig[file.status];
