@@ -138,3 +138,20 @@ export interface RebaseState {
   currentCommit: string | null;
   targetBranch: string | null;
 }
+
+// Cherry-pick
+export interface CherryPickCommit {
+  hash: string;
+  shortHash: string;
+  message: string;
+  author: Author;
+  date: Date;
+}
+
+export interface CherryPickState {
+  isCherryPicking: boolean;
+  selectedCommits: string[];
+  targetBranch: string | null;
+  currentCommit: string | null;
+  hasConflicts: boolean;
+}
