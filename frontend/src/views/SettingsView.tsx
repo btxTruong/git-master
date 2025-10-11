@@ -129,8 +129,8 @@ function AppearanceSettings() {
               onClick={() => setTheme(themeOption.value)}
               className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
                 theme === themeOption.value
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50'
               }`}
             >
               <div
@@ -177,8 +177,8 @@ function AppearanceSettings() {
             onClick={() => setDiffViewMode('unified')}
             className={`p-4 rounded-lg border-2 transition-all ${
               diffViewMode === 'unified'
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-gray-100'
+                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-100'
             }`}
           >
             <p className="text-sm font-medium">Unified</p>
@@ -189,8 +189,8 @@ function AppearanceSettings() {
             onClick={() => setDiffViewMode('split')}
             className={`p-4 rounded-lg border-2 transition-all ${
               diffViewMode === 'split'
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-gray-100'
+                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-100'
             }`}
           >
             <p className="text-sm font-medium">Split</p>
@@ -255,8 +255,8 @@ function BehaviorSettings() {
               onClick={() => setDateFormat(format.value)}
               className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all text-left ${
                 dateFormat === format.value
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50'
               }`}
             >
               <div className="flex-1">

@@ -4,6 +4,28 @@
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>git-master</title>
+    <!-- Preload theme to prevent FOUC (Flash of Unstyled Content) -->
+    <script>
+        (function() {
+            try {
+                const stored = localStorage.getItem('ui-preferences');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    const theme = parsed.state?.theme || 'system';
+                    const isDark = theme === 'dark' ||
+                        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (isDark) {
+                        document.documentElement.classList.add('dark');
+                    }
+                }
+            } catch (e) {
+                // If error, check system preference as fallback
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            }
+        })();
+    </script>
 </head>
 <body>
 <div id="root"></div>

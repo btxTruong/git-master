@@ -11,7 +11,6 @@ import { useTheme } from '@/hooks/useTheme';
 const HistoryView = lazy(() => import('@/views/HistoryView'));
 const ChangesView = lazy(() => import('@/views/ChangesView'));
 const BranchesView = lazy(() => import('@/views/BranchesView'));
-const MergeView = lazy(() => import('@/views/MergeView'));
 const SettingsView = lazy(() => import('@/views/SettingsView'));
 
 function App() {
@@ -32,7 +31,6 @@ function App() {
                 <Route path="/history" element={<HistoryView />} />
                 <Route path="/changes" element={<ChangesView />} />
                 <Route path="/branches" element={<BranchesView />} />
-                <Route path="/merge" element={<MergeView />} />
                 <Route path="/settings" element={<SettingsView />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

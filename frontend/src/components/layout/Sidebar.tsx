@@ -3,7 +3,6 @@ import {
   History,
   FileText,
   GitBranch,
-  GitMerge,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -14,7 +13,6 @@ const navItems = [
   { path: '/history', label: 'History', icon: History },
   { path: '/changes', label: 'Changes', icon: FileText },
   { path: '/branches', label: 'Branches', icon: GitBranch },
-  { path: '/merge', label: 'Merge', icon: GitMerge },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -23,15 +21,15 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-gray-50 border-r border-gray-200 transition-all duration-300 ${
+      className={`bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
         sidebarOpen ? 'w-56' : 'w-16'
       }`}
     >
       {/* Toggle button */}
-      <div className="h-14 flex items-center justify-end px-2 border-b border-gray-200">
+      <div className="h-14 flex items-center justify-end px-2 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={toggleSidebar}
-          className="p-2 hover:bg-gray-200 rounded"
+          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300"
           aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -45,8 +43,8 @@ export function Sidebar() {
             key={path}
             to={path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-200 transition-colors ${
-                isActive ? 'bg-gray-200 font-medium' : ''
+              `flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${
+                isActive ? 'bg-gray-200 dark:bg-gray-700 font-medium' : ''
               }`
             }
           >
