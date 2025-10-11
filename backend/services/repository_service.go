@@ -156,8 +156,8 @@ func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, erro
 		return nil, fmt.Errorf("no repository opened")
 	}
 
-	// Git log format
-	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%d|%s"
+	// Git log format - added %P for parent hashes
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%P|%d|%s"
 
 	args := []string{
 		"log",
@@ -187,8 +187,8 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 		return nil, fmt.Errorf("no repository opened")
 	}
 
-	// Get commit info
-	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%d|%s"
+	// Get commit info - added %P for parent hashes
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%P|%d|%s"
 	logResult, err := s.executor.Execute(
 		s.ctx,
 		"log",

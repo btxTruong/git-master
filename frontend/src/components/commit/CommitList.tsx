@@ -1,10 +1,11 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCommitStore, type Commit } from '@/stores/commitStore';
 import { CommitItem } from './CommitItem';
 import { Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { GitCommit } from 'lucide-react';
+import { computeGitGraphLayout } from '@/utils/gitGraphLayout';
 
 /**
  * Optimized commit list with virtualization and memoized callbacks
@@ -14,11 +15,22 @@ export function CommitList() {
   const { commits, selectedCommit, isLoading, hasMore, currentPage, loadCommits, selectCommit } =
     useCommitStore();
 
+  // Compute git graph layout for all commits
+  const laneInfoMap = useMemo(() => {
+    return computeGitGraphLayout(commits);
+  }, [commits]);
+
   const virtualizer = useVirtualizer({
     count: commits.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 88, // Each commit row is fixed at 88px tall
-    overscan: 10, // Render 10 extra rows above/below viewport
+    estimateSize: () => 72, // Initial estimate for compact view
+    getItemKey: (index) => commits[index]?.hash, // Stable keys for size cache
+    // Enable dynamic measurement via ResizeObserver for responsive height
+    measureElement:
+      typeof window !== 'undefined' && 'ResizeObserver' in window
+        ? (el) => el.getBoundingClientRect().height
+        : undefined,
+    overscan: 5, // Render 5 extra rows above/below viewport
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -68,10 +80,13 @@ export function CommitList() {
         {virtualItems.map((virtualRow) => {
           const commit = commits[virtualRow.index];
           const isSelected = selectedCommit?.hash === commit.hash;
+          const laneInfo = laneInfoMap.get(commit.hash);
 
           return (
             <div
               key={commit.hash}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -85,6 +100,8 @@ export function CommitList() {
                 commit={commit}
                 isSelected={isSelected}
                 onClick={() => handleSelectCommit(commit)}
+                laneInfo={laneInfo}
+                showGraph={true}
               />
             </div>
           );

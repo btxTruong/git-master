@@ -7,7 +7,7 @@ import (
 )
 
 // ParseCommits parses git log output into Commit objects
-// Expected format: hash|shortHash|authorName|authorEmail|committerName|committerEmail|timestamp|refs|subject
+// Expected format: hash|shortHash|authorName|authorEmail|committerName|committerEmail|timestamp|parentHashes|refs|subject
 func ParseCommits(output string) ([]models.Commit, error) {
 	if output == "" {
 		return []models.Commit{}, nil
@@ -18,7 +18,7 @@ func ParseCommits(output string) ([]models.Commit, error) {
 
 	for _, line := range lines {
 		parts := strings.Split(line, "|")
-		if len(parts) < 9 {
+		if len(parts) < 10 {
 			continue
 		}
 
@@ -27,17 +27,23 @@ func ParseCommits(output string) ([]models.Commit, error) {
 			timestamp = time.Now()
 		}
 
+		// Parse parent hashes (space-separated)
+		parentHashes := []string{}
+		if parts[7] != "" {
+			parentHashes = strings.Fields(parts[7])
+		}
+
 		// Parse refs (branch names, tags)
 		refs := []string{}
-		if parts[7] != "" {
-			refStr := strings.Trim(parts[7], " ()")
+		if parts[8] != "" {
+			refStr := strings.Trim(parts[8], " ()")
 			if refStr != "" {
 				refs = strings.Split(refStr, ", ")
 			}
 		}
 
-		// Join all parts from index 8 onwards to handle commit messages with | characters
-		message := strings.Join(parts[8:], "|")
+		// Join all parts from index 9 onwards to handle commit messages with | characters
+		message := strings.Join(parts[9:], "|")
 
 		commit := models.Commit{
 			Hash:      parts[0],
@@ -51,6 +57,7 @@ func ParseCommits(output string) ([]models.Commit, error) {
 				Email: parts[5],
 			},
 			Date:         timestamp,
+			ParentHashes: parentHashes,
 			Refs:         refs,
 			ShortMessage: message,
 			Message:      message,

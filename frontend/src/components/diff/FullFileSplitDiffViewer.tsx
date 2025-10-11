@@ -162,7 +162,13 @@ export function FullFileSplitDiffViewer({
       <div ref={leftPaneRef} className="overflow-auto bg-white dark:bg-gray-900 font-mono text-sm">
         <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
           Old: {fileName}
+          {!oldContent && newContent ? ' (no previous version)' : ''}
         </div>
+        {oldLines.length === 0 && newLines.length > 0 && (
+          <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+            File did not exist in the parent commit.
+          </div>
+        )}
         {oldLines.map((line, index) => {
           const bgColor =
             line.type === 'delete'
@@ -188,7 +194,13 @@ export function FullFileSplitDiffViewer({
       <div ref={rightPaneRef} className="overflow-auto bg-white dark:bg-gray-900 font-mono text-sm">
         <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold border-b border-green-200 dark:border-green-800 z-10">
           New: {fileName}
+          {oldContent && !newContent ? ' (deleted)' : ''}
         </div>
+        {newLines.length === 0 && oldLines.length > 0 && (
+          <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+            File was deleted in this commit.
+          </div>
+        )}
         {newLines.map((line, index) => {
           const bgColor =
             line.type === 'add'

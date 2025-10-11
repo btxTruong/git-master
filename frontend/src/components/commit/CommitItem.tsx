@@ -3,11 +3,15 @@ import { type Commit } from '@/stores/commitStore';
 import { User, Calendar } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDate } from '@/utils/dateFormat';
+import { CommitGraphCell } from './CommitGraphCell';
+import type { CommitLaneInfo } from '@/utils/gitGraphLayout';
 
 interface CommitItemProps {
   commit: Commit;
   isSelected: boolean;
   onClick: () => void;
+  laneInfo?: CommitLaneInfo;
+  showGraph?: boolean;
 }
 
 /**
@@ -21,8 +25,17 @@ export const CommitItem = memo(function CommitItem({
   commit,
   isSelected,
   onClick,
+  laneInfo,
+  showGraph = true,
 }: CommitItemProps) {
   const dateFormat = useUIStore((state) => state.dateFormat);
+  const theme = useUIStore((state) => state.theme);
+
+  const isDark = useMemo(() => {
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }, [theme]);
 
   const formattedDate = useMemo(() => {
     return formatDate(commit.date, dateFormat);
@@ -32,7 +45,7 @@ export const CommitItem = memo(function CommitItem({
     <div
       onClick={onClick}
       className={`
-        group relative px-4 py-3 cursor-pointer transition-all duration-200
+        group relative px-4 py-2.5 cursor-pointer transition-colors duration-200
         border-b border-gray-200 dark:border-gray-700
         ${
           isSelected
@@ -42,18 +55,26 @@ export const CommitItem = memo(function CommitItem({
       `}
     >
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          <div
-            className={`
-            w-2 h-2 rounded-full transition-colors
-            ${isSelected ? 'bg-blue-500' : 'bg-gray-400 dark:bg-gray-600 group-hover:bg-blue-400'}
-          `}
-          />
-        </div>
+        {showGraph && laneInfo ? (
+          <div className="flex-shrink-0 self-stretch flex items-center">
+            <CommitGraphCell laneInfo={laneInfo} isDark={isDark} />
+          </div>
+        ) : (
+          <div className="flex-shrink-0 mt-1">
+            <div
+              className={`
+              w-2 h-2 rounded-full transition-colors
+              ${isSelected ? 'bg-blue-500' : 'bg-gray-400 dark:bg-gray-600 group-hover:bg-blue-400'}
+            `}
+            />
+          </div>
+        )}
 
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-          {/* Hash and refs - show on large screens always, on small screens only when selected */}
-          <div className={`items-center gap-2 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}>
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {/* Hash and refs - always render but control visibility with max-lg:hidden */}
+          <div
+            className={`flex items-center gap-2 flex-wrap ${isSelected ? '' : 'max-lg:hidden'}`}
+          >
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
@@ -73,18 +94,18 @@ export const CommitItem = memo(function CommitItem({
             )}
           </div>
 
-          {/* Commit message - truncate on small screens when not selected, show full when selected */}
+          {/* Commit message - truncate unless selected or large screen */}
           <div
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
-              isSelected ? 'break-words' : 'truncate lg:break-words'
+              isSelected ? 'whitespace-normal break-words' : 'truncate lg:whitespace-normal lg:break-words'
             }`}
           >
             {commit.shortMessage || commit.message}
           </div>
 
-          {/* Author and timestamp - show on large screens always, on small screens only when selected */}
+          {/* Author and timestamp */}
           <div
-            className={`items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
+            className={`flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap ${isSelected ? '' : 'max-lg:hidden'}`}
           >
             <div className="flex items-center gap-1.5 font-medium min-w-0">
               <User className="w-3.5 h-3.5 shrink-0" />
