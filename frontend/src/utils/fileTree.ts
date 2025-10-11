@@ -9,7 +9,12 @@ export type TreeNode = {
 };
 
 export function buildFileTree(files: models.FileChange[]): TreeNode[] {
-  const root: Map<string, TreeNode> = new Map();
+  const root: TreeNode = {
+    name: '',
+    path: '',
+    type: 'folder',
+    children: [],
+  };
 
   for (const file of files) {
     // Use newPath for added/modified, oldPath for deleted
@@ -17,50 +22,47 @@ export function buildFileTree(files: models.FileChange[]): TreeNode[] {
     if (!filePath) continue;
 
     const parts = filePath.split('/').filter(Boolean);
-    let currentPath = '';
-    let currentLevel = root;
+    let currentNode = root;
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       const isLastPart = i === parts.length - 1;
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      const pathSoFar = parts.slice(0, i + 1).join('/');
 
-      if (!currentLevel.has(part)) {
+      if (!currentNode.children) {
+        currentNode.children = [];
+      }
+
+      // Find existing node or create new one
+      let existingNode = currentNode.children.find((child) => child.name === part);
+
+      if (!existingNode) {
         if (isLastPart) {
           // File node
-          currentLevel.set(part, {
+          existingNode = {
             name: part,
-            path: currentPath,
+            path: pathSoFar,
             type: 'file',
             file: file,
-          });
+          };
         } else {
           // Folder node
-          currentLevel.set(part, {
+          existingNode = {
             name: part,
-            path: currentPath,
+            path: pathSoFar,
             type: 'folder',
             children: [],
-          });
+          };
         }
+        currentNode.children.push(existingNode);
       }
 
-      if (!isLastPart) {
-        const node = currentLevel.get(part)!;
-        if (node.type === 'folder' && node.children) {
-          // Create map for next level
-          const childrenMap = new Map<string, TreeNode>();
-          for (const child of node.children) {
-            childrenMap.set(child.name, child);
-          }
-          currentLevel = childrenMap;
-        }
-      }
+      currentNode = existingNode;
     }
   }
 
-  // Convert map to sorted array
-  return sortNodes(Array.from(root.values()));
+  // Return sorted children of root
+  return sortNodes(root.children || []);
 }
 
 function sortNodes(nodes: TreeNode[]): TreeNode[] {

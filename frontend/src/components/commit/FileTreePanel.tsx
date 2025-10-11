@@ -1,5 +1,13 @@
-import { useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import {
+  ChevronRight,
+  ChevronDown,
+  File,
+  Folder,
+  FolderOpen,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import type { models } from '../../../wailsjs/go/models';
 import {
   buildFileTree,
@@ -14,6 +22,25 @@ interface FileTreePanelProps {
   selectedFile: models.FileChange | null;
 }
 
+// Helper to get all folder paths from tree
+function getAllFolderPaths(nodes: TreeNode[]): string[] {
+  const paths: string[] = [];
+
+  function traverse(nodes: TreeNode[]) {
+    for (const node of nodes) {
+      if (node.type === 'folder') {
+        paths.push(node.path);
+        if (node.children) {
+          traverse(node.children);
+        }
+      }
+    }
+  }
+
+  traverse(nodes);
+  return paths;
+}
+
 export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: FileTreePanelProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -21,6 +48,14 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
     if (!commitDetail || !commitDetail.files) return [];
     return buildFileTree(commitDetail.files);
   }, [commitDetail]);
+
+  // Expand all folders by default when commit changes
+  useEffect(() => {
+    if (fileTree.length > 0) {
+      const allFolders = getAllFolderPaths(fileTree);
+      setExpandedFolders(new Set(allFolders));
+    }
+  }, [fileTree]);
 
   if (!commitDetail) {
     return (
@@ -41,6 +76,20 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
       return next;
     });
   };
+
+  const expandAll = () => {
+    const allFolders = getAllFolderPaths(fileTree);
+    setExpandedFolders(new Set(allFolders));
+  };
+
+  const collapseAll = () => {
+    setExpandedFolders(new Set());
+  };
+
+  const allExpanded = useMemo(() => {
+    const allFolders = getAllFolderPaths(fileTree);
+    return allFolders.length > 0 && allFolders.every((path) => expandedFolders.has(path));
+  }, [fileTree, expandedFolders]);
 
   const renderTree = (nodes: TreeNode[], depth = 0) => {
     return nodes.map((node) => {
@@ -96,19 +145,23 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
             style={{ paddingLeft: `${depth * 16 + 12}px` }}
           >
             <div className="w-4 h-4" /> {/* Spacer for chevron alignment */}
-            <File className={`w-4 h-4 ${statusColor}`} />
-            <span className={`text-sm ${statusColor} flex-1`}>{node.name}</span>
-            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${statusColor}`}>
-              {statusLabel[0]}
-            </span>
-            {node.file.insertions > 0 && (
-              <span className="text-xs text-green-600 dark:text-green-400">
-                +{node.file.insertions}
+            <File className={`w-4 h-4 ${statusColor} flex-shrink-0`} />
+            <span className={`text-sm ${statusColor} flex-1 min-w-0 truncate`}>{node.name}</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${statusColor}`}>
+                {statusLabel[0]}
               </span>
-            )}
-            {node.file.deletions > 0 && (
-              <span className="text-xs text-red-600 dark:text-red-400">-{node.file.deletions}</span>
-            )}
+              {node.file.insertions > 0 && (
+                <span className="text-xs text-green-600 dark:text-green-400 font-mono w-10 text-right">
+                  +{node.file.insertions}
+                </span>
+              )}
+              {node.file.deletions > 0 && (
+                <span className="text-xs text-red-600 dark:text-red-400 font-mono w-10 text-right">
+                  -{node.file.deletions}
+                </span>
+              )}
+            </div>
           </div>
         );
       }
@@ -119,10 +172,29 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700">
-      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Files Changed ({commitDetail.files?.length || 0})
         </h3>
+        {fileTree.length > 0 && (
+          <button
+            onClick={allExpanded ? collapseAll : expandAll}
+            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+            title={allExpanded ? 'Collapse all' : 'Expand all'}
+          >
+            {allExpanded ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                Collapse All
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                Expand All
+              </>
+            )}
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto">
         {fileTree.length > 0 ? (
