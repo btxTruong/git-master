@@ -48,8 +48,8 @@ export const CommitItem = memo(function CommitItem({
           />
         </div>
 
-        <div className="flex-1 min-w-0 space-y-1 flex flex-col">
-          <div className="flex items-center gap-2 flex-nowrap overflow-hidden shrink-0">
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <div className="h-5 flex items-center gap-2 flex-nowrap overflow-hidden shrink-0">
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">
               {commit.shortHash}
             </span>
@@ -69,11 +69,11 @@ export const CommitItem = memo(function CommitItem({
             )}
           </div>
 
-          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-3 break-words">
+          <div className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-3 break-words overflow-hidden">
             {commit.shortMessage || commit.message}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 mt-auto shrink-0">
+          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 shrink-0">
             <div className="flex items-center gap-1.5 font-medium">
               <User className="w-3.5 h-3.5" />
               <span className="truncate">{commit.author.name}</span>
@@ -82,20 +82,6 @@ export const CommitItem = memo(function CommitItem({
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span className="shrink-0">{formattedDate}</span>
             </div>
-            {(commit.insertions > 0 || commit.deletions > 0) && (
-              <div className="flex items-center gap-2 ml-auto">
-                {commit.insertions > 0 && (
-                  <span className="font-mono text-green-600 dark:text-green-400">
-                    +{commit.insertions}
-                  </span>
-                )}
-                {commit.deletions > 0 && (
-                  <span className="font-mono text-red-600 dark:text-red-400">
-                    -{commit.deletions}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
