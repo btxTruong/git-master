@@ -17,7 +17,7 @@ export function CommitList() {
   const virtualizer = useVirtualizer({
     count: commits.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 72, // Each commit row is fixed at 72px tall
+    estimateSize: () => 88, // Each commit row is fixed at 88px tall
     overscan: 10, // Render 10 extra rows above/below viewport
   });
 
@@ -96,11 +96,6 @@ export function CommitList() {
         <div className="flex justify-center py-4">
           <Spinner size="sm" text="Loading more commits..." />
         </div>
-      )}
-
-      {/* End of list indicator */}
-      {!hasMore && commits.length > 0 && (
-        <div className="text-center py-4 text-gray-500 text-sm">End of commit history</div>
       )}
     </div>
   );
