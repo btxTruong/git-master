@@ -28,6 +28,7 @@ func main() {
 		Bind: []interface{}{
 			app,
 			app.repositoryService,
+			app.stagingService,
 		},
 	})
 

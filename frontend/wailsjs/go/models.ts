@@ -271,6 +271,24 @@ export namespace models {
 
 export namespace services {
 	
+	export class FileStatus {
+	    path: string;
+	    status: string;
+	    staged: boolean;
+	    modified: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.status = source["status"];
+	        this.staged = source["staged"];
+	        this.modified = source["modified"];
+	    }
+	}
 	export class RepositoryService {
 	
 	
@@ -282,6 +300,52 @@ export namespace services {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
 	    }
+	}
+	export class StagingService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new StagingService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class WorkingDirectoryStatus {
+	    stagedFiles: FileStatus[];
+	    unstagedFiles: FileStatus[];
+	    untrackedFiles: FileStatus[];
+	
+	    static createFrom(source: any = {}) {
+	        return new WorkingDirectoryStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stagedFiles = this.convertValues(source["stagedFiles"], FileStatus);
+	        this.unstagedFiles = this.convertValues(source["unstagedFiles"], FileStatus);
+	        this.untrackedFiles = this.convertValues(source["untrackedFiles"], FileStatus);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

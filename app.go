@@ -13,12 +13,15 @@ type App struct {
 	ctx               context.Context
 	repositoryService *services.RepositoryService
 	commitService     *services.CommitService
+	stagingService    *services.StagingService
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
+	repoService := services.NewRepositoryService()
 	return &App{
-		repositoryService: services.NewRepositoryService(),
+		repositoryService: repoService,
+		stagingService:    services.NewStagingService(repoService),
 	}
 }
 
@@ -32,6 +35,11 @@ func (a *App) startup(ctx context.Context) {
 // GetRepositoryService returns the repository service for Wails binding
 func (a *App) GetRepositoryService() *services.RepositoryService {
 	return a.repositoryService
+}
+
+// GetStagingService returns the staging service for Wails binding
+func (a *App) GetStagingService() *services.StagingService {
+	return a.stagingService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository

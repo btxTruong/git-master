@@ -6,6 +6,10 @@ export function GetRepositoryService() {
   return window['go']['main']['App']['GetRepositoryService']();
 }
 
+export function GetStagingService() {
+  return window['go']['main']['App']['GetStagingService']();
+}
+
 export function OpenDirectoryDialog() {
   return window['go']['main']['App']['OpenDirectoryDialog']();
 }

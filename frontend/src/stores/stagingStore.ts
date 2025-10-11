@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import type { FileChange } from '@/types/git';
+import {
+  getWorkingDirectoryStatus,
+  stageFile as stageFileAPI,
+  unstageFile as unstageFileAPI,
+  stageAllFiles,
+  unstageAllFiles,
+} from '@/api/staging';
 
 interface StagingState {
   stagedFiles: FileChange[];
@@ -38,18 +45,12 @@ export const useStagingStore = create<StagingState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // TODO: Integrate with Wails backend when available
-      // const changes = await getWorkingDirectoryStatus();
-
-      // Mock data for now
-      const stagedFiles: FileChange[] = [];
-      const unstagedFiles: FileChange[] = [];
-      const untrackedFiles: FileChange[] = [];
+      const changes = await getWorkingDirectoryStatus();
 
       set({
-        stagedFiles,
-        unstagedFiles,
-        untrackedFiles,
+        stagedFiles: changes.stagedFiles,
+        unstagedFiles: changes.unstagedFiles,
+        untrackedFiles: changes.untrackedFiles,
         isLoading: false,
       });
     } catch (error) {
@@ -61,25 +62,10 @@ export const useStagingStore = create<StagingState>((set, get) => ({
 
   stageFile: async (path: string) => {
     try {
-      // TODO: Integrate with Wails backend when available
-      // await stageFileAPI(path);
+      await stageFileAPI(path);
 
-      // Move file from unstaged/untracked to staged
-      const { unstagedFiles, untrackedFiles, stagedFiles } = get();
-
-      const fileInUnstaged = unstagedFiles.find((f) => f.path === path);
-      const fileInUntracked = untrackedFiles.find((f) => f.path === path);
-      const fileToStage = fileInUnstaged || fileInUntracked;
-
-      if (!fileToStage) {
-        throw new Error(`File not found: ${path}`);
-      }
-
-      set({
-        stagedFiles: [...stagedFiles, fileToStage],
-        unstagedFiles: unstagedFiles.filter((f) => f.path !== path),
-        untrackedFiles: untrackedFiles.filter((f) => f.path !== path),
-      });
+      // Reload changes to get updated status
+      await get().loadChanges();
 
       toast.success(`Staged ${path}`);
     } catch (error) {
@@ -91,21 +77,10 @@ export const useStagingStore = create<StagingState>((set, get) => ({
 
   unstageFile: async (path: string) => {
     try {
-      // TODO: Integrate with Wails backend when available
-      // await unstageFileAPI(path);
+      await unstageFileAPI(path);
 
-      // Move file from staged to unstaged
-      const { stagedFiles, unstagedFiles } = get();
-
-      const fileToUnstage = stagedFiles.find((f) => f.path === path);
-      if (!fileToUnstage) {
-        throw new Error(`File not found in staged: ${path}`);
-      }
-
-      set({
-        stagedFiles: stagedFiles.filter((f) => f.path !== path),
-        unstagedFiles: [...unstagedFiles, fileToUnstage],
-      });
+      // Reload changes to get updated status
+      await get().loadChanges();
 
       toast.success(`Unstaged ${path}`);
     } catch (error) {
@@ -117,16 +92,10 @@ export const useStagingStore = create<StagingState>((set, get) => ({
 
   stageAll: async () => {
     try {
-      // TODO: Integrate with Wails backend when available
-      // await stageAllAPI();
+      await stageAllFiles();
 
-      const { unstagedFiles, untrackedFiles, stagedFiles } = get();
-
-      set({
-        stagedFiles: [...stagedFiles, ...unstagedFiles, ...untrackedFiles],
-        unstagedFiles: [],
-        untrackedFiles: [],
-      });
+      // Reload changes to get updated status
+      await get().loadChanges();
 
       toast.success('Staged all changes');
     } catch (error) {
@@ -138,15 +107,10 @@ export const useStagingStore = create<StagingState>((set, get) => ({
 
   unstageAll: async () => {
     try {
-      // TODO: Integrate with Wails backend when available
-      // await unstageAllAPI();
+      await unstageAllFiles();
 
-      const { stagedFiles, unstagedFiles } = get();
-
-      set({
-        stagedFiles: [],
-        unstagedFiles: [...unstagedFiles, ...stagedFiles],
-      });
+      // Reload changes to get updated status
+      await get().loadChanges();
 
       toast.success('Unstaged all changes');
     } catch (error) {
