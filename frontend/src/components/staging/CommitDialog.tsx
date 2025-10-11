@@ -17,6 +17,7 @@ export function CommitDialog({ isOpen, onClose }: CommitDialogProps) {
   useEffect(() => {
     // Only update internal state when transitioning from closed to open
     if (isOpen && !isDialogOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAmend(false);
       setError(null);
       setIsDialogOpen(true);

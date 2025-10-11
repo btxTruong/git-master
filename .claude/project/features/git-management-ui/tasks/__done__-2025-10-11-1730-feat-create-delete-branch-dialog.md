@@ -1,17 +1,17 @@
-# Create CreateBranchDialog Component
+# Create DeleteBranchDialog Component
 
 ## Type
 feat
 
 ## Description
-Create dialog for creating new branch with name input, base branch selection, and checkout option.
+Create confirmation dialog for branch deletion with warnings for unmerged changes and force delete option.
 
 ## Acceptance Criteria
-- [ ] Component/feature implemented
-- [ ] TypeScript types defined
-- [ ] Error handling in place
-- [ ] UI responsive and styled
-- [ ] Integration tested
+- [x] Component/feature implemented
+- [x] TypeScript types defined
+- [x] Error handling in place
+- [x] UI responsive and styled
+- [x] Integration tested
 
 ## Technical Details
 - **File to create**: `frontend/src/components/dialog`
