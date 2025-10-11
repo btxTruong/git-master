@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
 import { HistoryView } from '@/views/HistoryView';
 import { ChangesView } from '@/views/ChangesView';
 import { BranchesView } from '@/views/BranchesView';
@@ -11,6 +12,7 @@ import { SettingsView } from '@/views/SettingsView';
 function App() {
   return (
     <BrowserRouter>
+      <GlobalShortcuts />
       <div className="flex flex-col h-screen">
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
