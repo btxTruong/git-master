@@ -23,6 +23,7 @@ let UnstageFile: ((path: string) => Promise<void>) | null = null;
 let StageAll: (() => Promise<void>) | null = null;
 let UnstageAll: (() => Promise<void>) | null = null;
 let GetFileDiff: ((path: string, staged: boolean) => Promise<string>) | null = null;
+let Commit: ((message: string, amend: boolean) => Promise<void>) | null = null;
 
 // Lazy load Wails bindings
 async function loadBindings() {
@@ -36,6 +37,7 @@ async function loadBindings() {
     StageAll = StagingService.StageAll;
     UnstageAll = StagingService.UnstageAll;
     GetFileDiff = (StagingService as any).GetFileDiff || null;
+    Commit = (StagingService as any).Commit || null;
   } catch (error) {
     console.error('Failed to load Wails bindings:', error);
     throw new Error('Wails bindings not available');
@@ -138,4 +140,14 @@ export async function getFileDiff(path: string, staged: boolean): Promise<string
   }
 
   return await GetFileDiff(path, staged);
+}
+
+export async function commitChanges(message: string, amend: boolean = false): Promise<void> {
+  await loadBindings();
+
+  if (!Commit) {
+    throw new Error('Commit binding not available');
+  }
+
+  await Commit(message, amend);
 }

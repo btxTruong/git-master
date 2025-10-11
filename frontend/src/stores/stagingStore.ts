@@ -7,6 +7,7 @@ import {
   unstageFile as unstageFileAPI,
   stageAllFiles,
   unstageAllFiles,
+  commitChanges as commitAPI,
 } from '@/api/staging';
 
 interface StagingState {
@@ -136,8 +137,7 @@ export const useStagingStore = create<StagingState>((set, get) => ({
     set({ isCommitting: true, error: null });
 
     try {
-      // TODO: Integrate with Wails backend when available
-      // await commitAPI(message, amend);
+      await commitAPI(message, amend);
 
       // Clear staged files and commit message after successful commit
       set({

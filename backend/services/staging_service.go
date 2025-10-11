@@ -222,3 +222,32 @@ func (s *StagingService) GetFileDiff(path string, staged bool) (string, error) {
 
 	return string(output), nil
 }
+
+// Commit creates a new commit with the staged changes
+func (s *StagingService) Commit(message string, amend bool) error {
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	// Validate message
+	if strings.TrimSpace(message) == "" {
+		return fmt.Errorf("commit message cannot be empty")
+	}
+
+	args := []string{"commit", "-m", message}
+	if amend {
+		args = []string{"commit", "--amend", "-m", message}
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoPath
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to commit: %w - %s", err, string(output))
+	}
+
+	return nil
+}
