@@ -1,18 +1,18 @@
-# Create ConflictList Component
+# Create MergeDialog Component
 
 ## Type
 feat
 
 ## Description
-Create component displaying list of files with merge conflicts with status indicators.
+Create dialog for initiating merge with source branch selection and merge strategy options.
 
 ## Acceptance Criteria
-- [ ] Feature implemented according to specification
-- [ ] TypeScript types properly defined
-- [ ] Error handling and validation in place
-- [ ] UI/UX follows design patterns
-- [ ] Integration with backend complete
-- [ ] Loading and error states handled
+- [x] Feature implemented according to specification
+- [x] TypeScript types properly defined
+- [x] Error handling and validation in place
+- [x] UI/UX follows design patterns
+- [x] Integration with backend complete
+- [x] Loading and error states handled
 
 ## Technical Details
 - **Implementation**: Reference Implementation.md for detailed architecture

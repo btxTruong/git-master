@@ -7,12 +7,18 @@ feat
 Implement quick resolution shortcuts to accept ours or theirs for entire file or section.
 
 ## Acceptance Criteria
-- [ ] Feature implemented according to specification
-- [ ] TypeScript types properly defined
-- [ ] Error handling and validation in place
-- [ ] UI/UX follows design patterns
-- [ ] Integration with backend complete
-- [ ] Loading and error states handled
+- [x] Feature implemented according to specification
+- [x] TypeScript types properly defined
+- [x] Error handling and validation in place
+- [x] UI/UX follows design patterns
+- [x] Integration with backend complete
+- [x] Loading and error states handled
+
+## Implementation Note
+Accept Ours/Theirs shortcuts are implemented in ConflictResolver component (src/components/merge/ConflictResolver.tsx) and ConflictPane component (src/components/merge/ConflictPane.tsx) with:
+- "Accept Ours" button that calls resolveConflict with 'ours' strategy
+- "Accept Theirs" button that calls resolveConflict with 'theirs' strategy
+- Both integrated with merge store and proper error handling
 
 ## Technical Details
 - **Implementation**: Reference Implementation.md for detailed architecture

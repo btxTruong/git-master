@@ -1,18 +1,18 @@
-# Create ConflictResolver Component
+# Create ConflictPane Component
 
 ## Type
 feat
 
 ## Description
-Create three-pane conflict resolver showing base, ours, and theirs versions side-by-side.
+Create single pane component for conflict resolver showing one version with syntax highlighting.
 
 ## Acceptance Criteria
-- [ ] Feature implemented according to specification
-- [ ] TypeScript types properly defined
-- [ ] Error handling and validation in place
-- [ ] UI/UX follows design patterns
-- [ ] Integration with backend complete
-- [ ] Loading and error states handled
+- [x] Feature implemented according to specification
+- [x] TypeScript types properly defined
+- [x] Error handling and validation in place
+- [x] UI/UX follows design patterns
+- [x] Integration with backend complete
+- [x] Loading and error states handled
 
 ## Technical Details
 - **Implementation**: Reference Implementation.md for detailed architecture
@@ -20,7 +20,7 @@ Create three-pane conflict resolver showing base, ours, and theirs versions side
 - **State Management**: Use appropriate Zustand store
 
 ## Estimated Time
-4 hours
+2 hours
 
 ## Dependencies
 - Depends on: Previous tasks in phase
