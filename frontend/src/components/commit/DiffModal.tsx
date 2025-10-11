@@ -1,14 +1,11 @@
 import { X } from 'lucide-react';
-import { DiffViewer } from '@/components/diff/DiffViewer';
 import { FullFileSplitDiffViewer } from '@/components/diff/FullFileSplitDiffViewer';
-import type { DiffResult } from '@/types/git';
 import type { models } from '../../../wailsjs/go/models';
 
 interface DiffModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedFile: models.FileChange | null;
-  diff: DiffResult | null;
   isLoading: boolean;
   fileContent?: { oldContent: string; newContent: string } | null;
 }
@@ -17,7 +14,6 @@ export function DiffModal({
   isOpen,
   onClose,
   selectedFile,
-  diff,
   isLoading,
   fileContent,
 }: DiffModalProps) {
@@ -55,18 +51,14 @@ export function DiffModal({
           </button>
         </div>
 
-        {/* Content */}
+        {/* Content - Always use split diff viewer */}
         <div className="flex-1 overflow-hidden">
-          {fileContent ? (
-            <FullFileSplitDiffViewer
-              oldContent={fileContent.oldContent}
-              newContent={fileContent.newContent}
-              fileName={fileName}
-              isLoading={isLoading}
-            />
-          ) : (
-            <DiffViewer diff={diff} isLoading={isLoading} />
-          )}
+          <FullFileSplitDiffViewer
+            oldContent={fileContent?.oldContent || ''}
+            newContent={fileContent?.newContent || ''}
+            fileName={fileName}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>

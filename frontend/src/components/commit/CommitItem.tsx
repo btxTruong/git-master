@@ -53,9 +53,7 @@ export const CommitItem = memo(function CommitItem({
 
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           {/* Hash and refs - show on large screens always, on small screens only when selected */}
-          <div
-            className={`flex items-center gap-2 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
-          >
+          <div className={`items-center gap-2 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}>
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
@@ -86,7 +84,7 @@ export const CommitItem = memo(function CommitItem({
 
           {/* Author and timestamp - show on large screens always, on small screens only when selected */}
           <div
-            className={`flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
+            className={`items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap ${isSelected ? 'flex' : 'hidden lg:flex'}`}
           >
             <div className="flex items-center gap-1.5 font-medium min-w-0">
               <User className="w-3.5 h-3.5 shrink-0" />
