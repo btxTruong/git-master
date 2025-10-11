@@ -4,7 +4,7 @@ import { useCommitStore } from '@/stores/commitStore';
 import { CommitList } from '@/components/commit/CommitList';
 import { CommitSearch } from '@/components/commit/CommitSearch';
 import { FileTreePanel } from '@/components/commit/FileTreePanel';
-import { DiffViewer } from '@/components/diff/DiffViewer';
+import { DiffModal } from '@/components/commit/DiffModal';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FolderOpen, History } from 'lucide-react';
 import { GetCommitDetail } from '../../wailsjs/go/services/RepositoryService';
@@ -51,6 +51,10 @@ function HistoryView() {
 
   const handleFileSelect = (file: models.FileChange) => {
     setSelectedFile(file);
+  };
+
+  const handleCloseDiffModal = () => {
+    setSelectedFile(null);
   };
 
   // Parse the diff for the selected file
@@ -100,18 +104,14 @@ function HistoryView() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Commit list */}
         <div
-          className={`${
-            selectedCommit ? (selectedFile ? 'w-1/4' : 'w-1/2') : 'w-full'
-          } overflow-hidden border-r border-gray-200 dark:border-gray-700`}
+          className={`${selectedCommit ? 'w-1/2' : 'w-full'} overflow-hidden border-r border-gray-200 dark:border-gray-700`}
         >
           <CommitList />
         </div>
 
-        {/* Middle: File tree panel */}
+        {/* Right: File tree panel */}
         {selectedCommit && (
-          <div
-            className={`${selectedFile ? 'w-1/4' : 'w-1/2'} overflow-hidden border-r border-gray-200 dark:border-gray-700`}
-          >
+          <div className="w-1/2 overflow-hidden">
             {isLoadingDetail ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-gray-500 dark:text-gray-400">Loading commit details...</div>
@@ -125,14 +125,16 @@ function HistoryView() {
             )}
           </div>
         )}
-
-        {/* Right: Diff viewer */}
-        {selectedCommit && selectedFile && (
-          <div className="w-1/2 overflow-hidden">
-            <DiffViewer diff={selectedFileDiff} isLoading={isLoadingDetail} />
-          </div>
-        )}
       </div>
+
+      {/* Diff Modal */}
+      <DiffModal
+        isOpen={!!selectedFile}
+        onClose={handleCloseDiffModal}
+        selectedFile={selectedFile}
+        diff={selectedFileDiff}
+        isLoading={isLoadingDetail}
+      />
     </div>
   );
 }

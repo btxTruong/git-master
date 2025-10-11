@@ -62,9 +62,9 @@ export function UnifiedDiff({ fileDiff }: UnifiedDiffProps) {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 px-4 overflow-x-auto">
+                  <div className="flex-1 px-4">
                     <span className={`inline-block w-4 font-bold ${prefixColor}`}>{prefix}</span>
-                    <span className="whitespace-pre">{line.content}</span>
+                    <span className="whitespace-pre-wrap break-all">{line.content}</span>
                   </div>
                 </div>
               );

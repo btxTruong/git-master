@@ -78,7 +78,7 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
                   <div className="w-12 text-right px-2 text-xs text-gray-500 select-none border-r border-gray-200">
                     {line.oldLineNumber ?? ''}
                   </div>
-                  <div className="flex-1 px-4 whitespace-pre overflow-x-auto">{line.content}</div>
+                  <div className="flex-1 px-4 whitespace-pre-wrap break-all">{line.content}</div>
                 </div>
               ))}
           </div>
@@ -106,7 +106,7 @@ export function SplitDiff({ fileDiff }: SplitDiffProps) {
                   <div className="w-12 text-right px-2 text-xs text-gray-500 select-none border-r border-gray-200">
                     {line.newLineNumber ?? ''}
                   </div>
-                  <div className="flex-1 px-4 whitespace-pre overflow-x-auto">{line.content}</div>
+                  <div className="flex-1 px-4 whitespace-pre-wrap break-all">{line.content}</div>
                 </div>
               ))}
           </div>

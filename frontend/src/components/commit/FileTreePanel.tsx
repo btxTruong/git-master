@@ -9,12 +9,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import type { models } from '../../../wailsjs/go/models';
-import {
-  buildFileTree,
-  getFileStatusColor,
-  getFileStatusLabel,
-  type TreeNode,
-} from '@/utils/fileTree';
+import { buildFileTree, getFileStatusColor, type TreeNode } from '@/utils/fileTree';
 
 interface FileTreePanelProps {
   commitDetail: models.CommitDetail | null;
@@ -128,7 +123,6 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
 
       if (node.file) {
         const statusColor = getFileStatusColor(node.file.status);
-        const statusLabel = getFileStatusLabel(node.file.status);
 
         return (
           <div
@@ -145,12 +139,16 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
             style={{ paddingLeft: `${depth * 16 + 12}px` }}
           >
             <div className="w-4 h-4" /> {/* Spacer for chevron alignment */}
-            <File className={`w-4 h-4 ${statusColor} flex-shrink-0`} />
-            <span className={`text-sm ${statusColor} flex-1 min-w-0 truncate`}>{node.name}</span>
+            <span
+              className={`flex items-center justify-center w-5 h-5 rounded text-xs font-bold flex-shrink-0 ${statusColor}`}
+            >
+              {node.file.status}
+            </span>
+            <File className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">
+              {node.name}
+            </span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${statusColor}`}>
-                {statusLabel[0]}
-              </span>
               {node.file.insertions > 0 && (
                 <span className="text-xs text-green-600 dark:text-green-400 font-mono">
                   +{node.file.insertions}

@@ -29,8 +29,8 @@ export const CommitItem = memo(function CommitItem({
     <div
       onClick={onClick}
       className={`
-        group relative h-[88px] px-4 py-3 cursor-pointer transition-all duration-200
-        border-b border-gray-200 dark:border-gray-700 overflow-hidden
+        group relative ${isSelected ? 'min-h-[88px]' : 'h-[88px]'} px-4 py-3 cursor-pointer transition-all duration-200
+        border-b border-gray-200 dark:border-gray-700
         ${
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
@@ -48,13 +48,13 @@ export const CommitItem = memo(function CommitItem({
           />
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          <div className="h-5 flex items-center gap-2 flex-nowrap overflow-hidden shrink-0">
-            <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
             {commit.refs && commit.refs.length > 0 && (
-              <div className="flex gap-1.5 flex-nowrap overflow-hidden">
+              <div className="flex gap-1.5 flex-wrap">
                 {commit.refs.map((ref, idx) => (
                   <span
                     key={idx}
@@ -69,18 +69,26 @@ export const CommitItem = memo(function CommitItem({
             )}
           </div>
 
-          <div className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-3 break-words overflow-hidden">
+          <div
+            className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
+              isSelected ? 'break-words' : 'truncate'
+            }`}
+          >
             {commit.shortMessage || commit.message}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 shrink-0">
-            <div className="flex items-center gap-1.5 font-medium">
-              <User className="w-3.5 h-3.5" />
+          <div
+            className={`flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 ${
+              isSelected ? 'flex-wrap' : 'overflow-hidden'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 font-medium min-w-0">
+              <User className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{commit.author.name}</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span className="shrink-0">{formattedDate}</span>
+              <span className="whitespace-nowrap">{formattedDate}</span>
             </div>
           </div>
         </div>
