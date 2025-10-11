@@ -8,7 +8,7 @@ import { useMergeStore } from '@/stores/mergeStore';
 import { useBranchStore } from '@/stores/branchStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 
-export function MergeView() {
+function MergeView() {
   const { currentRepository } = useRepositoryStore();
   const { currentBranch } = useBranchStore();
   const {
@@ -297,3 +297,5 @@ export function MergeView() {
     </div>
   );
 }
+
+export default MergeView;

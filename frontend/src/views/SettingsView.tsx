@@ -32,7 +32,7 @@ const TABS: TabConfig[] = [
  * SettingsView component
  * Displays application settings organized in tabs
  */
-export function SettingsView() {
+function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
 
   return (
@@ -438,3 +438,4 @@ function AdvancedSettings() {
     </div>
   );
 }
+export default SettingsView;

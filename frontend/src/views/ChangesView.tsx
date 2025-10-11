@@ -1,4 +1,4 @@
-export function ChangesView() {
+function ChangesView() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900">Working Changes</h1>
@@ -6,3 +6,5 @@ export function ChangesView() {
     </div>
   );
 }
+
+export default ChangesView;

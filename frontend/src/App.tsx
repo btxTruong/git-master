@@ -1,14 +1,18 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { GlobalShortcuts } from '@/components/common/GlobalShortcuts';
-import { HistoryView } from '@/views/HistoryView';
-import { ChangesView } from '@/views/ChangesView';
-import { BranchesView } from '@/views/BranchesView';
-import { MergeView } from '@/views/MergeView';
-import { SettingsView } from '@/views/SettingsView';
+import { Spinner } from '@/components/common/Spinner';
 import { useTheme } from '@/hooks/useTheme';
+
+// Code-split route components
+const HistoryView = lazy(() => import('@/views/HistoryView'));
+const ChangesView = lazy(() => import('@/views/ChangesView'));
+const BranchesView = lazy(() => import('@/views/BranchesView'));
+const MergeView = lazy(() => import('@/views/MergeView'));
+const SettingsView = lazy(() => import('@/views/SettingsView'));
 
 function App() {
   // Initialize theme
@@ -22,15 +26,17 @@ function App() {
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-auto bg-white dark:bg-gray-900">
-            <Routes>
-              <Route path="/" element={<Navigate to="/history" replace />} />
-              <Route path="/history" element={<HistoryView />} />
-              <Route path="/changes" element={<ChangesView />} />
-              <Route path="/branches" element={<BranchesView />} />
-              <Route path="/merge" element={<MergeView />} />
-              <Route path="/settings" element={<SettingsView />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/history" replace />} />
+                <Route path="/history" element={<HistoryView />} />
+                <Route path="/changes" element={<ChangesView />} />
+                <Route path="/branches" element={<BranchesView />} />
+                <Route path="/merge" element={<MergeView />} />
+                <Route path="/settings" element={<SettingsView />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
       </div>
@@ -84,12 +90,20 @@ function App() {
   );
 }
 
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Spinner size="lg" />
+    </div>
+  );
+}
+
 function NotFound() {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">404</h1>
-        <p className="text-gray-600 mt-2">Page not found</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">404</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Page not found</p>
       </div>
     </div>
   );
