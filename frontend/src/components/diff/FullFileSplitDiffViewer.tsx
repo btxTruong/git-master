@@ -3,6 +3,10 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
 import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
 
+const ADDED_LINE_COLOR = 'rgb(175, 244, 192)';
+const UPDATE_LINE_COLOR = 'rgb(231, 236, 250)';
+const HIGHLIGHT_UPDATE_TEXT_COLOR = 'rgb(193, 211, 242)';
+
 interface FullFileSplitDiffViewerProps {
   oldContent: string;
   newContent: string;
@@ -12,6 +16,8 @@ interface FullFileSplitDiffViewerProps {
 
 interface DiffLine extends DiffChange {
   segments?: InlineDiffSegment[];
+  correlationColor?: string;
+  isSpacer?: boolean;
 }
 
 export function FullFileSplitDiffViewer({
@@ -24,7 +30,7 @@ export function FullFileSplitDiffViewer({
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Compute diff with inline highlights and track change groups
+  // Compute diff with inline highlights, spacers, and correlation colors
   const { oldLines, newLines, changeIndices } = useMemo(() => {
     if (!oldContent && !newContent) {
       return { oldLines: [], newLines: [], changeIndices: [] };
@@ -57,10 +63,14 @@ export function FullFileSplitDiffViewer({
 
         enhancedChanges[deleteIdx].segments = oldSegments;
         enhancedChanges[addIdx].segments = newSegments;
+
+        // Mark these as correlated updates
+        enhancedChanges[deleteIdx].correlationColor = UPDATE_LINE_COLOR;
+        enhancedChanges[addIdx].correlationColor = UPDATE_LINE_COLOR;
       }
     });
 
-    // Separate into old and new lines and identify change blocks
+    // Build aligned old and new lines with spacers
     const oldLines: DiffLine[] = [];
     const newLines: DiffLine[] = [];
     const changeBlockIndices: number[] = [];
@@ -74,11 +84,27 @@ export function FullFileSplitDiffViewer({
           blockStartIndex = oldLines.length;
         }
         oldLines.push(change);
+        // Add spacer in new file for deleted line
+        newLines.push({
+          type: 'context',
+          oldLineNumber: null,
+          newLineNumber: null,
+          content: '',
+          isSpacer: true,
+        });
       } else if (change.type === 'add') {
         if (!inChangeBlock) {
           inChangeBlock = true;
           blockStartIndex = oldLines.length;
         }
+        // Add spacer in old file for added line
+        oldLines.push({
+          type: 'context',
+          oldLineNumber: null,
+          newLineNumber: null,
+          content: '',
+          isSpacer: true,
+        });
         newLines.push(change);
       } else {
         // Context line - end change block if active
@@ -187,6 +213,8 @@ export function FullFileSplitDiffViewer({
   const totalChanges = changeIndices.length;
 
   const renderLineContent = (line: DiffLine, side: 'old' | 'new') => {
+    const isUpdate = line.correlationColor === UPDATE_LINE_COLOR;
+
     if (line.segments) {
       const isDelete = side === 'old' && line.type === 'delete';
       const isAdd = side === 'new' && line.type === 'add';
@@ -194,16 +222,17 @@ export function FullFileSplitDiffViewer({
       return (
         <span className="whitespace-pre-wrap break-all">
           {line.segments.map((segment, i) => {
-            if (segment.type === 'delete' && isDelete) {
+            if (segment.type === 'delete' && isDelete && isUpdate) {
               return (
-                <span key={i} className="bg-red-300 dark:bg-red-800">
+                <span key={i} style={{ backgroundColor: HIGHLIGHT_UPDATE_TEXT_COLOR }}>
                   {segment.text}
                 </span>
               );
             }
             if (segment.type === 'insert' && isAdd) {
+              const bgColor = isUpdate ? HIGHLIGHT_UPDATE_TEXT_COLOR : ADDED_LINE_COLOR;
               return (
-                <span key={i} className="bg-green-300 dark:bg-green-800">
+                <span key={i} style={{ backgroundColor: bgColor }}>
                   {segment.text}
                 </span>
               );
@@ -282,25 +311,41 @@ export function FullFileSplitDiffViewer({
               </div>
             )}
             {oldLines.map((line, index) => {
-              const bgColor =
-                line.type === 'delete'
-                  ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
-                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-              const textColor =
-                line.type === 'delete'
-                  ? 'text-red-900 dark:text-red-100'
-                  : 'text-gray-800 dark:text-gray-200';
+              let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+              let textColor = 'text-gray-800 dark:text-gray-200';
+
+              if (line.isSpacer) {
+                bgColor = '';
+                textColor = '';
+              } else if (line.type === 'delete') {
+                bgColor = 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+                textColor = 'text-red-900 dark:text-red-100';
+              }
+
+              const correlationBarStyle = line.correlationColor
+                ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
+                : {};
+
+              const inlineStyle = line.isSpacer
+                ? { backgroundColor: ADDED_LINE_COLOR, minHeight: '1.5rem' }
+                : {};
 
               return (
                 <div
                   key={index}
                   data-line-index={index}
                   className={`flex ${bgColor} ${textColor} transition-colors`}
+                  style={inlineStyle}
                 >
-                  <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
+                  <div className="flex-1 px-4 py-0.5">
+                    {line.isSpacer ? '' : renderLineContent(line, 'old')}
+                  </div>
+                  <div
+                    className="w-12 text-left px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-l border-gray-200 dark:border-gray-700"
+                    style={correlationBarStyle}
+                  >
                     {line.oldLineNumber ?? ''}
                   </div>
-                  <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'old')}</div>
                 </div>
               );
             })}
@@ -321,21 +366,41 @@ export function FullFileSplitDiffViewer({
               </div>
             )}
             {newLines.map((line, index) => {
-              const bgColor =
-                line.type === 'add'
-                  ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30'
-                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-              const textColor =
-                line.type === 'add'
-                  ? 'text-green-900 dark:text-green-100'
-                  : 'text-gray-800 dark:text-gray-200';
+              let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+              let textColor = 'text-gray-800 dark:text-gray-200';
+
+              if (line.isSpacer) {
+                bgColor = '';
+                textColor = '';
+              } else if (line.type === 'add') {
+                textColor = 'text-gray-800 dark:text-gray-200';
+              }
+
+              const correlationBarStyle = line.correlationColor
+                ? { borderRightWidth: '3px', borderRightColor: line.correlationColor }
+                : {};
+
+              const inlineStyle = line.isSpacer
+                ? { backgroundColor: 'rgb(254, 226, 226)', minHeight: '1.5rem' }
+                : line.type === 'add'
+                  ? { backgroundColor: ADDED_LINE_COLOR }
+                  : {};
 
               return (
-                <div key={index} className={`flex ${bgColor} ${textColor} transition-colors`}>
-                  <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
+                <div
+                  key={index}
+                  className={`flex ${bgColor} ${textColor} transition-colors`}
+                  style={inlineStyle}
+                >
+                  <div
+                    className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700"
+                    style={correlationBarStyle}
+                  >
                     {line.newLineNumber ?? ''}
                   </div>
-                  <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'new')}</div>
+                  <div className="flex-1 px-4 py-0.5">
+                    {line.isSpacer ? '' : renderLineContent(line, 'new')}
+                  </div>
                 </div>
               );
             })}
