@@ -40,6 +40,7 @@ export function FullFileSplitDiffViewer({
   const [rightScrollWidth, setRightScrollWidth] = useState(0);
   const [leftClientWidth, setLeftClientWidth] = useState(0);
   const [rightClientWidth, setRightClientWidth] = useState(0);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
 
   // Compute diff with inline highlights, spacers, and correlation colors
   const { oldLines, newLines, changeIndices } = useMemo(() => {
@@ -175,10 +176,22 @@ export function FullFileSplitDiffViewer({
       rightPane.scrollTop = scrollContainer.scrollTop;
     };
 
+    const updateScrollbarWidth = () => {
+      if (scrollContainer) {
+        const width = scrollContainer.offsetWidth - scrollContainer.clientWidth;
+        setScrollbarWidth(width);
+      }
+    };
+
+    updateScrollbarWidth();
     scrollContainer.addEventListener('scroll', handleScroll);
+
+    const resizeObserver = new ResizeObserver(updateScrollbarWidth);
+    resizeObserver.observe(scrollContainer);
 
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
+      resizeObserver.disconnect();
     };
   }, []);
 
@@ -448,7 +461,7 @@ export function FullFileSplitDiffViewer({
               ref={leftPaneRef}
               className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
             >
-              <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
+              <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold z-10">
                 Old: {fileName}
                 {!oldContent && newContent ? ' (no previous version)' : ''}
               </div>
@@ -625,15 +638,11 @@ export function FullFileSplitDiffViewer({
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
         <div
           className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600"
-          style={{ overflowY: 'auto', scrollbarGutter: 'stable' }}
+          style={{ paddingRight: `${scrollbarWidth}px` }}
         >
           {/* Left pane footer: scrollbar + line number spacer */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
-            <div
-              ref={leftProxyRef}
-              className="flex-1 h-4 overflow-x-auto overflow-y-hidden"
-              style={{ scrollbarGutter: 'stable' }}
-            >
+            <div ref={leftProxyRef} className="flex-1 h-4 overflow-x-auto overflow-y-hidden">
               {leftScrollWidth > leftClientWidth && (
                 <div style={{ width: leftScrollWidth, height: '1px' }} />
               )}
@@ -648,11 +657,7 @@ export function FullFileSplitDiffViewer({
             <div className="w-12 flex-shrink-0 overflow-hidden border-r border-gray-200 dark:border-gray-700">
               <div className="h-4" />
             </div>
-            <div
-              ref={rightProxyRef}
-              className="flex-1 h-4 overflow-x-auto overflow-y-hidden"
-              style={{ scrollbarGutter: 'stable' }}
-            >
+            <div ref={rightProxyRef} className="flex-1 h-4 overflow-x-auto overflow-y-hidden">
               {rightScrollWidth > rightClientWidth && (
                 <div style={{ width: rightScrollWidth, height: '1px' }} />
               )}
@@ -667,7 +672,6 @@ export function FullFileSplitDiffViewer({
           <div
             ref={rightProxyRef}
             className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
-            style={{ scrollbarGutter: 'stable' }}
           >
             <div style={{ width: rightScrollWidth, height: '1px' }} />
           </div>
