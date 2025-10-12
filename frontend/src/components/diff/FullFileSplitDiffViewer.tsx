@@ -29,6 +29,17 @@ export function FullFileSplitDiffViewer({
   const leftPaneRef = useRef<HTMLDivElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const leftContentRef = useRef<HTMLDivElement>(null);
+  const rightContentRef = useRef<HTMLDivElement>(null);
+  const leftProxyRef = useRef<HTMLDivElement>(null);
+  const rightProxyRef = useRef<HTMLDivElement>(null);
+  const isSyncingLeft = useRef(false);
+  const isSyncingRight = useRef(false);
+
+  const [leftScrollWidth, setLeftScrollWidth] = useState(0);
+  const [rightScrollWidth, setRightScrollWidth] = useState(0);
+  const [leftClientWidth, setLeftClientWidth] = useState(0);
+  const [rightClientWidth, setRightClientWidth] = useState(0);
 
   // Compute diff with inline highlights, spacers, and correlation colors
   const { oldLines, newLines, changeIndices } = useMemo(() => {
@@ -168,6 +179,114 @@ export function FullFileSplitDiffViewer({
 
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Measure content dimensions for proxy scrollbar sizing
+  useEffect(() => {
+    const leftContent = leftContentRef.current;
+    const rightContent = rightContentRef.current;
+
+    if (!leftContent || !rightContent) return;
+
+    const updateDimensions = () => {
+      if (leftContent) {
+        setLeftScrollWidth(leftContent.scrollWidth);
+        setLeftClientWidth(leftContent.clientWidth);
+      }
+      if (rightContent) {
+        setRightScrollWidth(rightContent.scrollWidth);
+        setRightClientWidth(rightContent.clientWidth);
+      }
+    };
+
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateDimensions);
+    });
+
+    resizeObserver.observe(leftContent);
+    resizeObserver.observe(rightContent);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Left pane horizontal scroll synchronization
+  useEffect(() => {
+    const leftContent = leftContentRef.current;
+    const leftProxy = leftProxyRef.current;
+
+    if (!leftContent || !leftProxy) return;
+
+    const syncContentToProxy = () => {
+      if (isSyncingLeft.current) return;
+      isSyncingLeft.current = true;
+      requestAnimationFrame(() => {
+        if (leftProxy) {
+          leftProxy.scrollLeft = leftContent.scrollLeft;
+        }
+        isSyncingLeft.current = false;
+      });
+    };
+
+    const syncProxyToContent = () => {
+      if (isSyncingLeft.current) return;
+      isSyncingLeft.current = true;
+      requestAnimationFrame(() => {
+        if (leftContent) {
+          leftContent.scrollLeft = leftProxy.scrollLeft;
+        }
+        isSyncingLeft.current = false;
+      });
+    };
+
+    leftContent.addEventListener('scroll', syncContentToProxy, { passive: true });
+    leftProxy.addEventListener('scroll', syncProxyToContent, { passive: true });
+
+    return () => {
+      leftContent.removeEventListener('scroll', syncContentToProxy);
+      leftProxy.removeEventListener('scroll', syncProxyToContent);
+    };
+  }, []);
+
+  // Right pane horizontal scroll synchronization
+  useEffect(() => {
+    const rightContent = rightContentRef.current;
+    const rightProxy = rightProxyRef.current;
+
+    if (!rightContent || !rightProxy) return;
+
+    const syncContentToProxy = () => {
+      if (isSyncingRight.current) return;
+      isSyncingRight.current = true;
+      requestAnimationFrame(() => {
+        if (rightProxy) {
+          rightProxy.scrollLeft = rightContent.scrollLeft;
+        }
+        isSyncingRight.current = false;
+      });
+    };
+
+    const syncProxyToContent = () => {
+      if (isSyncingRight.current) return;
+      isSyncingRight.current = true;
+      requestAnimationFrame(() => {
+        if (rightContent) {
+          rightContent.scrollLeft = rightProxy.scrollLeft;
+        }
+        isSyncingRight.current = false;
+      });
+    };
+
+    rightContent.addEventListener('scroll', syncContentToProxy, { passive: true });
+    rightProxy.addEventListener('scroll', syncProxyToContent, { passive: true });
+
+    return () => {
+      rightContent.removeEventListener('scroll', syncContentToProxy);
+      rightProxy.removeEventListener('scroll', syncProxyToContent);
     };
   }, []);
 
@@ -332,7 +451,7 @@ export function FullFileSplitDiffViewer({
                 </div>
               )}
               <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 overflow-x-scroll overflow-y-hidden">
+                <div ref={leftContentRef} className="flex-1 overflow-x-scroll overflow-y-hidden">
                   <div className="min-w-0">
                     {oldLines.map((line, index) => {
                       let bgColor =
@@ -448,7 +567,7 @@ export function FullFileSplitDiffViewer({
                   );
                 })}
               </div>
-              <div className="flex-1 overflow-x-scroll overflow-y-hidden">
+              <div ref={rightContentRef} className="flex-1 overflow-x-scroll overflow-y-hidden">
                 <div className="min-w-0">
                   {newLines.map((line, index) => {
                     let bgColor =
@@ -488,6 +607,50 @@ export function FullFileSplitDiffViewer({
           </div>
         </div>
       </div>
+
+      {/* Sticky horizontal scrollbars footer */}
+      {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
+        <div className="grid grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600">
+          {/* Left proxy scrollbar */}
+          {leftScrollWidth > leftClientWidth && (
+            <div
+              ref={leftProxyRef}
+              className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
+              style={{ scrollbarGutter: 'stable' }}
+            >
+              <div style={{ width: leftScrollWidth, height: '1px' }} />
+            </div>
+          )}
+          {leftScrollWidth <= leftClientWidth && <div className="h-4 bg-white dark:bg-gray-900" />}
+
+          {/* Right proxy scrollbar */}
+          {rightScrollWidth > rightClientWidth && (
+            <div
+              ref={rightProxyRef}
+              className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
+              style={{ scrollbarGutter: 'stable' }}
+            >
+              <div style={{ width: rightScrollWidth, height: '1px' }} />
+            </div>
+          )}
+          {rightScrollWidth <= rightClientWidth && (
+            <div className="h-4 bg-white dark:bg-gray-900" />
+          )}
+        </div>
+      )}
+
+      {/* Single proxy scrollbar for new files */}
+      {isNewFile && rightScrollWidth > rightClientWidth && (
+        <div className="bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600">
+          <div
+            ref={rightProxyRef}
+            className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
+            style={{ scrollbarGutter: 'stable' }}
+          >
+            <div style={{ width: rightScrollWidth, height: '1px' }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
