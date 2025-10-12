@@ -331,49 +331,73 @@ export function FullFileSplitDiffViewer({
                   File did not exist in the parent commit.
                 </div>
               )}
-              <div className="overflow-x-auto overflow-y-hidden flex-1">
-                {oldLines.map((line, index) => {
-                  let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-                  let textColor = 'text-gray-800 dark:text-gray-200';
+              <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 overflow-x-scroll overflow-y-hidden">
+                  <div className="min-w-0">
+                    {oldLines.map((line, index) => {
+                      let bgColor =
+                        'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+                      let textColor = 'text-gray-800 dark:text-gray-200';
 
-                  if (line.isSpacer) {
-                    bgColor = '';
-                    textColor = '';
-                  } else if (line.type === 'delete') {
-                    bgColor =
-                      'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
-                    textColor = 'text-red-900 dark:text-red-100';
-                  }
+                      if (line.isSpacer) {
+                        bgColor = '';
+                        textColor = '';
+                      } else if (line.type === 'delete') {
+                        bgColor =
+                          'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+                        textColor = 'text-red-900 dark:text-red-100';
+                      }
 
-                  const correlationBarStyle = line.correlationColor
-                    ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
-                    : {};
+                      const inlineStyle = line.isSpacer
+                        ? { backgroundColor: ADDED_LINE_COLOR }
+                        : {};
 
-                  const inlineStyle = line.isSpacer ? { backgroundColor: ADDED_LINE_COLOR } : {};
+                      return (
+                        <div
+                          key={index}
+                          data-line-index={index}
+                          className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                          style={inlineStyle}
+                        >
+                          {line.isSpacer ? (
+                            <span className="whitespace-pre">&nbsp;</span>
+                          ) : (
+                            renderLineContent(line, 'old')
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="w-12 flex-shrink-0 overflow-hidden">
+                  {oldLines.map((line, index) => {
+                    let bgColor =
+                      'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
 
-                  return (
-                    <div
-                      key={index}
-                      data-line-index={index}
-                      className={`flex ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
-                      style={inlineStyle}
-                    >
-                      <div className="flex-1 px-4 py-0.5 min-w-0">
-                        {line.isSpacer ? (
-                          <span className="whitespace-pre">&nbsp;</span>
-                        ) : (
-                          renderLineContent(line, 'old')
-                        )}
-                      </div>
+                    if (line.isSpacer) {
+                      bgColor = '';
+                    } else if (line.type === 'delete') {
+                      bgColor =
+                        'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+                    }
+
+                    const correlationBarStyle = line.correlationColor
+                      ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
+                      : {};
+
+                    const inlineStyle = line.isSpacer ? { backgroundColor: ADDED_LINE_COLOR } : {};
+
+                    return (
                       <div
-                        className="w-12 flex-shrink-0 text-left px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-l border-gray-200 dark:border-gray-700"
-                        style={correlationBarStyle}
+                        key={index}
+                        className={`text-left px-2 py-0.5 text-xs ${bgColor} text-gray-500 dark:text-gray-500 select-none border-l border-gray-200 dark:border-gray-700 min-h-[1.5rem]`}
+                        style={{ ...inlineStyle, ...correlationBarStyle }}
                       >
                         {line.oldLineNumber ?? ''}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -392,50 +416,74 @@ export function FullFileSplitDiffViewer({
                 File was deleted in this commit.
               </div>
             )}
-            <div className="overflow-x-auto overflow-y-hidden flex-1">
-              {newLines.map((line, index) => {
-                let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-                let textColor = 'text-gray-800 dark:text-gray-200';
+            <div className="flex-1 flex overflow-hidden">
+              <div className="w-12 flex-shrink-0 overflow-hidden">
+                {newLines.map((line, index) => {
+                  let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
 
-                if (line.isSpacer) {
-                  bgColor = '';
-                  textColor = '';
-                } else if (line.type === 'add' || isNewFile) {
-                  textColor = 'text-gray-800 dark:text-gray-200';
-                }
+                  if (line.isSpacer) {
+                    bgColor = '';
+                  } else if (line.type === 'add' || isNewFile) {
+                    bgColor = '';
+                  }
 
-                const correlationBarStyle = line.correlationColor
-                  ? { borderRightWidth: '3px', borderRightColor: line.correlationColor }
-                  : {};
-
-                const inlineStyle = line.isSpacer
-                  ? { backgroundColor: 'rgb(254, 226, 226)' }
-                  : line.type === 'add' || isNewFile
-                    ? { backgroundColor: ADDED_LINE_COLOR }
+                  const correlationBarStyle = line.correlationColor
+                    ? { borderRightWidth: '3px', borderRightColor: line.correlationColor }
                     : {};
 
-                return (
-                  <div
-                    key={index}
-                    className={`flex ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
-                    style={inlineStyle}
-                  >
+                  const inlineStyle = line.isSpacer
+                    ? { backgroundColor: 'rgb(254, 226, 226)' }
+                    : line.type === 'add' || isNewFile
+                      ? { backgroundColor: ADDED_LINE_COLOR }
+                      : {};
+
+                  return (
                     <div
-                      className="w-12 flex-shrink-0 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700"
-                      style={correlationBarStyle}
+                      key={index}
+                      className={`text-right px-2 py-0.5 text-xs ${bgColor} text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700 min-h-[1.5rem]`}
+                      style={{ ...inlineStyle, ...correlationBarStyle }}
                     >
                       {line.newLineNumber ?? ''}
                     </div>
-                    <div className="flex-1 px-4 py-0.5 min-w-0">
-                      {line.isSpacer ? (
-                        <span className="whitespace-pre">&nbsp;</span>
-                      ) : (
-                        renderLineContent(line, 'new')
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <div className="flex-1 overflow-x-scroll overflow-y-hidden">
+                <div className="min-w-0">
+                  {newLines.map((line, index) => {
+                    let bgColor =
+                      'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+                    let textColor = 'text-gray-800 dark:text-gray-200';
+
+                    if (line.isSpacer) {
+                      bgColor = '';
+                      textColor = '';
+                    } else if (line.type === 'add' || isNewFile) {
+                      textColor = 'text-gray-800 dark:text-gray-200';
+                    }
+
+                    const inlineStyle = line.isSpacer
+                      ? { backgroundColor: 'rgb(254, 226, 226)' }
+                      : line.type === 'add' || isNewFile
+                        ? { backgroundColor: ADDED_LINE_COLOR }
+                        : {};
+
+                    return (
+                      <div
+                        key={index}
+                        className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                        style={inlineStyle}
+                      >
+                        {line.isSpacer ? (
+                          <span className="whitespace-pre">&nbsp;</span>
+                        ) : (
+                          renderLineContent(line, 'new')
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
