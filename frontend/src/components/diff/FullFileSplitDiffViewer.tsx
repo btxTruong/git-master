@@ -401,7 +401,7 @@ export function FullFileSplitDiffViewer({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="p-4 text-center text-gray-500 dark:text-gray-400">Loading full file...</div>
+        <div className="p-4 text-center text-gray-500 dark:text-gray-400">Loading file...</div>
       </div>
     );
   }
@@ -418,7 +418,7 @@ export function FullFileSplitDiffViewer({
   const isNewFile = !oldContent && newContent;
 
   return (
-    <div className="h-full flex flex-col pb-8">
+    <div className="h-full flex flex-col pb-8 bg-gray-200">
       {/* Navigation buttons */}
       {!isNewFile && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -549,7 +549,7 @@ export function FullFileSplitDiffViewer({
             ref={rightPaneRef}
             className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
           >
-            <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold border-b border-green-200 dark:border-green-800 z-10">
+            <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold z-10">
               {isNewFile ? `New File: ${fileName}` : `New: ${fileName}`}
               {oldContent && !newContent ? ' (deleted)' : ''}
             </div>
@@ -637,7 +637,7 @@ export function FullFileSplitDiffViewer({
       {/* Sticky horizontal scrollbars footer */}
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
         <div
-          className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600"
+          className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700"
           style={{ paddingRight: `${scrollbarWidth}px` }}
         >
           {/* Left pane footer: scrollbar + line number spacer */}
