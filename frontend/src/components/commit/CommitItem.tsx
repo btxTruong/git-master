@@ -72,9 +72,7 @@ export const CommitItem = memo(function CommitItem({
 
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           {/* Hash and refs - always render but control visibility with max-lg:hidden */}
-          <div
-            className={`flex items-center gap-2 flex-wrap ${isSelected ? '' : 'max-lg:hidden'}`}
-          >
+          <div className={`flex items-center gap-2 flex-wrap ${isSelected ? '' : 'max-lg:hidden'}`}>
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
@@ -97,7 +95,9 @@ export const CommitItem = memo(function CommitItem({
           {/* Commit message - truncate unless selected or large screen */}
           <div
             className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${
-              isSelected ? 'whitespace-normal break-words' : 'truncate lg:whitespace-normal lg:break-words'
+              isSelected
+                ? 'whitespace-normal break-words'
+                : 'truncate lg:whitespace-normal lg:break-words'
             }`}
           >
             {commit.shortMessage || commit.message}
