@@ -1,15 +1,8 @@
 import { useState, useMemo } from 'react';
-import {
-  ChevronRight,
-  ChevronDown,
-  File,
-  Folder,
-  FolderOpen,
-  Maximize2,
-  Minimize2,
-} from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Maximize2, Minimize2 } from 'lucide-react';
 import type { models } from '../../../wailsjs/go/models';
 import { buildFileTree, getFileStatusColor, type TreeNode } from '@/utils/fileTree';
+import { getFileIcon, DEFAULT_ICON_SIZE } from '@/utils/fileIcons';
 
 interface FileTreePanelProps {
   commitDetail: models.CommitDetail | null;
@@ -158,6 +151,7 @@ export function FileTreePanel({
 
       if (node.file) {
         const statusColor = getFileStatusColor(node.file.status);
+        const FileIcon = getFileIcon(node.name);
 
         return (
           <div
@@ -179,7 +173,11 @@ export function FileTreePanel({
             >
               {node.file.status}
             </span>
-            <File className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <FileIcon
+              width={DEFAULT_ICON_SIZE}
+              height={DEFAULT_ICON_SIZE}
+              className="flex-shrink-0"
+            />
             <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">
               {node.name}
             </span>
