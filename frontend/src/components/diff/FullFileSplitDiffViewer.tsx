@@ -623,7 +623,10 @@ export function FullFileSplitDiffViewer({
 
       {/* Sticky horizontal scrollbars footer */}
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
-        <div className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600">
+        <div
+          className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600"
+          style={{ overflowY: 'auto', scrollbarGutter: 'stable' }}
+        >
           {/* Left pane footer: scrollbar + line number spacer */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
             <div
@@ -635,14 +638,14 @@ export function FullFileSplitDiffViewer({
                 <div style={{ width: leftScrollWidth, height: '1px' }} />
               )}
             </div>
-            <div className="w-12 flex-shrink-0 overflow-hidden">
+            <div className="w-12 flex-shrink-0 overflow-hidden border-l border-gray-200 dark:border-gray-700">
               <div className="h-4" />
             </div>
           </div>
 
           {/* Right pane footer: line number spacer + scrollbar */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
-            <div className="w-12 flex-shrink-0 overflow-hidden">
+            <div className="w-12 flex-shrink-0 overflow-hidden border-r border-gray-200 dark:border-gray-700">
               <div className="h-4" />
             </div>
             <div
