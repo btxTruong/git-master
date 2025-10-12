@@ -4,7 +4,7 @@ import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
 import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
 
 const ADDED_LINE_COLOR = 'rgb(175, 244, 192)';
-const UPDATE_LINE_COLOR = 'rgb(231, 236, 250)';
+const UPDATE_LINE_COLOR = 'rgb(231, 237, 250)';
 const HIGHLIGHT_UPDATE_TEXT_COLOR = 'rgb(193, 211, 242)';
 
 interface FullFileSplitDiffViewerProps {
@@ -74,52 +74,65 @@ export function FullFileSplitDiffViewer({
     const oldLines: DiffLine[] = [];
     const newLines: DiffLine[] = [];
     const changeBlockIndices: number[] = [];
-    let inChangeBlock = false;
-    let blockStartIndex = -1;
 
-    enhancedChanges.forEach((change) => {
-      if (change.type === 'delete') {
-        if (!inChangeBlock) {
-          inChangeBlock = true;
-          blockStartIndex = oldLines.length;
-        }
+    let i = 0;
+    while (i < enhancedChanges.length) {
+      const change = enhancedChanges[i];
+
+      if (change.type === 'context') {
+        // Context lines are added to both sides
         oldLines.push(change);
-        // Add spacer in new file for deleted line
-        newLines.push({
-          type: 'context',
-          oldLineNumber: null,
-          newLineNumber: null,
-          content: '',
-          isSpacer: true,
-        });
-      } else if (change.type === 'add') {
-        if (!inChangeBlock) {
-          inChangeBlock = true;
-          blockStartIndex = oldLines.length;
-        }
-        // Add spacer in old file for added line
-        oldLines.push({
-          type: 'context',
-          oldLineNumber: null,
-          newLineNumber: null,
-          content: '',
-          isSpacer: true,
-        });
         newLines.push(change);
+        i++;
       } else {
-        // Context line - end change block if active
-        if (inChangeBlock) {
-          changeBlockIndices.push(blockStartIndex);
-          inChangeBlock = false;
-        }
-        oldLines.push(change);
-        newLines.push(change);
-      }
-    });
+        // Start of a change block - collect all consecutive deletes and adds
+        const blockStartIndex = oldLines.length;
+        changeBlockIndices.push(blockStartIndex);
 
-    // Handle case where file ends with changes
-    if (inChangeBlock && blockStartIndex >= 0) {
-      changeBlockIndices.push(blockStartIndex);
+        const deleteLines: DiffLine[] = [];
+        const addLines: DiffLine[] = [];
+
+        // Collect all consecutive delete and add lines
+        while (i < enhancedChanges.length && enhancedChanges[i].type !== 'context') {
+          if (enhancedChanges[i].type === 'delete') {
+            deleteLines.push(enhancedChanges[i]);
+          } else if (enhancedChanges[i].type === 'add') {
+            addLines.push(enhancedChanges[i]);
+          }
+          i++;
+        }
+
+        // Process paired lines first
+        const pairCount = Math.min(deleteLines.length, addLines.length);
+        for (let j = 0; j < pairCount; j++) {
+          oldLines.push(deleteLines[j]);
+          newLines.push(addLines[j]);
+        }
+
+        // Add remaining deletes with spacers in new
+        for (let j = pairCount; j < deleteLines.length; j++) {
+          oldLines.push(deleteLines[j]);
+          newLines.push({
+            type: 'context',
+            oldLineNumber: null,
+            newLineNumber: null,
+            content: '',
+            isSpacer: true,
+          });
+        }
+
+        // Add remaining adds with spacers in old
+        for (let j = pairCount; j < addLines.length; j++) {
+          oldLines.push({
+            type: 'context',
+            oldLineNumber: null,
+            newLineNumber: null,
+            content: '',
+            isSpacer: true,
+          });
+          newLines.push(addLines[j]);
+        }
+      }
     }
 
     return { oldLines, newLines, changeIndices: changeBlockIndices };
@@ -220,7 +233,7 @@ export function FullFileSplitDiffViewer({
       const isAdd = side === 'new' && line.type === 'add';
 
       return (
-        <span className="whitespace-pre-wrap break-all">
+        <span className="whitespace-pre">
           {line.segments.map((segment, i) => {
             if (segment.type === 'delete' && isDelete && isUpdate) {
               return (
@@ -243,7 +256,7 @@ export function FullFileSplitDiffViewer({
       );
     }
 
-    return <span className="whitespace-pre-wrap break-all">{line.content}</span>;
+    return <span className="whitespace-pre">{line.content}</span>;
   };
 
   if (isLoading) {
@@ -262,102 +275,116 @@ export function FullFileSplitDiffViewer({
     );
   }
 
+  // Check if file is completely new (no old content)
+  const isNewFile = !oldContent && newContent;
+
   return (
     <div className="h-full flex flex-col">
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePreviousDiff}
-            disabled={currentChangeIndex === 0 || totalChanges === 0}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
-            aria-label="Previous Diff"
-          >
-            <ChevronUp className="w-4 h-4" />
-            Previous Diff
-          </button>
-          <button
-            onClick={handleNextDiff}
-            disabled={currentChangeIndex >= totalChanges - 1 || totalChanges === 0}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
-            aria-label="Next Diff"
-          >
-            <ChevronDown className="w-4 h-4" />
-            Next Diff
-          </button>
-        </div>
-        {totalChanges > 0 && (
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Change {currentChangeIndex + 1} of {totalChanges}
+      {!isNewFile && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviousDiff}
+              disabled={currentChangeIndex === 0 || totalChanges === 0}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+              aria-label="Previous Diff"
+            >
+              <ChevronUp className="w-4 h-4" />
+              Previous Diff
+            </button>
+            <button
+              onClick={handleNextDiff}
+              disabled={currentChangeIndex >= totalChanges - 1 || totalChanges === 0}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+              aria-label="Next Diff"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Next Diff
+            </button>
           </div>
-        )}
-      </div>
+          {totalChanges > 0 && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Change {currentChangeIndex + 1} of {totalChanges}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Scroll container with split panes */}
       <div ref={scrollContainerRef} className="flex-1 overflow-auto">
-        <div className="grid grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700 min-h-full">
+        <div
+          className={`${isNewFile ? '' : 'grid grid-cols-2 gap-px'} bg-gray-300 dark:bg-gray-700 min-h-full`}
+        >
           {/* Left pane: Old file */}
-          <div
-            ref={leftPaneRef}
-            className="overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm"
-          >
-            <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
-              Old: {fileName}
-              {!oldContent && newContent ? ' (no previous version)' : ''}
-            </div>
-            {oldLines.length === 0 && newLines.length > 0 && (
-              <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-                File did not exist in the parent commit.
+          {!isNewFile && (
+            <div
+              ref={leftPaneRef}
+              className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
+            >
+              <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
+                Old: {fileName}
+                {!oldContent && newContent ? ' (no previous version)' : ''}
               </div>
-            )}
-            {oldLines.map((line, index) => {
-              let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-              let textColor = 'text-gray-800 dark:text-gray-200';
-
-              if (line.isSpacer) {
-                bgColor = '';
-                textColor = '';
-              } else if (line.type === 'delete') {
-                bgColor = 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
-                textColor = 'text-red-900 dark:text-red-100';
-              }
-
-              const correlationBarStyle = line.correlationColor
-                ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
-                : {};
-
-              const inlineStyle = line.isSpacer
-                ? { backgroundColor: ADDED_LINE_COLOR, minHeight: '1.5rem' }
-                : {};
-
-              return (
-                <div
-                  key={index}
-                  data-line-index={index}
-                  className={`flex ${bgColor} ${textColor} transition-colors`}
-                  style={inlineStyle}
-                >
-                  <div className="flex-1 px-4 py-0.5">
-                    {line.isSpacer ? '' : renderLineContent(line, 'old')}
-                  </div>
-                  <div
-                    className="w-12 text-left px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-l border-gray-200 dark:border-gray-700"
-                    style={correlationBarStyle}
-                  >
-                    {line.oldLineNumber ?? ''}
-                  </div>
+              {oldLines.length === 0 && newLines.length > 0 && (
+                <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+                  File did not exist in the parent commit.
                 </div>
-              );
-            })}
-          </div>
+              )}
+              <div className="overflow-x-auto overflow-y-hidden flex-1">
+                {oldLines.map((line, index) => {
+                  let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+                  let textColor = 'text-gray-800 dark:text-gray-200';
+
+                  if (line.isSpacer) {
+                    bgColor = '';
+                    textColor = '';
+                  } else if (line.type === 'delete') {
+                    bgColor =
+                      'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+                    textColor = 'text-red-900 dark:text-red-100';
+                  }
+
+                  const correlationBarStyle = line.correlationColor
+                    ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
+                    : {};
+
+                  const inlineStyle = line.isSpacer ? { backgroundColor: ADDED_LINE_COLOR } : {};
+
+                  return (
+                    <div
+                      key={index}
+                      data-line-index={index}
+                      className={`flex ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                      style={inlineStyle}
+                    >
+                      <div className="flex-1 px-4 py-0.5 min-w-0">
+                        {line.isSpacer ? (
+                          <span className="whitespace-pre">&nbsp;</span>
+                        ) : (
+                          renderLineContent(line, 'old')
+                        )}
+                      </div>
+                      <div
+                        className="w-12 flex-shrink-0 text-left px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-l border-gray-200 dark:border-gray-700"
+                        style={correlationBarStyle}
+                      >
+                        {line.oldLineNumber ?? ''}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Right pane: New file */}
           <div
             ref={rightPaneRef}
-            className="overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm"
+            className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
           >
             <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold border-b border-green-200 dark:border-green-800 z-10">
-              New: {fileName}
+              {isNewFile ? `New File: ${fileName}` : `New: ${fileName}`}
               {oldContent && !newContent ? ' (deleted)' : ''}
             </div>
             {newLines.length === 0 && oldLines.length > 0 && (
@@ -365,45 +392,51 @@ export function FullFileSplitDiffViewer({
                 File was deleted in this commit.
               </div>
             )}
-            {newLines.map((line, index) => {
-              let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-              let textColor = 'text-gray-800 dark:text-gray-200';
+            <div className="overflow-x-auto overflow-y-hidden flex-1">
+              {newLines.map((line, index) => {
+                let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+                let textColor = 'text-gray-800 dark:text-gray-200';
 
-              if (line.isSpacer) {
-                bgColor = '';
-                textColor = '';
-              } else if (line.type === 'add') {
-                textColor = 'text-gray-800 dark:text-gray-200';
-              }
+                if (line.isSpacer) {
+                  bgColor = '';
+                  textColor = '';
+                } else if (line.type === 'add' || isNewFile) {
+                  textColor = 'text-gray-800 dark:text-gray-200';
+                }
 
-              const correlationBarStyle = line.correlationColor
-                ? { borderRightWidth: '3px', borderRightColor: line.correlationColor }
-                : {};
-
-              const inlineStyle = line.isSpacer
-                ? { backgroundColor: 'rgb(254, 226, 226)', minHeight: '1.5rem' }
-                : line.type === 'add'
-                  ? { backgroundColor: ADDED_LINE_COLOR }
+                const correlationBarStyle = line.correlationColor
+                  ? { borderRightWidth: '3px', borderRightColor: line.correlationColor }
                   : {};
 
-              return (
-                <div
-                  key={index}
-                  className={`flex ${bgColor} ${textColor} transition-colors`}
-                  style={inlineStyle}
-                >
+                const inlineStyle = line.isSpacer
+                  ? { backgroundColor: 'rgb(254, 226, 226)' }
+                  : line.type === 'add' || isNewFile
+                    ? { backgroundColor: ADDED_LINE_COLOR }
+                    : {};
+
+                return (
                   <div
-                    className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700"
-                    style={correlationBarStyle}
+                    key={index}
+                    className={`flex ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                    style={inlineStyle}
                   >
-                    {line.newLineNumber ?? ''}
+                    <div
+                      className="w-12 flex-shrink-0 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700"
+                      style={correlationBarStyle}
+                    >
+                      {line.newLineNumber ?? ''}
+                    </div>
+                    <div className="flex-1 px-4 py-0.5 min-w-0">
+                      {line.isSpacer ? (
+                        <span className="whitespace-pre">&nbsp;</span>
+                      ) : (
+                        renderLineContent(line, 'new')
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 px-4 py-0.5">
-                    {line.isSpacer ? '' : renderLineContent(line, 'new')}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
