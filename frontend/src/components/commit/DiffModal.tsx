@@ -29,7 +29,7 @@ export function DiffModal({
       onClick={onClose}
     >
       <div
-        className="w-[95vw] h-[90vh] max-w-[1800px] rounded-lg bg-white dark:bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
+        className="w-screen h-screen bg-white dark:bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

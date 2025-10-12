@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -15,6 +15,7 @@ interface FileTreePanelProps {
   commitDetail: models.CommitDetail | null;
   onFileSelect: (file: models.FileChange) => void;
   selectedFile: models.FileChange | null;
+  repositoryName?: string;
 }
 
 // Helper to get all folder paths from tree
@@ -36,29 +37,53 @@ function getAllFolderPaths(nodes: TreeNode[]): string[] {
   return paths;
 }
 
-export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: FileTreePanelProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-
+export function FileTreePanel({
+  commitDetail,
+  onFileSelect,
+  selectedFile,
+  repositoryName,
+}: FileTreePanelProps) {
   const fileTree = useMemo(() => {
     if (!commitDetail || !commitDetail.files) return [];
-    return buildFileTree(commitDetail.files);
-  }, [commitDetail]);
+    const tree = buildFileTree(commitDetail.files);
 
-  // Expand all folders by default when commit changes
-  useEffect(() => {
-    if (fileTree.length > 0) {
-      const allFolders = getAllFolderPaths(fileTree);
-      setExpandedFolders(new Set(allFolders));
+    if (repositoryName) {
+      const rootNode: TreeNode = {
+        name: repositoryName,
+        path: '',
+        type: 'folder',
+        children: tree,
+      };
+      return [rootNode];
     }
-  }, [fileTree]);
 
-  if (!commitDetail) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-        Select a commit to view changed files
-      </div>
-    );
+    return tree;
+  }, [commitDetail, repositoryName]);
+
+  const initialExpandedFolders = useMemo(() => {
+    if (fileTree.length === 0) return new Set<string>();
+    const allFolders = getAllFolderPaths(fileTree);
+    if (repositoryName) {
+      allFolders.push('');
+    }
+    return new Set(allFolders);
+  }, [fileTree, repositoryName]);
+
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(initialExpandedFolders);
+  const [previousFileTree, setPreviousFileTree] = useState(fileTree);
+
+  if (fileTree !== previousFileTree) {
+    setPreviousFileTree(fileTree);
+    setExpandedFolders(initialExpandedFolders);
   }
+
+  const allExpanded = useMemo(() => {
+    const allFolders = getAllFolderPaths(fileTree);
+    if (repositoryName) {
+      allFolders.push('');
+    }
+    return allFolders.length > 0 && allFolders.every((path) => expandedFolders.has(path));
+  }, [fileTree, expandedFolders, repositoryName]);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
@@ -74,17 +99,27 @@ export function FileTreePanel({ commitDetail, onFileSelect, selectedFile }: File
 
   const expandAll = () => {
     const allFolders = getAllFolderPaths(fileTree);
+    if (repositoryName) {
+      allFolders.push('');
+    }
     setExpandedFolders(new Set(allFolders));
   };
 
   const collapseAll = () => {
-    setExpandedFolders(new Set());
+    if (repositoryName) {
+      setExpandedFolders(new Set(['']));
+    } else {
+      setExpandedFolders(new Set());
+    }
   };
 
-  const allExpanded = useMemo(() => {
-    const allFolders = getAllFolderPaths(fileTree);
-    return allFolders.length > 0 && allFolders.every((path) => expandedFolders.has(path));
-  }, [fileTree, expandedFolders]);
+  if (!commitDetail) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+        Select a commit to view changed files
+      </div>
+    );
+  }
 
   const renderTree = (nodes: TreeNode[], depth = 0) => {
     return nodes.map((node) => {

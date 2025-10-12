@@ -149,6 +149,7 @@ function HistoryView() {
                 commitDetail={commitDetail}
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedFile}
+                repositoryName={currentRepository?.name}
               />
             )}
           </div>
