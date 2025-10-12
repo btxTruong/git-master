@@ -187,7 +187,7 @@ export function FullFileSplitDiffViewer({
     const leftContent = leftContentRef.current;
     const rightContent = rightContentRef.current;
 
-    if (!leftContent || !rightContent) return;
+    if (!leftContent && !rightContent) return;
 
     const updateDimensions = () => {
       if (leftContent) {
@@ -200,19 +200,26 @@ export function FullFileSplitDiffViewer({
       }
     };
 
-    updateDimensions();
+    const timeoutId = setTimeout(() => {
+      updateDimensions();
+    }, 0);
 
     const resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(updateDimensions);
     });
 
-    resizeObserver.observe(leftContent);
-    resizeObserver.observe(rightContent);
+    if (leftContent) {
+      resizeObserver.observe(leftContent);
+    }
+    if (rightContent) {
+      resizeObserver.observe(rightContent);
+    }
 
     return () => {
+      clearTimeout(timeoutId);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [oldLines, newLines]);
 
   // Left pane horizontal scroll synchronization
   useEffect(() => {
@@ -250,7 +257,7 @@ export function FullFileSplitDiffViewer({
       leftContent.removeEventListener('scroll', syncContentToProxy);
       leftProxy.removeEventListener('scroll', syncProxyToContent);
     };
-  }, []);
+  }, [leftScrollWidth]);
 
   // Right pane horizontal scroll synchronization
   useEffect(() => {
@@ -288,7 +295,7 @@ export function FullFileSplitDiffViewer({
       rightContent.removeEventListener('scroll', syncContentToProxy);
       rightProxy.removeEventListener('scroll', syncProxyToContent);
     };
-  }, []);
+  }, [rightScrollWidth]);
 
   // Navigation functions
   const navigateToChange = useCallback(
@@ -433,7 +440,7 @@ export function FullFileSplitDiffViewer({
       {/* Scroll container with split panes */}
       <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         <div
-          className={`${isNewFile ? '' : 'grid grid-cols-2 gap-px'} bg-gray-300 dark:bg-gray-700 min-h-full`}
+          className={`${isNewFile ? '' : 'grid grid-cols-2'} bg-gray-300 dark:bg-gray-700 min-h-full`}
         >
           {/* Left pane: Old file */}
           {!isNewFile && (
@@ -451,8 +458,11 @@ export function FullFileSplitDiffViewer({
                 </div>
               )}
               <div className="flex-1 flex overflow-hidden">
-                <div ref={leftContentRef} className="flex-1 overflow-x-scroll overflow-y-hidden">
-                  <div className="min-w-0">
+                <div
+                  ref={leftContentRef}
+                  className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hidden"
+                >
+                  <div className="w-max min-w-full">
                     {oldLines.map((line, index) => {
                       let bgColor =
                         'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
@@ -567,8 +577,11 @@ export function FullFileSplitDiffViewer({
                   );
                 })}
               </div>
-              <div ref={rightContentRef} className="flex-1 overflow-x-scroll overflow-y-hidden">
-                <div className="min-w-0">
+              <div
+                ref={rightContentRef}
+                className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hidden"
+              >
+                <div className="w-max min-w-full">
                   {newLines.map((line, index) => {
                     let bgColor =
                       'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
@@ -610,32 +623,38 @@ export function FullFileSplitDiffViewer({
 
       {/* Sticky horizontal scrollbars footer */}
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
-        <div className="grid grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600">
-          {/* Left proxy scrollbar */}
-          {leftScrollWidth > leftClientWidth && (
+        <div className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700 border-t border-gray-300 dark:border-gray-600">
+          {/* Left pane footer: scrollbar + line number spacer */}
+          <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
             <div
               ref={leftProxyRef}
-              className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
+              className="flex-1 h-4 overflow-x-auto overflow-y-hidden"
               style={{ scrollbarGutter: 'stable' }}
             >
-              <div style={{ width: leftScrollWidth, height: '1px' }} />
+              {leftScrollWidth > leftClientWidth && (
+                <div style={{ width: leftScrollWidth, height: '1px' }} />
+              )}
             </div>
-          )}
-          {leftScrollWidth <= leftClientWidth && <div className="h-4 bg-white dark:bg-gray-900" />}
+            <div className="w-12 flex-shrink-0 overflow-hidden">
+              <div className="h-4" />
+            </div>
+          </div>
 
-          {/* Right proxy scrollbar */}
-          {rightScrollWidth > rightClientWidth && (
+          {/* Right pane footer: line number spacer + scrollbar */}
+          <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
+            <div className="w-12 flex-shrink-0 overflow-hidden">
+              <div className="h-4" />
+            </div>
             <div
               ref={rightProxyRef}
-              className="h-4 overflow-x-auto overflow-y-hidden bg-white dark:bg-gray-900"
+              className="flex-1 h-4 overflow-x-auto overflow-y-hidden"
               style={{ scrollbarGutter: 'stable' }}
             >
-              <div style={{ width: rightScrollWidth, height: '1px' }} />
+              {rightScrollWidth > rightClientWidth && (
+                <div style={{ width: rightScrollWidth, height: '1px' }} />
+              )}
             </div>
-          )}
-          {rightScrollWidth <= rightClientWidth && (
-            <div className="h-4 bg-white dark:bg-gray-900" />
-          )}
+          </div>
         </div>
       )}
 
