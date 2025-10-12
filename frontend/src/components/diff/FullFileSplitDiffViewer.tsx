@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useMemo, useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
 import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
@@ -33,6 +33,7 @@ export function FullFileSplitDiffViewer({
   const rightContentRef = useRef<HTMLDivElement>(null);
   const leftProxyRef = useRef<HTMLDivElement>(null);
   const rightProxyRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const isSyncingLeft = useRef(false);
   const isSyncingRight = useRef(false);
 
@@ -40,7 +41,6 @@ export function FullFileSplitDiffViewer({
   const [rightScrollWidth, setRightScrollWidth] = useState(0);
   const [leftClientWidth, setLeftClientWidth] = useState(0);
   const [rightClientWidth, setRightClientWidth] = useState(0);
-  const [scrollbarWidth, setScrollbarWidth] = useState(0);
 
   // Compute diff with inline highlights, spacers, and correlation colors
   const { oldLines, newLines, changeIndices } = useMemo(() => {
@@ -165,7 +165,7 @@ export function FullFileSplitDiffViewer({
   }
 
   // Single scroll control - both panes scroll together
-  useEffect(() => {
+  useLayoutEffect(() => {
     const leftPane = leftPaneRef.current;
     const rightPane = rightPaneRef.current;
     const scrollContainer = scrollContainerRef.current;
@@ -176,24 +176,34 @@ export function FullFileSplitDiffViewer({
       rightPane.scrollTop = scrollContainer.scrollTop;
     };
 
+    scrollContainer.addEventListener('scroll', handleScroll);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Update footer padding to account for scrollbar
+  useLayoutEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    const footer = footerRef.current;
+
+    if (!scrollContainer || !footer) return;
+
     const updateScrollbarWidth = () => {
-      if (scrollContainer) {
-        const width = scrollContainer.offsetWidth - scrollContainer.clientWidth;
-        setScrollbarWidth(width);
-      }
+      const width = scrollContainer.offsetWidth - scrollContainer.clientWidth;
+      footer.style.paddingRight = `${width}px`;
     };
 
     updateScrollbarWidth();
-    scrollContainer.addEventListener('scroll', handleScroll);
 
     const resizeObserver = new ResizeObserver(updateScrollbarWidth);
     resizeObserver.observe(scrollContainer);
 
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [leftScrollWidth, rightScrollWidth]);
 
   // Measure content dimensions for proxy scrollbar sizing
   useEffect(() => {
@@ -636,10 +646,7 @@ export function FullFileSplitDiffViewer({
 
       {/* Sticky horizontal scrollbars footer */}
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
-        <div
-          className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700"
-          style={{ paddingRight: `${scrollbarWidth}px` }}
-        >
+        <div ref={footerRef} className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700">
           {/* Left pane footer: scrollbar + line number spacer */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
             <div ref={leftProxyRef} className="flex-1 h-4 overflow-x-auto overflow-y-hidden">
