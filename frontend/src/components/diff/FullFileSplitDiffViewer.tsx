@@ -1,4 +1,5 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
 import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
 
@@ -21,11 +22,12 @@ export function FullFileSplitDiffViewer({
 }: FullFileSplitDiffViewerProps) {
   const leftPaneRef = useRef<HTMLDivElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Compute diff with inline highlights
-  const { oldLines, newLines } = useMemo(() => {
+  // Compute diff with inline highlights and track change groups
+  const { oldLines, newLines, changeIndices } = useMemo(() => {
     if (!oldContent && !newContent) {
-      return { oldLines: [], newLines: [] };
+      return { oldLines: [], newLines: [], changeIndices: [] };
     }
 
     // Use proper LCS-based diff algorithm
@@ -58,56 +60,131 @@ export function FullFileSplitDiffViewer({
       }
     });
 
-    // Separate into old and new lines
+    // Separate into old and new lines and identify change blocks
     const oldLines: DiffLine[] = [];
     const newLines: DiffLine[] = [];
+    const changeBlockIndices: number[] = [];
+    let inChangeBlock = false;
+    let blockStartIndex = -1;
 
     enhancedChanges.forEach((change) => {
       if (change.type === 'delete') {
+        if (!inChangeBlock) {
+          inChangeBlock = true;
+          blockStartIndex = oldLines.length;
+        }
         oldLines.push(change);
       } else if (change.type === 'add') {
+        if (!inChangeBlock) {
+          inChangeBlock = true;
+          blockStartIndex = oldLines.length;
+        }
         newLines.push(change);
       } else {
-        // Context line - add to both sides
+        // Context line - end change block if active
+        if (inChangeBlock) {
+          changeBlockIndices.push(blockStartIndex);
+          inChangeBlock = false;
+        }
         oldLines.push(change);
         newLines.push(change);
       }
     });
 
-    return { oldLines, newLines };
+    // Handle case where file ends with changes
+    if (inChangeBlock && blockStartIndex >= 0) {
+      changeBlockIndices.push(blockStartIndex);
+    }
+
+    return { oldLines, newLines, changeIndices: changeBlockIndices };
   }, [oldContent, newContent]);
 
-  // Synchronized scrolling
+  // Derive current change index based on content - resets automatically when content changes
+  const contentKey = useMemo(
+    () => `${oldContent.length}-${newContent.length}`,
+    [oldContent, newContent]
+  );
+  const [currentChangeIndex, setCurrentChangeIndex] = useState<number>(0);
+  const [lastContentKey, setLastContentKey] = useState(contentKey);
+
+  // Reset index when content changes
+  if (contentKey !== lastContentKey) {
+    setCurrentChangeIndex(0);
+    setLastContentKey(contentKey);
+  }
+
+  // Single scroll control - both panes scroll together
   useEffect(() => {
     const leftPane = leftPaneRef.current;
     const rightPane = rightPaneRef.current;
-    if (!leftPane || !rightPane) return;
+    const scrollContainer = scrollContainerRef.current;
+    if (!leftPane || !rightPane || !scrollContainer) return;
 
-    let isLeftScrolling = false;
-    let isRightScrolling = false;
-
-    const handleLeftScroll = () => {
-      if (isRightScrolling) return;
-      isLeftScrolling = true;
-      rightPane.scrollTop = leftPane.scrollTop;
-      isLeftScrolling = false;
+    const handleScroll = () => {
+      leftPane.scrollTop = scrollContainer.scrollTop;
+      rightPane.scrollTop = scrollContainer.scrollTop;
     };
 
-    const handleRightScroll = () => {
-      if (isLeftScrolling) return;
-      isRightScrolling = true;
-      leftPane.scrollTop = rightPane.scrollTop;
-      isRightScrolling = false;
-    };
-
-    leftPane.addEventListener('scroll', handleLeftScroll);
-    rightPane.addEventListener('scroll', handleRightScroll);
+    scrollContainer.addEventListener('scroll', handleScroll);
 
     return () => {
-      leftPane.removeEventListener('scroll', handleLeftScroll);
-      rightPane.removeEventListener('scroll', handleRightScroll);
+      scrollContainer.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Navigation functions
+  const navigateToChange = useCallback(
+    (changeIdx: number) => {
+      if (changeIdx < 0 || changeIdx >= changeIndices.length) return;
+
+      const scrollContainer = scrollContainerRef.current;
+      const leftPane = leftPaneRef.current;
+
+      if (!scrollContainer || !leftPane) return;
+
+      const targetLineIndex = changeIndices[changeIdx];
+      const targetElement = leftPane.querySelector(`[data-line-index="${targetLineIndex}"]`);
+
+      if (targetElement) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = targetElement.getBoundingClientRect();
+        const scrollOffset =
+          scrollContainer.scrollTop + (elementRect.top - containerRect.top) - 100;
+
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollOffset),
+          behavior: 'smooth',
+        });
+
+        setCurrentChangeIndex(changeIdx);
+      }
+    },
+    [changeIndices]
+  );
+
+  // Auto-scroll to first change after render
+  useEffect(() => {
+    if (changeIndices.length > 0) {
+      const timer = setTimeout(() => {
+        navigateToChange(0);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [changeIndices, navigateToChange]);
+
+  const handlePreviousDiff = () => {
+    if (currentChangeIndex > 0) {
+      navigateToChange(currentChangeIndex - 1);
+    }
+  };
+
+  const handleNextDiff = () => {
+    if (currentChangeIndex < changeIndices.length - 1) {
+      navigateToChange(currentChangeIndex + 1);
+    }
+  };
+
+  const totalChanges = changeIndices.length;
 
   const renderLineContent = (line: DiffLine, side: 'old' | 'new') => {
     if (line.segments) {
@@ -157,69 +234,113 @@ export function FullFileSplitDiffViewer({
   }
 
   return (
-    <div className="h-full grid grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700">
-      {/* Left pane: Old file */}
-      <div ref={leftPaneRef} className="overflow-auto bg-white dark:bg-gray-900 font-mono text-sm">
-        <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
-          Old: {fileName}
-          {!oldContent && newContent ? ' (no previous version)' : ''}
+    <div className="h-full flex flex-col">
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePreviousDiff}
+            disabled={currentChangeIndex === 0 || totalChanges === 0}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+            aria-label="Previous Diff"
+          >
+            <ChevronUp className="w-4 h-4" />
+            Previous Diff
+          </button>
+          <button
+            onClick={handleNextDiff}
+            disabled={currentChangeIndex >= totalChanges - 1 || totalChanges === 0}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+            aria-label="Next Diff"
+          >
+            <ChevronDown className="w-4 h-4" />
+            Next Diff
+          </button>
         </div>
-        {oldLines.length === 0 && newLines.length > 0 && (
-          <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-            File did not exist in the parent commit.
+        {totalChanges > 0 && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Change {currentChangeIndex + 1} of {totalChanges}
           </div>
         )}
-        {oldLines.map((line, index) => {
-          const bgColor =
-            line.type === 'delete'
-              ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
-              : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-          const textColor =
-            line.type === 'delete'
-              ? 'text-red-900 dark:text-red-100'
-              : 'text-gray-800 dark:text-gray-200';
-
-          return (
-            <div key={index} className={`flex ${bgColor} ${textColor} transition-colors`}>
-              <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
-                {line.oldLineNumber ?? ''}
-              </div>
-              <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'old')}</div>
-            </div>
-          );
-        })}
       </div>
 
-      {/* Right pane: New file */}
-      <div ref={rightPaneRef} className="overflow-auto bg-white dark:bg-gray-900 font-mono text-sm">
-        <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold border-b border-green-200 dark:border-green-800 z-10">
-          New: {fileName}
-          {oldContent && !newContent ? ' (deleted)' : ''}
-        </div>
-        {newLines.length === 0 && oldLines.length > 0 && (
-          <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-            File was deleted in this commit.
-          </div>
-        )}
-        {newLines.map((line, index) => {
-          const bgColor =
-            line.type === 'add'
-              ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30'
-              : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
-          const textColor =
-            line.type === 'add'
-              ? 'text-green-900 dark:text-green-100'
-              : 'text-gray-800 dark:text-gray-200';
-
-          return (
-            <div key={index} className={`flex ${bgColor} ${textColor} transition-colors`}>
-              <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
-                {line.newLineNumber ?? ''}
-              </div>
-              <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'new')}</div>
+      {/* Scroll container with split panes */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
+        <div className="grid grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700 min-h-full">
+          {/* Left pane: Old file */}
+          <div
+            ref={leftPaneRef}
+            className="overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm"
+          >
+            <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold border-b border-red-200 dark:border-red-800 z-10">
+              Old: {fileName}
+              {!oldContent && newContent ? ' (no previous version)' : ''}
             </div>
-          );
-        })}
+            {oldLines.length === 0 && newLines.length > 0 && (
+              <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+                File did not exist in the parent commit.
+              </div>
+            )}
+            {oldLines.map((line, index) => {
+              const bgColor =
+                line.type === 'delete'
+                  ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+              const textColor =
+                line.type === 'delete'
+                  ? 'text-red-900 dark:text-red-100'
+                  : 'text-gray-800 dark:text-gray-200';
+
+              return (
+                <div
+                  key={index}
+                  data-line-index={index}
+                  className={`flex ${bgColor} ${textColor} transition-colors`}
+                >
+                  <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
+                    {line.oldLineNumber ?? ''}
+                  </div>
+                  <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'old')}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right pane: New file */}
+          <div
+            ref={rightPaneRef}
+            className="overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm"
+          >
+            <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold border-b border-green-200 dark:border-green-800 z-10">
+              New: {fileName}
+              {oldContent && !newContent ? ' (deleted)' : ''}
+            </div>
+            {newLines.length === 0 && oldLines.length > 0 && (
+              <div className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+                File was deleted in this commit.
+              </div>
+            )}
+            {newLines.map((line, index) => {
+              const bgColor =
+                line.type === 'add'
+                  ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
+              const textColor =
+                line.type === 'add'
+                  ? 'text-green-900 dark:text-green-100'
+                  : 'text-gray-800 dark:text-gray-200';
+
+              return (
+                <div key={index} className={`flex ${bgColor} ${textColor} transition-colors`}>
+                  <div className="w-12 text-right px-2 text-xs text-gray-500 dark:text-gray-500 select-none border-r border-gray-200 dark:border-gray-700">
+                    {line.newLineNumber ?? ''}
+                  </div>
+                  <div className="flex-1 px-4 py-0.5">{renderLineContent(line, 'new')}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
