@@ -103,31 +103,61 @@ export const CommitGraphCell = memo(function CommitGraphCell({
         />
       )}
 
-      {/* Draw curved line to parent in different lane */}
+      {/* Draw curved line to parent in different lane (CHECKOUT/BRANCH - going OUT) */}
       {hasCrossLaneParent && laneInfo.primaryParentLane !== null && (
-        <path
-          d={`M ${nodeX} ${nodeY + nodeRadius} Q ${nodeX} ${nodeY + height / 3}, ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height}`}
-          stroke={mainColor}
-          strokeWidth={2.5}
-          fill="none"
-          opacity={0.9}
-        />
+        <g>
+          {/* Solid line for checkout/branch operations */}
+          <path
+            d={`M ${nodeX} ${nodeY + nodeRadius} Q ${nodeX} ${nodeY + height / 3}, ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height}`}
+            stroke={mainColor}
+            strokeWidth={2.5}
+            fill="none"
+            opacity={0.95}
+          />
+        </g>
       )}
 
-      {/* Draw merge lines from source lanes */}
-      {laneInfo.mergeSourceLanes.map((sourceLane) => {
+      {/* Draw merge lines from source lanes (INCOMING - bringing code IN) */}
+      {laneInfo.mergeSourceLanes.map((sourceLane, idx) => {
         const sourceX = sourceLane * LANE_WIDTH + LANE_WIDTH / 2;
         const sourceColor = getLaneColor(sourceLane, isDark);
+        const mergeArrowId = `merge-arrow-${laneInfo.laneIndex}-${idx}`;
 
         return (
-          <path
-            key={`merge-${sourceLane}`}
-            d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
-            stroke={sourceColor}
-            strokeWidth={3}
-            fill="none"
-            opacity={0.9}
-          />
+          <g key={`merge-${sourceLane}`}>
+            {/* Define arrow marker for this merge line */}
+            <defs>
+              <marker
+                id={mergeArrowId}
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M 0 0 L 6 3 L 0 6 z" fill={sourceColor} opacity={0.9} />
+              </marker>
+            </defs>
+            {/* Glow effect for merge lines */}
+            <path
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
+              stroke={sourceColor}
+              strokeWidth={5}
+              fill="none"
+              opacity={0.2}
+            />
+            {/* Main merge line with dashed pattern and arrow */}
+            <path
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
+              stroke={sourceColor}
+              strokeWidth={3}
+              fill="none"
+              opacity={0.95}
+              strokeDasharray="6 3"
+              markerEnd={`url(#${mergeArrowId})`}
+            />
+          </g>
         );
       })}
 
