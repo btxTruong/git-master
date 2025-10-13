@@ -110,7 +110,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
           </defs>
           {/* Line stops before circle, arrow tip touches circle edge */}
           <path
-            d={`M ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height} Q ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${nodeY + height / 4}, ${nodeX - 2} ${nodeY + nodeRadius - 3}`}
+            d={`M ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height} Q ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${nodeY + height / 4}, ${nodeX - 7} ${nodeY + nodeRadius - 4}`}
             stroke={mainColor}
             strokeWidth={2.5}
             fill="none"
@@ -157,7 +157,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             </defs>
             {/* Glow effect for merge lines */}
             <path
-              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX - 2} ${nodeY - nodeRadius + 3}`}
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX + 4} ${nodeY - nodeRadius + 4}`}
               stroke={sourceColor}
               strokeWidth={5}
               fill="none"
@@ -165,7 +165,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             />
             {/* Main merge line - stops before circle, arrow tip touches edge */}
             <path
-              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX - 2} ${nodeY - nodeRadius + 3}`}
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX + 12} ${nodeY - nodeRadius + 4}`}
               stroke={sourceColor}
               strokeWidth={3}
               fill="none"
