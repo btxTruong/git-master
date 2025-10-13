@@ -543,9 +543,9 @@ export function FullFileSplitDiffViewer({
                       : {};
 
                     const inlineStyle = line.isSpacer
-                      ? { backgroundColor: ADDED_LINE_COLOR, borderLeftColor: '#E5E7EB' }
+                      ? { backgroundColor: ADDED_LINE_COLOR, borderLeft: '1px solid #D1D5DB' }
                       : line.type === 'delete'
-                        ? { backgroundColor: DELETE_LINE_COLOR, borderLeftColor: '#E5E7EB' }
+                        ? { backgroundColor: DELETE_LINE_COLOR, borderLeft: '1px solid #D1D5DB' }
                         : {};
 
                     return (
@@ -593,9 +593,9 @@ export function FullFileSplitDiffViewer({
                     : {};
 
                   const inlineStyle = line.isSpacer
-                    ? { backgroundColor: DELETE_LINE_COLOR, borderRightColor: '#E5E7EB' }
+                    ? { backgroundColor: DELETE_LINE_COLOR, borderRight: '1px solid #D1D5DB' }
                     : line.type === 'add' || isNewFile
-                      ? { backgroundColor: ADDED_LINE_COLOR, borderRightColor: '#E5E7EB' }
+                      ? { backgroundColor: ADDED_LINE_COLOR, borderRight: '1px solid #D1D5DB' }
                       : {};
 
                   return (
