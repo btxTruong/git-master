@@ -38,9 +38,6 @@ export function DiffModal({
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
               {fileName}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-              Status: {selectedFile.status} • +{selectedFile.insertions} -{selectedFile.deletions}
-            </p>
           </div>
           <button
             onClick={onClose}

@@ -369,6 +369,8 @@ export function FullFileSplitDiffViewer({
   const handleNextDiff = () => {
     if (currentChangeIndex < changeIndices.length - 1) {
       navigateToChange(currentChangeIndex + 1);
+    } else if (changeIndices.length === 1) {
+      navigateToChange(0);
     }
   };
 
@@ -444,7 +446,7 @@ export function FullFileSplitDiffViewer({
             </button>
             <button
               onClick={handleNextDiff}
-              disabled={currentChangeIndex >= totalChanges - 1 || totalChanges === 0}
+              disabled={(currentChangeIndex >= totalChanges - 1 && totalChanges !== 1) || totalChanges === 0}
               className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
               aria-label="Next Diff"
             >
@@ -504,13 +506,21 @@ export function FullFileSplitDiffViewer({
                         ? { backgroundColor: ADDED_LINE_COLOR }
                         : {};
 
+                      const isCurrentChange =
+                        changeIndices.length > 0 &&
+                        currentChangeIndex < changeIndices.length &&
+                        index === changeIndices[currentChangeIndex];
+
                       return (
                         <div
                           key={index}
                           data-line-index={index}
-                          className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                          className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem] relative`}
                           style={inlineStyle}
                         >
+                          {isCurrentChange && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
+                          )}
                           {line.isSpacer ? (
                             <span className="whitespace-pre">&nbsp;</span>
                           ) : (
@@ -623,12 +633,20 @@ export function FullFileSplitDiffViewer({
                         ? { backgroundColor: ADDED_LINE_COLOR }
                         : {};
 
+                    const isCurrentChange =
+                      changeIndices.length > 0 &&
+                      currentChangeIndex < changeIndices.length &&
+                      index === changeIndices[currentChangeIndex];
+
                     return (
                       <div
                         key={index}
-                        className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
+                        className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem] relative`}
                         style={inlineStyle}
                       >
+                        {isCurrentChange && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
+                        )}
                         {line.isSpacer ? (
                           <span className="whitespace-pre">&nbsp;</span>
                         ) : (
