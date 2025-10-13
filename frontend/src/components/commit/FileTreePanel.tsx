@@ -99,11 +99,7 @@ export function FileTreePanel({
   };
 
   const collapseAll = () => {
-    if (repositoryName) {
-      setExpandedFolders(new Set(['']));
-    } else {
-      setExpandedFolders(new Set());
-    }
+    setExpandedFolders(new Set());
   };
 
   if (!commitDetail) {
