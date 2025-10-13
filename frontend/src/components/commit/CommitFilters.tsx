@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, User, GitBranch } from 'lucide-react';
+import { X, User, GitBranch } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
 import { Dropdown } from '@/components/common/Dropdown';
+import { DatePicker } from '@/components/common/DatePicker';
 
 export function CommitFilters() {
   const { filters, setFilter, commits } = useCommitStore();
@@ -39,22 +40,6 @@ export function CommitFilters() {
       )
     )
   ).sort();
-
-  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value ? new Date(e.target.value) : null;
-    setFilter('dateFrom', date);
-  };
-
-  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value ? new Date(e.target.value) : null;
-    setFilter('dateTo', date);
-  };
-
-  const formatDateForInput = (date: Date | null) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toISOString().split('T')[0];
-  };
 
   const activeFilterCount = [
     filters.author,
@@ -110,13 +95,15 @@ export function CommitFilters() {
       </button>
 
       {/* Filter dropdown */}
-      <div className="absolute top-full right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+      <div className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900">Filter Commits</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Filter Commits
+            </h3>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="Close filters"
             >
               <X className="w-4 h-4" />
@@ -146,37 +133,22 @@ export function CommitFilters() {
 
             {/* Date range filters */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4" />
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Date Range
-              </label>
-              <div className="space-y-2">
-                <div>
-                  <label className="text-xs text-gray-600 mb-1 block">From</label>
-                  <input
-                    type="date"
-                    value={formatDateForInput(filters.dateFrom)}
-                    onChange={handleDateFromChange}
-                    className="
-                      w-full px-3 py-2 border border-gray-300 rounded-md
-                      text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    "
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600 mb-1 block">To</label>
-                  <input
-                    type="date"
-                    value={formatDateForInput(filters.dateTo)}
-                    onChange={handleDateToChange}
-                    className="
-                      w-full px-3 py-2 border border-gray-300 rounded-md
-                      text-sm
-                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    "
-                  />
-                </div>
+              </div>
+              <div className="space-y-3">
+                <DatePicker
+                  label="From"
+                  value={filters.dateFrom}
+                  onChange={(date) => setFilter('dateFrom', date)}
+                  placeholder="Select start date"
+                />
+                <DatePicker
+                  label="To"
+                  value={filters.dateTo}
+                  onChange={(date) => setFilter('dateTo', date)}
+                  placeholder="Select end date"
+                />
               </div>
             </div>
           </div>

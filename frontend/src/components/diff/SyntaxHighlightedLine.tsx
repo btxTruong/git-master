@@ -63,7 +63,7 @@ const TOKEN_COLORS: Record<string, string> = {
   entity: '#800000',
   url: '#0000ff',
   variable: '#001080',
-  'atrule': '#af00db',
+  atrule: '#af00db',
   'attr-value': '#a31515',
   function: '#795e26',
   'class-name': '#267f99',
