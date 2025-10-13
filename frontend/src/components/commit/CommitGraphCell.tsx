@@ -9,8 +9,8 @@ interface CommitGraphCellProps {
   cellHeight?: number;
 }
 
-const LANE_WIDTH = 12;
-const NODE_RADIUS = 4;
+const LANE_WIDTH = 20;
+const NODE_RADIUS = 5;
 const DEFAULT_HEIGHT = 60;
 
 /**
@@ -27,6 +27,17 @@ export const CommitGraphCell = memo(function CommitGraphCell({
     return laneInfo.laneIndex * LANE_WIDTH + LANE_WIDTH / 2;
   }, [laneInfo.laneIndex]);
 
+  const calculatedWidth = useMemo(() => {
+    const maxLane = Math.max(
+      laneInfo.laneIndex,
+      ...Array.from(laneInfo.activeLanes),
+      ...laneInfo.mergeSourceLanes,
+      laneInfo.branchTargetLane ?? 0
+    );
+    const requiredWidth = (maxLane + 1) * LANE_WIDTH + LANE_WIDTH;
+    return Math.max(width, requiredWidth);
+  }, [laneInfo, width]);
+
   const height = cellHeight || DEFAULT_HEIGHT;
   const nodeY = height / 2;
 
@@ -34,12 +45,12 @@ export const CommitGraphCell = memo(function CommitGraphCell({
 
   return (
     <svg
-      width={width}
+      width={calculatedWidth}
       height="100%"
       className="overflow-visible"
-      style={{ minWidth: width }}
+      style={{ minWidth: calculatedWidth }}
       preserveAspectRatio="none"
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox={`0 0 ${calculatedWidth} ${height}`}
     >
       {/* Draw active lane lines */}
       {Array.from(laneInfo.activeLanes).map((lane) => {
@@ -54,8 +65,8 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             x2={x}
             y2={height}
             stroke={color}
-            strokeWidth={2}
-            opacity={0.6}
+            strokeWidth={1.5}
+            opacity={0.3}
           />
         );
       })}
@@ -68,7 +79,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
           x2={nodeX}
           y2={nodeY - NODE_RADIUS}
           stroke={mainColor}
-          strokeWidth={2}
+          strokeWidth={2.5}
         />
       )}
 
@@ -80,7 +91,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
           x2={nodeX}
           y2={height}
           stroke={mainColor}
-          strokeWidth={2}
+          strokeWidth={2.5}
         />
       )}
 
@@ -94,7 +105,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             key={`merge-${sourceLane}`}
             d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
             stroke={sourceColor}
-            strokeWidth={2}
+            strokeWidth={2.5}
             fill="none"
             opacity={0.8}
           />
@@ -106,7 +117,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
         <path
           d={`M ${nodeX} ${nodeY} Q ${nodeX} ${nodeY + height / 4}, ${laneInfo.branchTargetLane * LANE_WIDTH + LANE_WIDTH / 2} ${height}`}
           stroke={mainColor}
-          strokeWidth={2}
+          strokeWidth={2.5}
           fill="none"
           opacity={0.8}
         />

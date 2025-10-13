@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Copy, Calendar, GitCommit, ArrowLeft, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Copy, Calendar, GitCommit, ArrowLeft, AlertCircle, GripVertical } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DiffViewer } from '@/components/diff/DiffViewer';
 import { fetchCommitDiff } from '@/api/commit';
@@ -12,12 +12,19 @@ interface CommitDetailProps {
   onBack?: () => void;
 }
 
+const MIN_SIDEBAR_WIDTH = 100;
+const MAX_SIDEBAR_WIDTH = 400;
+const DEFAULT_SIDEBAR_WIDTH = 140;
+
 export function CommitDetail({ commit, onParentClick, onBack }: CommitDetailProps) {
   const [diff, setDiff] = useState<DiffResult | null>(null);
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { diffViewMode, setDiffViewMode } = useUIStore();
 
   useEffect(() => {
@@ -65,6 +72,45 @@ export function CommitDetail({ commit, onParentClick, onBack }: CommitDetailProp
       setIsLoadingDiff(false);
     }
   }
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing || !sidebarRef.current) return;
+
+      const sidebarRect = sidebarRef.current.getBoundingClientRect();
+      const newWidth = e.clientX - sidebarRect.left;
+
+      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
+        setSidebarWidth(newWidth);
+      }
+    },
+    [isResizing]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="commit-detail h-full flex flex-col bg-white">
@@ -203,28 +249,45 @@ export function CommitDetail({ commit, onParentClick, onBack }: CommitDetailProp
             {/* File navigation and diff viewer */}
             <div className="flex-1 flex overflow-hidden">
               {/* File sidebar */}
-              <div className="w-64 border-r border-gray-200 overflow-auto bg-gray-50">
-                <div className="p-2">
-                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                    Changed Files ({diff.files.length})
+              <div
+                ref={sidebarRef}
+                className="border-r border-gray-200 overflow-auto bg-gray-50 flex-shrink-0 relative"
+                style={{ width: `${sidebarWidth}px` }}
+              >
+                <div className="p-1.5">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1.5 px-1">
+                    Files ({diff.files.length})
                   </div>
                   {diff.files.map((file, index) => (
                     <button
                       key={file.path}
                       onClick={() => setSelectedFileIndex(index)}
-                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 ${
+                      className={`w-full text-left px-1.5 py-1 text-sm rounded hover:bg-gray-100 transition-colors ${
                         selectedFileIndex === index
                           ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'
                           : ''
                       }`}
                     >
-                      <div className="font-mono truncate text-xs">{file.path}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        <span className="text-green-600">+{file.additions || 0}</span>{' '}
+                      <div className="font-mono truncate text-xs leading-tight">{file.path}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5 flex gap-1.5">
+                        <span className="text-green-600">+{file.additions || 0}</span>
                         <span className="text-red-600">-{file.deletions || 0}</span>
                       </div>
                     </button>
                   ))}
+                </div>
+
+                {/* Resize handle */}
+                <div
+                  className={`absolute top-0 right-0 w-3 h-full cursor-col-resize hover:bg-blue-400/50 transition-colors ${
+                    isResizing ? 'bg-blue-500/50' : 'bg-transparent'
+                  }`}
+                  onMouseDown={handleMouseDown}
+                  style={{ zIndex: 10 }}
+                >
+                  <div className="absolute top-1/2 right-0.5 transform -translate-y-1/2">
+                    <GripVertical className="w-3 h-3 text-gray-500" />
+                  </div>
                 </div>
               </div>
 

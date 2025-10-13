@@ -54,9 +54,9 @@ export const CommitItem = memo(function CommitItem({
         }
       `}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         {showGraph && laneInfo ? (
-          <div className="flex-shrink-0 self-stretch flex items-center">
+          <div className="flex-shrink-0 self-stretch flex items-center pr-2">
             <CommitGraphCell laneInfo={laneInfo} isDark={isDark} />
           </div>
         ) : (
