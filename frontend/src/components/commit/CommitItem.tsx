@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { type Commit } from '@/stores/commitStore';
-import { User, Calendar } from 'lucide-react';
+import { User, Calendar, GitMerge } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDate } from '@/utils/dateFormat';
 import { CommitGraphCell } from './CommitGraphCell';
@@ -41,6 +41,9 @@ export const CommitItem = memo(function CommitItem({
     return formatDate(commit.date, dateFormat);
   }, [commit.date, dateFormat]);
 
+  const isMergeCommit = commit.parentHashes && commit.parentHashes.length >= 2;
+  const isOctopusMerge = commit.parentHashes && commit.parentHashes.length >= 3;
+
   return (
     <div
       onClick={onClick}
@@ -76,6 +79,23 @@ export const CommitItem = memo(function CommitItem({
             <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
               {commit.shortHash}
             </span>
+            {isMergeCommit && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded
+                           bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300
+                           border border-purple-200 dark:border-purple-700"
+                title={
+                  isOctopusMerge
+                    ? `Octopus merge (${commit.parentHashes.length} parents)`
+                    : 'Merge commit'
+                }
+              >
+                <GitMerge className="w-3 h-3" />
+                {isOctopusMerge && (
+                  <span className="font-semibold">{commit.parentHashes.length}</span>
+                )}
+              </span>
+            )}
             {commit.refs && commit.refs.length > 0 && (
               <div className="flex gap-1.5 flex-wrap">
                 {commit.refs.map((ref, idx) => (

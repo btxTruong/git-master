@@ -12,7 +12,10 @@ export interface CommitLaneInfo {
   hasChildInSameLane: boolean;
   mergeSourceLanes: number[];
   branchTargetLane: number | null;
+  primaryParentLane: number | null;
   activeLanes: Set<number>;
+  isMergeCommit: boolean;
+  parentCount: number;
 }
 
 interface LaneState {
@@ -63,6 +66,7 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
     // Determine relationships
     const hasChildInSameLane = lanes[assignedLane]?.commitHash === commit.hash;
     const mergeSourceLanes: number[] = [];
+    let primaryParentLane: number | null = null;
 
     // Clear current lane
     lanes[assignedLane] = { commitHash: null, branchName: null };
@@ -72,8 +76,17 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
     const parentHashes = commit.parentHashes ?? [];
     parentHashes.forEach((parentHash, index) => {
       if (index === 0) {
-        // Primary parent continues in same lane
-        lanes[assignedLane] = { commitHash: parentHash, branchName: null };
+        // Primary parent - check if it needs a different lane
+        const existingParentLane = lanes.findIndex((lane) => lane.commitHash === parentHash);
+
+        if (existingParentLane !== -1) {
+          // Parent already in a different lane - draw curve to it
+          primaryParentLane = existingParentLane;
+        } else {
+          // Parent continues in same lane
+          lanes[assignedLane] = { commitHash: parentHash, branchName: null };
+          primaryParentLane = assignedLane;
+        }
       } else {
         // Merge parents get new lanes
         const parentLane = lanes.findIndex((lane) => lane.commitHash === parentHash);
@@ -95,11 +108,14 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
     laneInfo.set(commit.hash, {
       commitHash: commit.hash,
       laneIndex: assignedLane,
-      hasParentInSameLane: parentHashes.length > 0,
+      hasParentInSameLane: primaryParentLane === assignedLane,
       hasChildInSameLane,
       mergeSourceLanes,
       branchTargetLane,
+      primaryParentLane,
       activeLanes: new Set(activeLanes),
+      isMergeCommit: parentHashes.length >= 2,
+      parentCount: parentHashes.length,
     });
   }
 

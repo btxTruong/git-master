@@ -11,6 +11,7 @@ interface CommitGraphCellProps {
 
 const LANE_WIDTH = 20;
 const NODE_RADIUS = 5;
+const MERGE_NODE_RADIUS = 7;
 const DEFAULT_HEIGHT = 60;
 
 /**
@@ -42,6 +43,12 @@ export const CommitGraphCell = memo(function CommitGraphCell({
   const nodeY = height / 2;
 
   const mainColor = getLaneColor(laneInfo.laneIndex, isDark);
+  const isMerge = laneInfo.isMergeCommit;
+  const isOctopusMerge = laneInfo.parentCount >= 3;
+  const nodeRadius = isMerge ? MERGE_NODE_RADIUS : NODE_RADIUS;
+
+  const hasCrossLaneParent =
+    laneInfo.primaryParentLane !== null && laneInfo.primaryParentLane !== laneInfo.laneIndex;
 
   return (
     <svg
@@ -56,6 +63,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
       {Array.from(laneInfo.activeLanes).map((lane) => {
         const x = lane * LANE_WIDTH + LANE_WIDTH / 2;
         const color = getLaneColor(lane, isDark);
+        const isCurrentLane = lane === laneInfo.laneIndex;
 
         return (
           <line
@@ -65,8 +73,8 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             x2={x}
             y2={height}
             stroke={color}
-            strokeWidth={1.5}
-            opacity={0.3}
+            strokeWidth={isCurrentLane ? 2 : 1.5}
+            opacity={isCurrentLane ? 0.4 : 0.25}
           />
         );
       })}
@@ -77,21 +85,32 @@ export const CommitGraphCell = memo(function CommitGraphCell({
           x1={nodeX}
           y1={0}
           x2={nodeX}
-          y2={nodeY - NODE_RADIUS}
+          y2={nodeY - nodeRadius}
           stroke={mainColor}
           strokeWidth={2.5}
         />
       )}
 
       {/* Draw line from node to bottom (parent connection) */}
-      {laneInfo.hasParentInSameLane && (
+      {laneInfo.hasParentInSameLane && !hasCrossLaneParent && (
         <line
           x1={nodeX}
-          y1={nodeY + NODE_RADIUS}
+          y1={nodeY + nodeRadius}
           x2={nodeX}
           y2={height}
           stroke={mainColor}
           strokeWidth={2.5}
+        />
+      )}
+
+      {/* Draw curved line to parent in different lane */}
+      {hasCrossLaneParent && laneInfo.primaryParentLane !== null && (
+        <path
+          d={`M ${nodeX} ${nodeY + nodeRadius} Q ${nodeX} ${nodeY + height / 3}, ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height}`}
+          stroke={mainColor}
+          strokeWidth={2.5}
+          fill="none"
+          opacity={0.9}
         />
       )}
 
@@ -105,9 +124,9 @@ export const CommitGraphCell = memo(function CommitGraphCell({
             key={`merge-${sourceLane}`}
             d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
             stroke={sourceColor}
-            strokeWidth={2.5}
+            strokeWidth={3}
             fill="none"
-            opacity={0.8}
+            opacity={0.9}
           />
         );
       })}
@@ -124,14 +143,43 @@ export const CommitGraphCell = memo(function CommitGraphCell({
       )}
 
       {/* Draw commit node */}
-      <circle
-        cx={nodeX}
-        cy={nodeY}
-        r={NODE_RADIUS}
-        fill={mainColor}
-        stroke="white"
-        strokeWidth={2}
-      />
+      {isMerge ? (
+        <>
+          {/* Glow effect for merge commits */}
+          <circle cx={nodeX} cy={nodeY} r={nodeRadius + 2} fill={mainColor} opacity={0.3} />
+          {/* Outer ring for merge commits */}
+          <circle
+            cx={nodeX}
+            cy={nodeY}
+            r={nodeRadius}
+            fill="none"
+            stroke={mainColor}
+            strokeWidth={2.5}
+          />
+          {/* Inner circle for merge commits */}
+          <circle
+            cx={nodeX}
+            cy={nodeY}
+            r={nodeRadius - 2}
+            fill={mainColor}
+            stroke={isDark ? '#1f2937' : 'white'}
+            strokeWidth={1.5}
+          />
+          {/* Octopus merge indicator - additional inner dot */}
+          {isOctopusMerge && (
+            <circle cx={nodeX} cy={nodeY} r={1.5} fill={isDark ? '#1f2937' : 'white'} />
+          )}
+        </>
+      ) : (
+        <circle
+          cx={nodeX}
+          cy={nodeY}
+          r={nodeRadius}
+          fill={mainColor}
+          stroke={isDark ? '#1f2937' : 'white'}
+          strokeWidth={2}
+        />
+      )}
     </svg>
   );
 });

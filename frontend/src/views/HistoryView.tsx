@@ -18,7 +18,7 @@ const MAX_COMMIT_LIST_PERCENT = 85;
 const DEFAULT_COMMIT_LIST_PERCENT = 70;
 
 function HistoryView() {
-  const { currentRepository} = useRepositoryStore();
+  const { currentRepository } = useRepositoryStore();
   const { selectedCommit, loadCommits, reset } = useCommitStore();
   const [commitDetail, setCommitDetail] = useState<models.CommitDetail | null>(null);
   const [selectedFile, setSelectedFile] = useState<models.FileChange | null>(null);
