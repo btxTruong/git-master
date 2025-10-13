@@ -2,8 +2,10 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState, useCallback } fr
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { computeInlineDiff, type InlineDiffSegment } from '@/utils/inlineDiff';
 import { computeLineDiff, findChangeGroups, type DiffChange } from '@/utils/lineDiff';
+import { detectLanguageFromFilename } from '@/utils/languageDetector';
+import { SyntaxHighlightedLine } from './SyntaxHighlightedLine';
 
-const ADDED_LINE_COLOR = 'rgb(175, 244, 192)';
+const ADDED_LINE_COLOR = '#D6FCE4';
 const UPDATE_LINE_COLOR = 'rgb(231, 237, 250)';
 const HIGHLIGHT_UPDATE_TEXT_COLOR = 'rgb(193, 211, 242)';
 
@@ -375,6 +377,7 @@ export function FullFileSplitDiffViewer({
   };
 
   const totalChanges = changeIndices.length;
+  const language = useMemo(() => detectLanguageFromFilename(fileName), [fileName]);
 
   const renderLineContent = (line: DiffLine, side: 'old' | 'new') => {
     const isUpdate = line.correlationColor === UPDATE_LINE_COLOR;
@@ -384,30 +387,19 @@ export function FullFileSplitDiffViewer({
       const isAdd = side === 'new' && line.type === 'add';
 
       return (
-        <span className="whitespace-pre">
-          {line.segments.map((segment, i) => {
-            if (segment.type === 'delete' && isDelete && isUpdate) {
-              return (
-                <span key={i} style={{ backgroundColor: HIGHLIGHT_UPDATE_TEXT_COLOR }}>
-                  {segment.text}
-                </span>
-              );
-            }
-            if (segment.type === 'insert' && isAdd) {
-              const bgColor = isUpdate ? HIGHLIGHT_UPDATE_TEXT_COLOR : ADDED_LINE_COLOR;
-              return (
-                <span key={i} style={{ backgroundColor: bgColor }}>
-                  {segment.text}
-                </span>
-              );
-            }
-            return <span key={i}>{segment.text}</span>;
-          })}
-        </span>
+        <SyntaxHighlightedLine
+          content={line.content}
+          language={language}
+          segments={line.segments}
+          segmentType={isDelete ? 'delete' : isAdd ? 'insert' : undefined}
+          highlightColor={
+            isUpdate ? HIGHLIGHT_UPDATE_TEXT_COLOR : isAdd ? ADDED_LINE_COLOR : undefined
+          }
+        />
       );
     }
 
-    return <span className="whitespace-pre">{line.content}</span>;
+    return <SyntaxHighlightedLine content={line.content} language={language} />;
   };
 
   if (isLoading) {
@@ -433,30 +425,32 @@ export function FullFileSplitDiffViewer({
     <div className="h-full flex flex-col">
       {/* Navigation buttons */}
       {!isNewFile && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handlePreviousDiff}
               disabled={currentChangeIndex === 0 || totalChanges === 0}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
               aria-label="Previous Diff"
             >
-              <ChevronUp className="w-4 h-4" />
-              Previous Diff
+              <ChevronUp className="w-3.5 h-3.5" />
+              Previous
             </button>
             <button
               onClick={handleNextDiff}
-              disabled={(currentChangeIndex >= totalChanges - 1 && totalChanges !== 1) || totalChanges === 0}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+              disabled={
+                (currentChangeIndex >= totalChanges - 1 && totalChanges !== 1) || totalChanges === 0
+              }
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
               aria-label="Next Diff"
             >
-              <ChevronDown className="w-4 h-4" />
-              Next Diff
+              <ChevronDown className="w-3.5 h-3.5" />
+              Next
             </button>
           </div>
           {totalChanges > 0 && (
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Change {currentChangeIndex + 1} of {totalChanges}
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              {currentChangeIndex + 1} / {totalChanges}
             </div>
           )}
         </div>
@@ -473,7 +467,7 @@ export function FullFileSplitDiffViewer({
               ref={leftPaneRef}
               className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
             >
-              <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-4 py-2 text-xs font-semibold z-10">
+              <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-3 py-1 text-xs font-semibold z-10">
                 Old: {fileName}
                 {!oldContent && newContent ? ' (no previous version)' : ''}
               </div>
@@ -569,7 +563,7 @@ export function FullFileSplitDiffViewer({
             ref={rightPaneRef}
             className="overflow-y-hidden bg-white dark:bg-gray-900 font-mono text-sm flex flex-col"
           >
-            <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-4 py-2 text-xs font-semibold z-10">
+            <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-3 py-1 text-xs font-semibold z-10">
               {isNewFile ? `New File: ${fileName}` : `New: ${fileName}`}
               {oldContent && !newContent ? ' (deleted)' : ''}
             </div>
