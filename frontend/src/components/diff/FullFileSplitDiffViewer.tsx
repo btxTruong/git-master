@@ -6,7 +6,8 @@ import { detectLanguageFromFilename } from '@/utils/languageDetector';
 import { SyntaxHighlightedLine } from './SyntaxHighlightedLine';
 
 const ADDED_LINE_COLOR = '#D6FCE4';
-const UPDATE_LINE_COLOR = 'rgb(231, 237, 250)';
+const UPDATE_LINE_COLOR = '#E4ECF8';
+const DELETE_LINE_COLOR = '#E4ECF8';
 const HIGHLIGHT_UPDATE_TEXT_COLOR = 'rgb(193, 211, 242)';
 
 interface FullFileSplitDiffViewerProps {
@@ -491,14 +492,15 @@ export function FullFileSplitDiffViewer({
                         bgColor = '';
                         textColor = '';
                       } else if (line.type === 'delete') {
-                        bgColor =
-                          'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
-                        textColor = 'text-red-900 dark:text-red-100';
+                        bgColor = '';
+                        textColor = 'text-gray-800 dark:text-gray-200';
                       }
 
                       const inlineStyle = line.isSpacer
                         ? { backgroundColor: ADDED_LINE_COLOR }
-                        : {};
+                        : line.type === 'delete'
+                          ? { backgroundColor: DELETE_LINE_COLOR }
+                          : {};
 
                       const isCurrentChange =
                         changeIndices.length > 0 &&
@@ -533,15 +535,18 @@ export function FullFileSplitDiffViewer({
                     if (line.isSpacer) {
                       bgColor = '';
                     } else if (line.type === 'delete') {
-                      bgColor =
-                        'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+                      bgColor = '';
                     }
 
                     const correlationBarStyle = line.correlationColor
                       ? { borderLeftWidth: '3px', borderLeftColor: line.correlationColor }
                       : {};
 
-                    const inlineStyle = line.isSpacer ? { backgroundColor: ADDED_LINE_COLOR } : {};
+                    const inlineStyle = line.isSpacer
+                      ? { backgroundColor: ADDED_LINE_COLOR, borderLeftColor: '#E5E7EB' }
+                      : line.type === 'delete'
+                        ? { backgroundColor: DELETE_LINE_COLOR, borderLeftColor: '#E5E7EB' }
+                        : {};
 
                     return (
                       <div
@@ -588,9 +593,9 @@ export function FullFileSplitDiffViewer({
                     : {};
 
                   const inlineStyle = line.isSpacer
-                    ? { backgroundColor: 'rgb(254, 226, 226)' }
+                    ? { backgroundColor: DELETE_LINE_COLOR, borderRightColor: '#E5E7EB' }
                     : line.type === 'add' || isNewFile
-                      ? { backgroundColor: ADDED_LINE_COLOR }
+                      ? { backgroundColor: ADDED_LINE_COLOR, borderRightColor: '#E5E7EB' }
                       : {};
 
                   return (
@@ -622,7 +627,7 @@ export function FullFileSplitDiffViewer({
                     }
 
                     const inlineStyle = line.isSpacer
-                      ? { backgroundColor: 'rgb(254, 226, 226)' }
+                      ? { backgroundColor: DELETE_LINE_COLOR }
                       : line.type === 'add' || isNewFile
                         ? { backgroundColor: ADDED_LINE_COLOR }
                         : {};
