@@ -8,6 +8,8 @@ interface DiffModalProps {
   selectedFile: models.FileChange | null;
   isLoading: boolean;
   fileContent?: { oldContent: string; newContent: string } | null;
+  oldCommitHash?: string;
+  newCommitHash?: string;
 }
 
 export function DiffModal({
@@ -16,6 +18,8 @@ export function DiffModal({
   selectedFile,
   isLoading,
   fileContent,
+  oldCommitHash,
+  newCommitHash,
 }: DiffModalProps) {
   if (!isOpen || !selectedFile) {
     return null;
@@ -55,6 +59,8 @@ export function DiffModal({
             newContent={fileContent?.newContent || ''}
             fileName={fileName}
             isLoading={isLoading}
+            oldCommitHash={oldCommitHash}
+            newCommitHash={newCommitHash}
           />
         </div>
       </div>

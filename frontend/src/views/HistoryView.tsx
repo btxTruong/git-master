@@ -163,6 +163,12 @@ function HistoryView() {
         selectedFile={selectedFile}
         isLoading={isLoadingDetail || isLoadingFileContent}
         fileContent={fileContent}
+        oldCommitHash={
+          commitDetail?.parentHashes && commitDetail.parentHashes.length > 0
+            ? commitDetail.parentHashes[0].slice(0, 7)
+            : undefined
+        }
+        newCommitHash={selectedCommit?.hash.slice(0, 7)}
       />
     </div>
   );

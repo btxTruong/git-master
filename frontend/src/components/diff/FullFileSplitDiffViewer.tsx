@@ -15,6 +15,8 @@ interface FullFileSplitDiffViewerProps {
   newContent: string;
   fileName: string;
   isLoading?: boolean;
+  oldCommitHash?: string;
+  newCommitHash?: string;
 }
 
 interface DiffLine extends DiffChange {
@@ -28,6 +30,8 @@ export function FullFileSplitDiffViewer({
   newContent,
   fileName,
   isLoading,
+  oldCommitHash,
+  newCommitHash,
 }: FullFileSplitDiffViewerProps) {
   const leftPaneRef = useRef<HTMLDivElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
@@ -46,9 +50,9 @@ export function FullFileSplitDiffViewer({
   const [rightClientWidth, setRightClientWidth] = useState(0);
 
   // Compute diff with inline highlights, spacers, and correlation colors
-  const { oldLines, newLines, changeIndices } = useMemo(() => {
+  const { oldLines, newLines, changeIndices, changeBlockRanges } = useMemo(() => {
     if (!oldContent && !newContent) {
-      return { oldLines: [], newLines: [], changeIndices: [] };
+      return { oldLines: [], newLines: [], changeIndices: [], changeBlockRanges: [] };
     }
 
     // Use proper LCS-based diff algorithm
@@ -89,6 +93,7 @@ export function FullFileSplitDiffViewer({
     const oldLines: DiffLine[] = [];
     const newLines: DiffLine[] = [];
     const changeBlockIndices: number[] = [];
+    const changeBlockRanges: Array<{ start: number; end: number }> = [];
 
     let i = 0;
     while (i < enhancedChanges.length) {
@@ -147,10 +152,14 @@ export function FullFileSplitDiffViewer({
           });
           newLines.push(addLines[j]);
         }
+
+        // Record the end index of this change block
+        const blockEndIndex = oldLines.length - 1;
+        changeBlockRanges.push({ start: blockStartIndex, end: blockEndIndex });
       }
     }
 
-    return { oldLines, newLines, changeIndices: changeBlockIndices };
+    return { oldLines, newLines, changeIndices: changeBlockIndices, changeBlockRanges };
   }, [oldContent, newContent]);
 
   // Derive current change index based on content - resets automatically when content changes
@@ -372,8 +381,6 @@ export function FullFileSplitDiffViewer({
   const handleNextDiff = () => {
     if (currentChangeIndex < changeIndices.length - 1) {
       navigateToChange(currentChangeIndex + 1);
-    } else if (changeIndices.length === 1) {
-      navigateToChange(0);
     }
   };
 
@@ -439,9 +446,7 @@ export function FullFileSplitDiffViewer({
             </button>
             <button
               onClick={handleNextDiff}
-              disabled={
-                (currentChangeIndex >= totalChanges - 1 && totalChanges !== 1) || totalChanges === 0
-              }
+              disabled={currentChangeIndex >= totalChanges - 1 || totalChanges === 0}
               className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
               aria-label="Next Diff"
             >
@@ -470,6 +475,9 @@ export function FullFileSplitDiffViewer({
             >
               <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-300 px-3 py-1 text-xs font-semibold z-10">
                 Old: {fileName}
+                {oldCommitHash && (
+                  <span className="ml-2 font-mono text-xs opacity-75">({oldCommitHash})</span>
+                )}
                 {!oldContent && newContent ? ' (no previous version)' : ''}
               </div>
               {oldLines.length === 0 && newLines.length > 0 && (
@@ -502,21 +510,13 @@ export function FullFileSplitDiffViewer({
                           ? { backgroundColor: DELETE_LINE_COLOR }
                           : {};
 
-                      const isCurrentChange =
-                        changeIndices.length > 0 &&
-                        currentChangeIndex < changeIndices.length &&
-                        index === changeIndices[currentChangeIndex];
-
                       return (
                         <div
                           key={index}
                           data-line-index={index}
-                          className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem] relative`}
+                          className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
                           style={inlineStyle}
                         >
-                          {isCurrentChange && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
-                          )}
                           {line.isSpacer ? (
                             <span className="whitespace-pre">&nbsp;</span>
                           ) : (
@@ -526,6 +526,35 @@ export function FullFileSplitDiffViewer({
                       );
                     })}
                   </div>
+                </div>
+                {/* Indicator column for OLD side */}
+                <div className="w-1 flex-shrink-0 overflow-hidden">
+                  {oldLines.map((line, index) => {
+                    const isCurrentChange =
+                      changeBlockRanges.length > 0 &&
+                      currentChangeIndex < changeBlockRanges.length &&
+                      index >= changeBlockRanges[currentChangeIndex].start &&
+                      index <= changeBlockRanges[currentChangeIndex].end;
+
+                    let bgColor = 'bg-white dark:bg-gray-900';
+                    let inlineStyle = {};
+
+                    if (isCurrentChange) {
+                      bgColor = 'bg-blue-500 dark:bg-blue-400';
+                    } else if (line.isSpacer) {
+                      inlineStyle = { backgroundColor: ADDED_LINE_COLOR };
+                    } else if (line.type === 'delete') {
+                      inlineStyle = { backgroundColor: DELETE_LINE_COLOR };
+                    }
+
+                    return (
+                      <div
+                        key={index}
+                        className={`${bgColor} min-h-[1.5rem]`}
+                        style={inlineStyle}
+                      />
+                    );
+                  })}
                 </div>
                 <div className="w-12 flex-shrink-0 overflow-hidden">
                   {oldLines.map((line, index) => {
@@ -570,6 +599,9 @@ export function FullFileSplitDiffViewer({
           >
             <div className="sticky top-0 bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-300 px-3 py-1 text-xs font-semibold z-10">
               {isNewFile ? `New File: ${fileName}` : `New: ${fileName}`}
+              {newCommitHash && (
+                <span className="ml-2 font-mono text-xs opacity-75">({newCommitHash})</span>
+              )}
               {oldContent && !newContent ? ' (deleted)' : ''}
             </div>
             {newLines.length === 0 && oldLines.length > 0 && (
@@ -612,6 +644,35 @@ export function FullFileSplitDiffViewer({
                   );
                 })}
               </div>
+              {/* Indicator column for NEW side */}
+              <div className="w-1 flex-shrink-0 overflow-hidden">
+                {newLines.map((line, index) => {
+                  const isCurrentChange =
+                    changeBlockRanges.length > 0 &&
+                    currentChangeIndex < changeBlockRanges.length &&
+                    index >= changeBlockRanges[currentChangeIndex].start &&
+                    index <= changeBlockRanges[currentChangeIndex].end;
+
+                  let bgColor = 'bg-white dark:bg-gray-900';
+                  let inlineStyle = {};
+
+                  if (isCurrentChange) {
+                    bgColor = 'bg-blue-500 dark:bg-blue-400';
+                  } else if (line.isSpacer) {
+                    inlineStyle = { backgroundColor: DELETE_LINE_COLOR };
+                  } else if (line.type === 'add' || isNewFile) {
+                    inlineStyle = { backgroundColor: line.correlationColor || ADDED_LINE_COLOR };
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      className={`${bgColor} min-h-[1.5rem]`}
+                      style={inlineStyle}
+                    />
+                  );
+                })}
+              </div>
               <div
                 ref={rightContentRef}
                 className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hidden"
@@ -635,20 +696,12 @@ export function FullFileSplitDiffViewer({
                         ? { backgroundColor: line.correlationColor || ADDED_LINE_COLOR }
                         : {};
 
-                    const isCurrentChange =
-                      changeIndices.length > 0 &&
-                      currentChangeIndex < changeIndices.length &&
-                      index === changeIndices[currentChangeIndex];
-
                     return (
                       <div
                         key={index}
-                        className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem] relative`}
+                        className={`px-4 py-0.5 ${bgColor} ${textColor} transition-colors min-h-[1.5rem]`}
                         style={inlineStyle}
                       >
-                        {isCurrentChange && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
-                        )}
                         {line.isSpacer ? (
                           <span className="whitespace-pre">&nbsp;</span>
                         ) : (
@@ -667,21 +720,27 @@ export function FullFileSplitDiffViewer({
       {/* Sticky horizontal scrollbars footer */}
       {!isNewFile && (leftScrollWidth > leftClientWidth || rightScrollWidth > rightClientWidth) && (
         <div ref={footerRef} className="grid grid-cols-2 bg-gray-300 dark:bg-gray-700">
-          {/* Left pane footer: scrollbar + line number spacer */}
+          {/* Left pane footer: scrollbar + indicator + line number spacer */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
             <div ref={leftProxyRef} className="flex-1 h-4 overflow-x-auto overflow-y-hidden">
               {leftScrollWidth > leftClientWidth && (
                 <div style={{ width: leftScrollWidth, height: '1px' }} />
               )}
             </div>
+            <div className="w-1 flex-shrink-0 overflow-hidden bg-gray-300 dark:bg-gray-700">
+              <div className="h-4" />
+            </div>
             <div className="w-12 flex-shrink-0 overflow-hidden border-l border-gray-200 dark:border-gray-700">
               <div className="h-4" />
             </div>
           </div>
 
-          {/* Right pane footer: line number spacer + scrollbar */}
+          {/* Right pane footer: line number spacer + indicator + scrollbar */}
           <div className="flex overflow-hidden bg-white dark:bg-gray-900 font-mono text-sm">
             <div className="w-12 flex-shrink-0 overflow-hidden border-r border-gray-200 dark:border-gray-700">
+              <div className="h-4" />
+            </div>
+            <div className="w-1 flex-shrink-0 overflow-hidden bg-gray-300 dark:bg-gray-700">
               <div className="h-4" />
             </div>
             <div ref={rightProxyRef} className="flex-1 h-4 overflow-x-auto overflow-y-hidden">
