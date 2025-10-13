@@ -528,7 +528,7 @@ export function FullFileSplitDiffViewer({
                   </div>
                 </div>
                 {/* Indicator column for OLD side */}
-                <div className="w-1 flex-shrink-0 overflow-hidden">
+                <div className="w-1 flex-shrink-0 overflow-hidden flex flex-col">
                   {oldLines.map((line, index) => {
                     const isCurrentChange =
                       changeBlockRanges.length > 0 &&
@@ -555,8 +555,9 @@ export function FullFileSplitDiffViewer({
                       />
                     );
                   })}
+                  <div className="flex-1 bg-white dark:bg-gray-900" />
                 </div>
-                <div className="w-12 flex-shrink-0 overflow-hidden">
+                <div className="w-12 flex-shrink-0 overflow-hidden flex flex-col">
                   {oldLines.map((line, index) => {
                     let bgColor =
                       'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
@@ -587,6 +588,7 @@ export function FullFileSplitDiffViewer({
                       </div>
                     );
                   })}
+                  <div className="flex-1 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700" />
                 </div>
               </div>
             </div>
@@ -610,7 +612,7 @@ export function FullFileSplitDiffViewer({
               </div>
             )}
             <div className="flex-1 flex overflow-hidden">
-              <div className="w-12 flex-shrink-0 overflow-hidden">
+              <div className="w-12 flex-shrink-0 overflow-hidden flex flex-col">
                 {newLines.map((line, index) => {
                   let bgColor = 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800';
 
@@ -643,9 +645,10 @@ export function FullFileSplitDiffViewer({
                     </div>
                   );
                 })}
+                <div className="flex-1 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700" />
               </div>
               {/* Indicator column for NEW side */}
-              <div className="w-1 flex-shrink-0 overflow-hidden">
+              <div className="w-1 flex-shrink-0 overflow-hidden flex flex-col">
                 {newLines.map((line, index) => {
                   const isCurrentChange =
                     changeBlockRanges.length > 0 &&
@@ -665,13 +668,10 @@ export function FullFileSplitDiffViewer({
                   }
 
                   return (
-                    <div
-                      key={index}
-                      className={`${bgColor} min-h-[1.5rem]`}
-                      style={inlineStyle}
-                    />
+                    <div key={index} className={`${bgColor} min-h-[1.5rem]`} style={inlineStyle} />
                   );
                 })}
+                <div className="flex-1 bg-white dark:bg-gray-900" />
               </div>
               <div
                 ref={rightContentRef}
