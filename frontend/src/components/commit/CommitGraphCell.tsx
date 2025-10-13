@@ -79,8 +79,8 @@ export const CommitGraphCell = memo(function CommitGraphCell({
         );
       })}
 
-      {/* Draw line from top to node (child connection) */}
-      {laneInfo.hasChildInSameLane && (
+      {/* Draw line from top to node (child connection from parent branch) */}
+      {laneInfo.hasChildInSameLane && !hasCrossLaneParent && (
         <line
           x1={nodeX}
           y1={0}
@@ -89,6 +89,35 @@ export const CommitGraphCell = memo(function CommitGraphCell({
           stroke={mainColor}
           strokeWidth={2.5}
         />
+      )}
+
+      {/* Draw curved line from parent lane (bottom) to new branch (top) - CHECKOUT */}
+      {hasCrossLaneParent && laneInfo.primaryParentLane !== null && (
+        <g>
+          {/* Define arrow marker - tip at refX=4 (end of arrow) */}
+          <defs>
+            <marker
+              id={`checkout-arrow-in-${laneInfo.laneIndex}`}
+              markerWidth="4"
+              markerHeight="4"
+              refX="3"
+              refY="2"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path d="M 0 0 L 4 2 L 0 4 z" fill={mainColor} opacity={0.9} />
+            </marker>
+          </defs>
+          {/* Line stops before circle, arrow tip touches circle edge */}
+          <path
+            d={`M ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height} Q ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${nodeY + height / 4}, ${nodeX - 2} ${nodeY + nodeRadius - 3}`}
+            stroke={mainColor}
+            strokeWidth={2.5}
+            fill="none"
+            opacity={0.95}
+            markerEnd={`url(#checkout-arrow-in-${laneInfo.laneIndex})`}
+          />
+        </g>
       )}
 
       {/* Draw line from node to bottom (parent connection) */}
@@ -103,19 +132,6 @@ export const CommitGraphCell = memo(function CommitGraphCell({
         />
       )}
 
-      {/* Draw curved line to parent in different lane (CHECKOUT/BRANCH - going OUT) */}
-      {hasCrossLaneParent && laneInfo.primaryParentLane !== null && (
-        <g>
-          {/* Solid line for checkout/branch operations */}
-          <path
-            d={`M ${nodeX} ${nodeY + nodeRadius} Q ${nodeX} ${nodeY + height / 3}, ${laneInfo.primaryParentLane * LANE_WIDTH + LANE_WIDTH / 2} ${height}`}
-            stroke={mainColor}
-            strokeWidth={2.5}
-            fill="none"
-            opacity={0.95}
-          />
-        </g>
-      )}
 
       {/* Draw merge lines from source lanes (INCOMING - bringing code IN) */}
       {laneInfo.mergeSourceLanes.map((sourceLane, idx) => {
@@ -125,31 +141,31 @@ export const CommitGraphCell = memo(function CommitGraphCell({
 
         return (
           <g key={`merge-${sourceLane}`}>
-            {/* Define arrow marker for this merge line */}
+            {/* Define arrow marker - tip at refX=4 (end of arrow) */}
             <defs>
               <marker
                 id={mergeArrowId}
-                markerWidth="6"
-                markerHeight="6"
-                refX="5"
-                refY="3"
+                markerWidth="4"
+                markerHeight="4"
+                refX="3"
+                refY="2"
                 orient="auto"
                 markerUnits="strokeWidth"
               >
-                <path d="M 0 0 L 6 3 L 0 6 z" fill={sourceColor} opacity={0.9} />
+                <path d="M 0 0 L 4 2 L 0 4 z" fill={sourceColor} opacity={0.9} />
               </marker>
             </defs>
             {/* Glow effect for merge lines */}
             <path
-              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX - 2} ${nodeY - nodeRadius + 3}`}
               stroke={sourceColor}
               strokeWidth={5}
               fill="none"
               opacity={0.2}
             />
-            {/* Main merge line with dashed pattern and arrow */}
+            {/* Main merge line - stops before circle, arrow tip touches edge */}
             <path
-              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX} ${nodeY}`}
+              d={`M ${sourceX} ${0} Q ${sourceX} ${nodeY / 2}, ${nodeX - 2} ${nodeY - nodeRadius + 3}`}
               stroke={sourceColor}
               strokeWidth={3}
               fill="none"
