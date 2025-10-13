@@ -19,8 +19,13 @@ export function CommitSearch() {
     setFilter('searchText', '');
   };
 
+  const handleClearAll = () => {
+    setSearchInput('');
+    clearFilters();
+  };
+
   const hasActiveFilters =
-    filters.searchText || filters.author || filters.branch || filters.dateFrom || filters.dateTo;
+    searchInput || filters.author || filters.branch || filters.dateFrom || filters.dateTo;
 
   return (
     <div className="h-14 border-b border-gray-200 px-4 flex items-center gap-3">
@@ -31,7 +36,7 @@ export function CommitSearch() {
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search commits by message..."
+          placeholder="Search commits by message or hash..."
           className="
             w-full pl-10 pr-10 py-2
             border border-gray-300 rounded-md
@@ -60,7 +65,7 @@ export function CommitSearch() {
       {/* Clear all filters */}
       {hasActiveFilters && (
         <button
-          onClick={clearFilters}
+          onClick={handleClearAll}
           className="
             px-3 py-2
             text-sm font-medium text-blue-600

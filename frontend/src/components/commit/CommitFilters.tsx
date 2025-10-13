@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, User, GitBranch } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
+import { Dropdown } from '@/components/common/Dropdown';
 
 export function CommitFilters() {
   const { filters, setFilter, commits } = useCommitStore();
@@ -124,52 +125,24 @@ export function CommitFilters() {
 
           <div className="space-y-4">
             {/* Author filter */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4" />
-                Author
-              </label>
-              <select
-                value={filters.author || ''}
-                onChange={(e) => setFilter('author', e.target.value || null)}
-                className="
-                  w-full px-3 py-2 border border-gray-300 rounded-md
-                  text-sm
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                "
-              >
-                <option value="">All authors</option>
-                {authors.map((author) => (
-                  <option key={author} value={author}>
-                    {author}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              label="Author"
+              icon={User}
+              value={filters.author}
+              onChange={(value) => setFilter('author', value)}
+              options={authors}
+              placeholder="All authors"
+            />
 
             {/* Branch filter */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <GitBranch className="w-4 h-4" />
-                Branch
-              </label>
-              <select
-                value={filters.branch || ''}
-                onChange={(e) => setFilter('branch', e.target.value || null)}
-                className="
-                  w-full px-3 py-2 border border-gray-300 rounded-md
-                  text-sm
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                "
-              >
-                <option value="">All branches</option>
-                {branches.map((branch) => (
-                  <option key={branch} value={branch}>
-                    {branch}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              label="Branch"
+              icon={GitBranch}
+              value={filters.branch}
+              onChange={(value) => setFilter('branch', value)}
+              options={branches}
+              placeholder="All branches"
+            />
 
             {/* Date range filters */}
             <div>

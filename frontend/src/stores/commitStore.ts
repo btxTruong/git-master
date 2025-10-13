@@ -75,7 +75,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   filters: initialFilters,
 
   loadCommits: async (page: number) => {
-    const { pageSize, commits, isLoading } = get();
+    const { pageSize, commits, isLoading, filters } = get();
 
     // Prevent concurrent loads
     if (isLoading) return;
@@ -84,7 +84,17 @@ export const useCommitStore = create<CommitState>((set, get) => ({
 
     try {
       const offset = page * pageSize;
-      const newCommits = await GetCommits(pageSize, offset);
+
+      // Convert filters to backend format
+      const backendFilters = {
+        branch: filters.branch || '',
+        author: filters.author || '',
+        dateFrom: filters.dateFrom ? filters.dateFrom.toISOString() : '',
+        dateTo: filters.dateTo ? filters.dateTo.toISOString() : '',
+        searchText: filters.searchText || '',
+      };
+
+      const newCommits = await GetCommits(pageSize, offset, backendFilters);
 
       // If page 0, replace commits; otherwise append
       const updatedCommits = page === 0 ? newCommits : [...commits, ...newCommits];

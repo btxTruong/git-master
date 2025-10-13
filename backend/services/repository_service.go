@@ -150,8 +150,8 @@ func (s *RepositoryService) GetCurrentRepository() *models.Repository {
 	return s.repo
 }
 
-// GetCommits retrieves commit history with pagination
-func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, error) {
+// GetCommits retrieves commit history with pagination and filters
+func (s *RepositoryService) GetCommits(limit, offset int, filters models.CommitFilters) ([]models.Commit, error) {
 	if s.executor == nil {
 		return nil, fmt.Errorf("no repository opened")
 	}
@@ -165,7 +165,26 @@ func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, erro
 		fmt.Sprintf("--skip=%d", offset),
 		fmt.Sprintf("--pretty=format:%s", format),
 		"--date=format:%Y-%m-%d %H:%M:%S %z",
-		"--all",
+	}
+
+	// Apply branch filter
+	if filters.Branch != "" {
+		args = append(args, filters.Branch)
+	} else {
+		args = append(args, "--all")
+	}
+
+	// Apply author filter
+	if filters.Author != "" {
+		args = append(args, fmt.Sprintf("--author=%s", filters.Author))
+	}
+
+	// Apply date range filters
+	if filters.DateFrom != "" {
+		args = append(args, fmt.Sprintf("--since=%s", filters.DateFrom))
+	}
+	if filters.DateTo != "" {
+		args = append(args, fmt.Sprintf("--until=%s", filters.DateTo))
 	}
 
 	result, err := s.executor.Execute(s.ctx, args...)
@@ -176,6 +195,22 @@ func (s *RepositoryService) GetCommits(limit, offset int) ([]models.Commit, erro
 	commits, err := git.ParseCommits(result.Stdout)
 	if err != nil {
 		return nil, err
+	}
+
+	// Apply search text filter (searches commit message OR hash)
+	// We do this client-side to support searching both fields
+	if filters.SearchText != "" {
+		searchLower := strings.ToLower(filters.SearchText)
+		filteredCommits := []models.Commit{}
+		for _, commit := range commits {
+			// Check if hash or message contains search text
+			if strings.Contains(strings.ToLower(commit.Hash), searchLower) ||
+				strings.Contains(strings.ToLower(commit.ShortHash), searchLower) ||
+				strings.Contains(strings.ToLower(commit.Message), searchLower) {
+				filteredCommits = append(filteredCommits, commit)
+			}
+		}
+		commits = filteredCommits
 	}
 
 	return commits, nil

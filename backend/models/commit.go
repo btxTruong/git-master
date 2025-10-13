@@ -30,3 +30,12 @@ type CommitDetail struct {
 	Files []FileChange `json:"files"`
 	Diff  string       `json:"diff"` // full diff text
 }
+
+// CommitFilters represents filters for commit history
+type CommitFilters struct {
+	Branch     string `json:"branch"`
+	Author     string `json:"author"`
+	DateFrom   string `json:"dateFrom"`
+	DateTo     string `json:"dateTo"`
+	SearchText string `json:"searchText"`
+}

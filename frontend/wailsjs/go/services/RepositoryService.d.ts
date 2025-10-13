@@ -14,7 +14,7 @@ export function GetBranches():Promise<models.BranchList>;
 
 export function GetCommitDetail(arg1:string):Promise<models.CommitDetail>;
 
-export function GetCommits(arg1:number,arg2:number):Promise<Array<models.Commit>>;
+export function GetCommits(arg1:number,arg2:number,arg3:models.CommitFilters):Promise<Array<models.Commit>>;
 
 export function GetCurrentRepository():Promise<models.Repository>;
 

@@ -217,6 +217,26 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class CommitFilters {
+	    branch: string;
+	    author: string;
+	    dateFrom: string;
+	    dateTo: string;
+	    searchText: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CommitFilters(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.branch = source["branch"];
+	        this.author = source["author"];
+	        this.dateFrom = source["dateFrom"];
+	        this.dateTo = source["dateTo"];
+	        this.searchText = source["searchText"];
+	    }
+	}
 	
 	export class Repository {
 	    path: string;

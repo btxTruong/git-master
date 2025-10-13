@@ -22,8 +22,8 @@ export function GetCommitDetail(arg1) {
   return window['go']['services']['RepositoryService']['GetCommitDetail'](arg1);
 }
 
-export function GetCommits(arg1, arg2) {
-  return window['go']['services']['RepositoryService']['GetCommits'](arg1, arg2);
+export function GetCommits(arg1, arg2, arg3) {
+  return window['go']['services']['RepositoryService']['GetCommits'](arg1, arg2, arg3);
 }
 
 export function GetCurrentRepository() {
