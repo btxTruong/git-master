@@ -595,7 +595,10 @@ export function FullFileSplitDiffViewer({
                   const inlineStyle = line.isSpacer
                     ? { backgroundColor: DELETE_LINE_COLOR, borderRight: '1px solid #D1D5DB' }
                     : line.type === 'add' || isNewFile
-                      ? { backgroundColor: ADDED_LINE_COLOR, borderRight: '1px solid #D1D5DB' }
+                      ? {
+                          backgroundColor: line.correlationColor || ADDED_LINE_COLOR,
+                          borderRight: '1px solid #D1D5DB',
+                        }
                       : {};
 
                   return (
@@ -629,7 +632,7 @@ export function FullFileSplitDiffViewer({
                     const inlineStyle = line.isSpacer
                       ? { backgroundColor: DELETE_LINE_COLOR }
                       : line.type === 'add' || isNewFile
-                        ? { backgroundColor: ADDED_LINE_COLOR }
+                        ? { backgroundColor: line.correlationColor || ADDED_LINE_COLOR }
                         : {};
 
                     const isCurrentChange =
