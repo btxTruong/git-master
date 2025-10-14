@@ -13,16 +13,16 @@ Operations to implement:
 - Get all groups for a repository
 
 ## Acceptance Criteria
-- [ ] CreateChangelistGroup creates group with unique UUID and timestamp
-- [ ] RenameChangelistGroup validates name uniqueness and updates timestamp
-- [ ] DeleteChangelistGroup removes group and optionally archives first
-- [ ] AddPathsToChangelistGroup adds paths without duplicates
-- [ ] RemovePathsFromChangelistGroup removes specified paths
-- [ ] MovePathsBetweenChangelistGroups handles cross-group transfers atomically
-- [ ] All operations use lock mechanism for thread safety
-- [ ] All operations return detailed errors on failure
-- [ ] Group name validation enforced (1-100 chars, no reserved names)
-- [ ] Path normalization applied (POSIX-style forward slashes)
+- [x] CreateChangelistGroup creates group with unique UUID and timestamp
+- [x] RenameChangelistGroup validates name uniqueness and updates timestamp
+- [x] DeleteChangelistGroup removes group and optionally archives first
+- [x] AddPathsToChangelistGroup adds paths without duplicates
+- [x] RemovePathsFromChangelistGroup removes specified paths
+- [x] MovePathsBetweenChangelistGroups handles cross-group transfers atomically
+- [x] All operations use lock mechanism for thread safety
+- [x] All operations return detailed errors on failure
+- [x] Group name validation enforced (1-100 chars, no reserved names)
+- [x] Path normalization applied (POSIX-style forward slashes)
 
 ## Technical Considerations
 - Use full descriptive parameter names (e.g., `changelistGroupIdentifier`, `filePathsToAdd`)
