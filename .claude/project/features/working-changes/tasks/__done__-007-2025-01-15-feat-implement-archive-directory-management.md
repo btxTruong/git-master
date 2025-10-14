@@ -11,14 +11,14 @@ Functionality:
 - Parse archive metadata files
 
 ## Acceptance Criteria
-- [ ] GetArchiveDirectoryPath returns `~/.git-master/{repo-name}/`
-- [ ] SanitizeArchiveName removes dangerous characters but preserves readability
-- [ ] EnsureArchiveDirectoryExists creates directory structure with proper permissions
-- [ ] ListAllArchivesForRepository returns all archives with metadata
-- [ ] Archive names deduplicated (append number if exists)
-- [ ] Cross-platform path handling (Windows, macOS, Linux)
-- [ ] Metadata JSON files parsed and validated
-- [ ] Missing metadata handled gracefully
+- [x] GetArchiveDirectoryPath returns `~/.git-master/{repo-name}/`
+- [x] SanitizeArchiveName removes dangerous characters but preserves readability
+- [x] EnsureArchiveDirectoryExists creates directory structure with proper permissions
+- [x] ListAllArchivesForRepository returns all archives with metadata
+- [x] Archive names deduplicated (append number if exists)
+- [x] Cross-platform path handling (Windows, macOS, Linux)
+- [x] Metadata JSON files parsed and validated
+- [x] Missing metadata handled gracefully
 
 ## Technical Considerations
 - Use full descriptive function names
