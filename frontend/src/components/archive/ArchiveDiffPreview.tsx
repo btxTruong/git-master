@@ -10,6 +10,7 @@ import {
 import { getArchiveDiffContent } from '@/api/changelist';
 import { VirtualizedUnifiedDiff } from '@/components/diff/VirtualizedUnifiedDiff';
 import { VirtualizedSplitDiff } from '@/components/diff/VirtualizedSplitDiff';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useUIStore } from '@/stores/uiStore';
 import type { FileDiff } from '@/types/git';
 import { FileStatus } from '@/types/git';
@@ -279,16 +280,12 @@ export function ArchiveDiffPreview({ archiveName, className = '' }: ArchiveDiffP
   // Empty state - no archive selected
   if (!archiveName) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 ${className}`}
-      >
-        <FileSearch className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          No Archive Selected
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-          Select an archive from the list to view its diff here.
-        </p>
+      <div className={`h-full bg-gray-50 dark:bg-gray-800 ${className}`}>
+        <EmptyState
+          icon={<FileSearch className="w-16 h-16" />}
+          title="No Archive Selected"
+          description="Select an archive from the list to view its diff here."
+        />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { FileSearch, AlertCircle, Loader2 } from 'lucide-react';
 import { GetFileDiff } from '@/../../wailsjs/go/services/StagingService';
 import { VirtualizedUnifiedDiff } from '@/components/diff/VirtualizedUnifiedDiff';
 import { VirtualizedSplitDiff } from '@/components/diff/VirtualizedSplitDiff';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useUIStore } from '@/stores/uiStore';
 import type { StagingFileChange } from '@/types/git';
 import type { FileDiff } from '@/types/git';
@@ -312,16 +313,12 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
   // Empty state - no file selected
   if (!selectedFile) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 ${className}`}
-      >
-        <FileSearch className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          No File Selected
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-          Select a file from any changelist group to view its diff here.
-        </p>
+      <div className={`h-full bg-gray-50 dark:bg-gray-800 ${className}`}>
+        <EmptyState
+          icon={<FileSearch className="w-16 h-16" />}
+          title="No File Selected"
+          description="Select a file from any changelist group to view its diff here."
+        />
       </div>
     );
   }

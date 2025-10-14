@@ -4,13 +4,13 @@
 Implement empty state components for all scenarios where lists or content areas are empty, providing helpful guidance to users.
 
 ## Acceptance Criteria
-- [ ] Empty state for no changelist groups
-- [ ] Empty state for no files in group
-- [ ] Empty state for no archives
-- [ ] Empty state for no diff selected
-- [ ] Empty states include helpful text and actions
-- [ ] Icons make empty states visually clear
-- [ ] Consistent styling across all empty states
+- [x] Empty state for no changelist groups
+- [x] Empty state for no files in group
+- [x] Empty state for no archives
+- [x] Empty state for no diff selected
+- [x] Empty states include helpful text and actions
+- [x] Icons make empty states visually clear
+- [x] Consistent styling across all empty states
 
 ## Technical Considerations
 - Use existing EmptyState component

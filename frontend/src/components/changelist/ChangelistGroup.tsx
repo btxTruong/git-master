@@ -7,6 +7,7 @@ import {
   CHANGELIST_TYPE_UNTRACKED,
 } from '@/types/changelist';
 import { FileTree } from '@/components/staging/FileTree';
+import { EmptyState } from '@/components/common/EmptyState';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
 
@@ -253,14 +254,12 @@ export const ChangelistGroup = memo(function ChangelistGroup({
         <div className="border-t border-gray-200 dark:border-gray-700">
           {fileCount === 0 ? (
             // Empty State
-            <div className="px-4 py-8 text-center">
-              <FolderOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                No files in this group
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Add files by dragging them here or using the context menu
-              </p>
+            <div className="py-4">
+              <EmptyState
+                icon={<FolderOpen className="w-12 h-12" />}
+                title="No Files in Group"
+                description="Add files by dragging them here or using the context menu"
+              />
             </div>
           ) : (
             // File Tree

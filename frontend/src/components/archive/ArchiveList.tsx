@@ -2,6 +2,7 @@ import { memo, useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Archive, ArrowUpDown, Loader2 } from 'lucide-react';
 import { ArchiveItem, type ArchiveAction } from './ArchiveItem';
+import { EmptyState } from '@/components/common/EmptyState';
 import type { ArchiveListEntry } from '@/types/changelist';
 
 interface ArchiveListProps {
@@ -138,16 +139,11 @@ export const ArchiveList = memo(function ArchiveList({
   // Empty state
   if (archives.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-16">
-        <Archive className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          No archives yet
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
-          Archives are snapshots of your changelists that you can restore later. Create an archive
-          by right-clicking a changelist group.
-        </p>
-      </div>
+      <EmptyState
+        icon={<Archive className="w-16 h-16" />}
+        title="No Archives Yet"
+        description="Archives are snapshots of your changelists that you can restore later. Create an archive by right-clicking a changelist group."
+      />
     );
   }
 

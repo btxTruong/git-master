@@ -3,6 +3,7 @@ import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
 import { Spinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
@@ -157,6 +158,16 @@ export function ChangelistPanel({
     [repositoryPath, allGroups, deleteGroup, renameGroup]
   );
 
+  // Handle creating a new group
+  const handleCreateGroup = useCallback(() => {
+    if (!repositoryPath) return;
+
+    const groupName = window.prompt('Enter group name:');
+    if (groupName && groupName.trim()) {
+      useChangelistStore.getState().createGroup(repositoryPath, groupName.trim());
+    }
+  }, [repositoryPath]);
+
   // Empty state when no changes
   if (allGroups.length === 0) {
     return (
@@ -169,15 +180,16 @@ export function ChangelistPanel({
         />
 
         {/* Empty state */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <FolderOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            No Changes
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-            Your working directory is clean. Make some changes to files or create a custom group to
-            organize your work.
-          </p>
+        <div className="flex-1">
+          <EmptyState
+            icon={<FolderOpen className="w-16 h-16" />}
+            title="No Changes"
+            description="Your working directory is clean. Make some changes to files or create a custom group to organize your work."
+            action={{
+              label: 'Create Group',
+              onClick: handleCreateGroup,
+            }}
+          />
         </div>
       </div>
     );
