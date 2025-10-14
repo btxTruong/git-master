@@ -10,14 +10,14 @@ Key components:
 - Directory structure creation for `.git-master` folder
 
 ## Acceptance Criteria
-- [ ] Lock file mechanism implemented with 3-second timeout and 50ms polling
-- [ ] Atomic write function writes to temp file, syncs, then renames
-- [ ] Lock automatically released via defer pattern
-- [ ] JSON marshaling/unmarshaling with proper error handling
-- [ ] Directory creation handles missing `.git-master` folder
-- [ ] Lock acquisition failure returns descriptive error
-- [ ] Concurrent access attempts queue properly with timeout
-- [ ] File permissions set correctly (0644 for data, 0755 for directories)
+- [x] Lock file mechanism implemented with 3-second timeout and 50ms polling
+- [x] Atomic write function writes to temp file, syncs, then renames
+- [x] Lock automatically released via defer pattern
+- [x] JSON marshaling/unmarshaling with proper error handling
+- [x] Directory creation handles missing `.git-master` folder
+- [x] Lock acquisition failure returns descriptive error
+- [x] Concurrent access attempts queue properly with timeout
+- [x] File permissions set correctly (0644 for data, 0755 for directories)
 
 ## Technical Considerations
 - Use full descriptive function names (e.g., `acquireChangelistConfigurationLock`)
