@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { Commit } from '@/stores/commitStore';
+import { useCommitStore } from '@/stores/commitStore';
 import { NewBranchDialog } from './NewBranchDialog';
 import { NewTagDialog } from './NewTagDialog';
 import { SavePatchDialog } from './SavePatchDialog';
@@ -50,6 +51,7 @@ export function CommitContextMenu({
   allCommits = [],
   onSelectCommit,
 }: CommitContextMenuProps) {
+  const { requestScrollToCommit } = useCommitStore();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const [isNewBranchDialogOpen, setIsNewBranchDialogOpen] = useState(false);
@@ -217,6 +219,7 @@ export function CommitContextMenu({
       const parentCommit = allCommits.find((c) => c.hash === parentHash);
       if (parentCommit && onSelectCommit) {
         onSelectCommit(parentCommit);
+        requestScrollToCommit(parentCommit.hash);
         toast.success(`Navigated to parent commit ${parentCommit.shortHash}`);
       } else {
         toast.error('Parent commit not found in current view');
@@ -230,6 +233,7 @@ export function CommitContextMenu({
     const childCommit = allCommits.find((c) => c.parentHashes?.includes(commit.hash));
     if (childCommit && onSelectCommit) {
       onSelectCommit(childCommit);
+      requestScrollToCommit(childCommit.hash);
       toast.success(`Navigated to child commit ${childCommit.shortHash}`);
     } else {
       toast.error('No child commit found in current view');

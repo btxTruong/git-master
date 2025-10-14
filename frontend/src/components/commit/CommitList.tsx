@@ -12,8 +12,17 @@ import { computeGitGraphLayout } from '@/utils/gitGraphLayout';
  */
 export function CommitList() {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { commits, selectedCommit, isLoading, hasMore, currentPage, loadCommits, selectCommit } =
-    useCommitStore();
+  const {
+    commits,
+    selectedCommit,
+    isLoading,
+    hasMore,
+    currentPage,
+    loadCommits,
+    selectCommit,
+    scrollToCommitHash,
+    clearScrollRequest,
+  } = useCommitStore();
 
   // Compute git graph layout for all commits
   const laneInfoMap = useMemo(() => {
@@ -58,6 +67,17 @@ export function CommitList() {
       loadCommits(currentPage + 1);
     }
   }, [virtualItems, commits.length, hasMore, isLoading, currentPage, loadCommits]);
+
+  // Handle scroll to commit request
+  useEffect(() => {
+    if (scrollToCommitHash) {
+      const commitIndex = commits.findIndex((c) => c.hash === scrollToCommitHash);
+      if (commitIndex !== -1) {
+        virtualizer.scrollToIndex(commitIndex, { align: 'center', behavior: 'smooth' });
+        clearScrollRequest();
+      }
+    }
+  }, [scrollToCommitHash, commits, virtualizer, clearScrollRequest]);
 
   // Show empty state when no commits and not loading
   if (commits.length === 0 && !isLoading) {

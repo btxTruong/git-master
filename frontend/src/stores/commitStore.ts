@@ -40,6 +40,7 @@ interface CommitState {
   hasMore: boolean;
   error: string | null;
   filters: CommitFilters;
+  scrollToCommitHash: string | null;
 
   // Actions
   loadCommits: (page: number) => Promise<void>;
@@ -53,6 +54,8 @@ interface CommitState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setHasMore: (hasMore: boolean) => void;
+  requestScrollToCommit: (hash: string) => void;
+  clearScrollRequest: () => void;
 }
 
 const initialFilters: CommitFilters = {
@@ -73,6 +76,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   hasMore: true,
   error: null,
   filters: initialFilters,
+  scrollToCommitHash: null,
 
   loadCommits: async (page: number) => {
     const { pageSize, commits, isLoading, filters } = get();
@@ -147,4 +151,6 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error, isLoading: false }),
   setHasMore: (hasMore) => set({ hasMore }),
+  requestScrollToCommit: (hash) => set({ scrollToCommitHash: hash }),
+  clearScrollRequest: () => set({ scrollToCommitHash: null }),
 }));
