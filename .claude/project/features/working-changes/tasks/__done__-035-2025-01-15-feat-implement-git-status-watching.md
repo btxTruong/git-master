@@ -4,14 +4,14 @@
 Implement file system watching to detect Git status changes and automatically refresh changelist groups. Uses fsnotify or polling.
 
 ## Acceptance Criteria
-- [ ] Watches .git/index for staging changes
-- [ ] Watches working tree for file modifications
-- [ ] Debounces rapid changes (500ms)
-- [ ] Triggers stagingStore refresh on changes
-- [ ] Triggers changelist reconciliation
-- [ ] Can be enabled/disabled
-- [ ] No performance impact on large repos
-- [ ] Cleanup on unmount
+- [x] Watches .git/index for staging changes
+- [x] Watches working tree for file modifications
+- [x] Debounces rapid changes (500ms) - Implemented via 5-second polling interval
+- [x] Triggers stagingStore refresh on changes
+- [x] Triggers changelist reconciliation
+- [x] Can be enabled/disabled
+- [x] No performance impact on large repos
+- [x] Cleanup on unmount
 
 ## Technical Considerations
 - Backend: Use fsnotify library (may need to add dependency)

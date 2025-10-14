@@ -328,7 +328,7 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
       // Reload groups after reconciliation
       await get().loadAllChangelistGroups(repositoryPath);
 
-      toast.success('Reconciled changelists with Git status');
+      // Silent reconciliation - no toast unless error (per acceptance criteria)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to reconcile with Git status';

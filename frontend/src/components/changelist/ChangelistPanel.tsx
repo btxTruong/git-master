@@ -11,6 +11,7 @@ import type { Changelist } from '@/types/changelist';
 interface ChangelistPanelProps {
   onFileSelect: (file: StagingFileChange) => void;
   selectedFilePath: string | null;
+  onShowHistory?: (filePath: string) => void;
   className?: string;
 }
 
@@ -26,6 +27,7 @@ interface ChangelistPanelProps {
 export function ChangelistPanel({
   onFileSelect,
   selectedFilePath,
+  onShowHistory,
   className = '',
 }: ChangelistPanelProps) {
   // Get custom groups from store
@@ -197,6 +199,7 @@ export function ChangelistPanel({
             onFileSelect={onFileSelect}
             selectedFilePath={selectedFilePath}
             onGroupAction={handleGroupAction}
+            onShowHistory={onShowHistory}
           />
         ))}
       </div>

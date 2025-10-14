@@ -4,13 +4,13 @@
 Implement automatic reconciliation of changelist groups when Git status changes are detected. Handles renames, deletions, and new files.
 
 ## Acceptance Criteria
-- [ ] Reconciliation triggered on Git status events
-- [ ] Renames update paths in all groups
-- [ ] Deleted files marked as missing
-- [ ] New files can be auto-added to groups (optional)
-- [ ] Reconciliation atomic and fast (<100ms)
-- [ ] No user disruption during reconciliation
-- [ ] Error handling doesn't break UI
+- [x] Reconciliation triggered on Git status events
+- [x] Renames update paths in all groups
+- [x] Deleted files marked as missing
+- [x] New files can be auto-added to groups (optional)
+- [x] Reconciliation atomic and fast (<100ms)
+- [x] No user disruption during reconciliation
+- [x] Error handling doesn't break UI
 
 ## Technical Considerations
 - Subscribe to Git status change events

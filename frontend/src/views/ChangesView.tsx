@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FolderOpen, GitBranch, RefreshCw } from 'lucide-react';
+import { FolderOpen, GitBranch, RefreshCw, Play, Pause } from 'lucide-react';
 import { ChangelistPanel } from '@/components/changelist/ChangelistPanel';
 import { DiffPreviewPane } from '@/components/changelist/DiffPreviewPane';
 import { BlameViewer } from '@/components/blame/BlameViewer';
+import { FileHistoryDialog } from '@/components/changelist/FileHistoryDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useChangelistStore } from '@/stores/changelistStore';
@@ -39,6 +40,13 @@ function ChangesView() {
   // is connected to FileItem/FileTree components
   const [isBlameViewerOpen, setIsBlameViewerOpen] = useState(false);
   const [blameData, setBlameData] = useState<BlameResult | null>(null);
+
+  // File history dialog state
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [historyFilePath, setHistoryFilePath] = useState<string>('');
+
+  // Auto-refresh state
+  const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
 
   const changelistPanelRef = useRef<HTMLDivElement>(null);
   const autoRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -107,7 +115,7 @@ function ChangesView() {
 
   // Set up auto-refresh timer
   useEffect(() => {
-    if (currentRepository?.path) {
+    if (currentRepository?.path && isAutoRefreshEnabled) {
       // Initial refresh
       refreshGitStatus();
 
@@ -121,7 +129,7 @@ function ChangesView() {
         }
       };
     }
-  }, [currentRepository, refreshGitStatus]);
+  }, [currentRepository, refreshGitStatus, isAutoRefreshEnabled]);
 
   // Handle file selection
   const handleFileSelect = useCallback((file: StagingFileChange) => {
@@ -137,6 +145,18 @@ function ChangesView() {
   const handleCloseBlameViewer = useCallback(() => {
     setIsBlameViewerOpen(false);
     setBlameData(null);
+  }, []);
+
+  // Handle showing file history
+  const handleShowHistory = useCallback((filePath: string) => {
+    setHistoryFilePath(filePath);
+    setIsHistoryDialogOpen(true);
+  }, []);
+
+  // Handle closing file history dialog
+  const handleCloseHistoryDialog = useCallback(() => {
+    setIsHistoryDialogOpen(false);
+    setHistoryFilePath('');
   }, []);
 
   // Note: handleShowBlame will be added when FileContextMenu is integrated with FileItem/FileTree
@@ -275,14 +295,42 @@ function ChangesView() {
             Working Changes
           </h1>
 
-          <button
-            onClick={handleManualRefresh}
-            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
-            title="Refresh (Cmd/Ctrl+R)"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
+              className={`px-3 py-1.5 text-sm rounded transition-colors flex items-center gap-2 ${
+                isAutoRefreshEnabled
+                  ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/30'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title={
+                isAutoRefreshEnabled
+                  ? 'Auto-refresh enabled (click to disable)'
+                  : 'Auto-refresh disabled (click to enable)'
+              }
+            >
+              {isAutoRefreshEnabled ? (
+                <>
+                  <Pause className="w-4 h-4" />
+                  Auto
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Auto
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleManualRefresh}
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
+              title="Refresh (Cmd/Ctrl+R)"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {currentRepository && (
@@ -303,6 +351,7 @@ function ChangesView() {
           <ChangelistPanel
             onFileSelect={handleFileSelect}
             selectedFilePath={selectedFile?.path || null}
+            onShowHistory={handleShowHistory}
             className="h-full"
           />
 
@@ -328,6 +377,13 @@ function ChangesView() {
         onClose={handleCloseBlameViewer}
         blameData={blameData}
         isLoading={false}
+      />
+
+      {/* File History Dialog */}
+      <FileHistoryDialog
+        isOpen={isHistoryDialogOpen}
+        onClose={handleCloseHistoryDialog}
+        filePath={historyFilePath}
       />
     </div>
   );

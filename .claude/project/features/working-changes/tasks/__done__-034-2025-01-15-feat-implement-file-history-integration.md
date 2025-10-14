@@ -4,13 +4,13 @@
 Integrate file history functionality into context menu, showing commit history for specific files.
 
 ## Acceptance Criteria
-- [ ] History action in file context menu
-- [ ] Shows commit list filtered to file path
-- [ ] Displays commit hash, message, author, date
-- [ ] Click commit to view diff for that file
-- [ ] Handles file renames correctly
-- [ ] Empty state for new files
-- [ ] Loading and error states
+- [x] History action in file context menu
+- [x] Shows commit list filtered to file path
+- [x] Displays commit hash, message, author, date
+- [x] Click commit to view diff for that file
+- [x] Handles file renames correctly
+- [x] Empty state for new files
+- [x] Loading and error states
 
 ## Technical Considerations
 - Use existing CommitService.GetCommits with file path filter

@@ -17,6 +17,7 @@ interface ChangelistGroupProps {
   onFileSelect: (file: StagingFileChange) => void;
   selectedFilePath: string | null;
   onGroupAction?: (action: GroupAction, groupId: string) => void;
+  onShowHistory?: (filePath: string) => void;
   isLoading?: boolean;
 }
 
@@ -126,6 +127,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   onFileSelect,
   selectedFilePath,
   onGroupAction,
+  onShowHistory,
   isLoading = false,
 }: ChangelistGroupProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -263,6 +265,8 @@ export const ChangelistGroup = memo(function ChangelistGroup({
                 files={stagingFiles}
                 selectedFile={selectedFile}
                 onFileSelect={onFileSelect}
+                groupId={group.id}
+                onShowHistory={onShowHistory}
               />
             </div>
           )}

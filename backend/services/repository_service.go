@@ -760,3 +760,42 @@ func (s *RepositoryService) GetAuthors() ([]string, error) {
 
 	return authors, nil
 }
+
+// GetFileHistory retrieves commit history for a specific file
+// Uses --follow to track renames
+func (s *RepositoryService) GetFileHistory(filePath string, limit, offset int) ([]models.Commit, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Git log format - same as GetCommits
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%P|%d|%s"
+
+	args := []string{
+		"log",
+		"--follow", // Track file renames
+		fmt.Sprintf("--pretty=format:%s", format),
+		"--date=format:%Y-%m-%d %H:%M:%S %z",
+		fmt.Sprintf("--max-count=%d", limit),
+		fmt.Sprintf("--skip=%d", offset),
+		"--", // Separator before file path
+		filePath,
+	}
+
+	result, err := s.executor.Execute(s.ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file history: %w", err)
+	}
+
+	if result.Stdout == "" {
+		// File might be new (no commits yet)
+		return []models.Commit{}, nil
+	}
+
+	commits, err := git.ParseCommits(result.Stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	return commits, nil
+}

@@ -62,6 +62,10 @@ export function GetFileContentAtCommit(arg1, arg2) {
   return window['go']['services']['RepositoryService']['GetFileContentAtCommit'](arg1, arg2);
 }
 
+export function GetFileHistory(arg1, arg2, arg3) {
+  return window['go']['services']['RepositoryService']['GetFileHistory'](arg1, arg2, arg3);
+}
+
 export function GetStatus() {
   return window['go']['services']['RepositoryService']['GetStatus']();
 }

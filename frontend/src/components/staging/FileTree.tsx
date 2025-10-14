@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react';
+import { FileContextMenu } from '@/components/changelist/FileContextMenu';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
 
@@ -7,6 +8,8 @@ interface FileTreeProps {
   files: StagingFileChange[];
   selectedFile: StagingFileChange | null;
   onFileSelect: (file: StagingFileChange) => void;
+  groupId?: string;
+  onShowHistory?: (filePath: string) => void;
 }
 
 // Simple tree node for staging area
@@ -85,7 +88,13 @@ function sortNodes(nodes: StagingTreeNode[]): StagingTreeNode[] {
     });
 }
 
-export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
+export function FileTree({
+  files,
+  selectedFile,
+  onFileSelect,
+  groupId,
+  onShowHistory,
+}: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const tree = buildStagingFileTree(files);
 
@@ -122,11 +131,11 @@ export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
         [FileStatus.Untracked]: 'U',
       }[node.file!.status];
 
-      return (
+      const fileNode = (
         <div
           key={node.path}
-          className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-gray-100 ${
-            isSelected ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+          className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+            isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500' : ''
           }`}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => onFileSelect(node.file!)}
@@ -136,6 +145,22 @@ export function FileTree({ files, selectedFile, onFileSelect }: FileTreeProps) {
           <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
         </div>
       );
+
+      // Wrap with context menu if groupId is provided
+      if (groupId) {
+        return (
+          <FileContextMenu
+            key={node.path}
+            filePath={node.file!.path}
+            currentGroupId={groupId}
+            onHistoryClick={onShowHistory ? () => onShowHistory(node.file!.path) : undefined}
+          >
+            {fileNode}
+          </FileContextMenu>
+        );
+      }
+
+      return fileNode;
     }
 
     const isExpanded = expandedFolders.has(node.path);
