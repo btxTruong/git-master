@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, User, GitBranch } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
-import { Dropdown } from '@/components/common/Dropdown';
+import { SearchableDropdown } from '@/components/common/SearchableDropdown';
 import { DatePicker } from '@/components/common/DatePicker';
 
 export function CommitFilters() {
@@ -112,23 +112,23 @@ export function CommitFilters() {
 
           <div className="space-y-4">
             {/* Author filter */}
-            <Dropdown
+            <SearchableDropdown
               label="Author"
               icon={User}
               value={filters.author}
               onChange={(value) => setFilter('author', value)}
               options={authors}
-              placeholder="All authors"
+              placeholder="Search authors..."
             />
 
             {/* Branch filter */}
-            <Dropdown
+            <SearchableDropdown
               label="Branch"
               icon={GitBranch}
               value={filters.branch}
               onChange={(value) => setFilter('branch', value)}
               options={branches}
-              placeholder="All branches"
+              placeholder="Search branches..."
             />
 
             {/* Date range filters */}
