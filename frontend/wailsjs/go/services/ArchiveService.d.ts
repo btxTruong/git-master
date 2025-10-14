@@ -15,6 +15,8 @@ export function GetArchiveList():Promise<Array<models.ArchiveListEntry>>;
 
 export function GetArchiveMetadata(arg1:string):Promise<models.ArchiveMetadata>;
 
+export function ImportPatchFile(arg1:string,arg2:services.ImportPatchOptions):Promise<services.ImportPatchResult>;
+
 export function RenameArchiveByName(arg1:string,arg2:string):Promise<void>;
 
 export function RestoreArchiveToWorkingTree(arg1:string,arg2:services.RestoreOptions):Promise<services.RestoreResult>;
@@ -24,3 +26,5 @@ export function SetExecutor(arg1:git.Executor):Promise<void>;
 export function SetRepositoryPath(arg1:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
+
+export function ValidatePatchFile(arg1:string):Promise<boolean>;

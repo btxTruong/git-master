@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Archive, Upload, RefreshCw, FolderOpen } from 'lucide-react';
 import { ArchiveList } from '@/components/archive/ArchiveList';
 import { ArchiveDiffPreview } from '@/components/archive/ArchiveDiffPreview';
+import { ImportPatchDialog } from '@/components/archive/ImportPatchDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useArchiveStore } from '@/stores/archiveStore';
@@ -26,6 +27,9 @@ function ArchivesView() {
 
   const [archiveListPercent, setArchiveListPercent] = useState(DEFAULT_ARCHIVE_LIST_PERCENT);
   const [isResizing, setIsResizing] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importPatchContent, setImportPatchContent] = useState('');
+  const [importFileName, setImportFileName] = useState('');
 
   const archiveListPanelRef = useRef<HTMLDivElement>(null);
 
@@ -72,11 +76,10 @@ function ArchivesView() {
         // Read file content
         const content = await file.text();
 
-        // For now, just show a success message
-        // TODO: Implement actual patch import functionality
-        toast.success(`Patch file "${file.name}" loaded. Import functionality coming soon.`);
-
-        console.log('Patch content:', content);
+        // Store patch content and show dialog
+        setImportPatchContent(content);
+        setImportFileName(file.name);
+        setShowImportDialog(true);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to read patch file';
         toast.error(message);
@@ -85,6 +88,11 @@ function ArchivesView() {
 
     input.click();
   }, []);
+
+  // Handle successful import
+  const handleImportSuccess = useCallback(() => {
+    loadArchives();
+  }, [loadArchives]);
 
   // Resizable splitter handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -198,74 +206,86 @@ function ArchivesView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-      {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Archive className="w-5 h-5" />
-            Archives
-          </h1>
+    <>
+      <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+        {/* Header */}
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Archive className="w-5 h-5" />
+              Archives
+            </h1>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleImportPatch}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
-              title="Import Patch"
-            >
-              <Upload className="w-4 h-4" />
-              Import Patch
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleImportPatch}
+                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
+                title="Import Patch"
+              >
+                <Upload className="w-4 h-4" />
+                Import Patch
+              </button>
 
-            <button
-              onClick={handleManualRefresh}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
-              title="Refresh (Cmd/Ctrl+R)"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
+              <button
+                onClick={handleManualRefresh}
+                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
+                title="Refresh (Cmd/Ctrl+R)"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {currentRepository && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {currentRepository.name} · {currentRepository.currentBranch}
+            </p>
+          )}
+        </div>
+
+        {/* Main content: two-column layout */}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Left: Archive list */}
+          <div
+            ref={archiveListPanelRef}
+            className="overflow-hidden border-r border-gray-200 dark:border-gray-700 flex-shrink-0 relative"
+            style={{ width: `${archiveListPercent}%` }}
+          >
+            <ArchiveList
+              archives={archives}
+              selectedArchiveId={selectedArchiveId}
+              onSelectArchive={handleArchiveSelect}
+              isLoading={isLoading}
+            />
+
+            {/* Resize handle */}
+            <div
+              className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 transition-colors ${
+                isResizing ? 'bg-blue-500' : 'bg-transparent'
+              }`}
+              onMouseDown={handleMouseDown}
+              style={{ zIndex: 10 }}
+            />
+          </div>
+
+          {/* Right: Diff preview pane */}
+          <div className="flex-1 overflow-hidden">
+            <ArchiveDiffPreview archiveName={selectedArchiveName} className="h-full" />
           </div>
         </div>
-
-        {currentRepository && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {currentRepository.name} · {currentRepository.currentBranch}
-          </p>
-        )}
       </div>
 
-      {/* Main content: two-column layout */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left: Archive list */}
-        <div
-          ref={archiveListPanelRef}
-          className="overflow-hidden border-r border-gray-200 dark:border-gray-700 flex-shrink-0 relative"
-          style={{ width: `${archiveListPercent}%` }}
-        >
-          <ArchiveList
-            archives={archives}
-            selectedArchiveId={selectedArchiveId}
-            onSelectArchive={handleArchiveSelect}
-            isLoading={isLoading}
-          />
-
-          {/* Resize handle */}
-          <div
-            className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 transition-colors ${
-              isResizing ? 'bg-blue-500' : 'bg-transparent'
-            }`}
-            onMouseDown={handleMouseDown}
-            style={{ zIndex: 10 }}
-          />
-        </div>
-
-        {/* Right: Diff preview pane */}
-        <div className="flex-1 overflow-hidden">
-          <ArchiveDiffPreview archiveName={selectedArchiveName} className="h-full" />
-        </div>
-      </div>
-    </div>
+      {/* Import Patch Dialog */}
+      {showImportDialog && (
+        <ImportPatchDialog
+          patchContent={importPatchContent}
+          fileName={importFileName}
+          onClose={() => setShowImportDialog(false)}
+          onSuccess={handleImportSuccess}
+        />
+      )}
+    </>
   );
 }
 

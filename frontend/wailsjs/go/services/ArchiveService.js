@@ -22,6 +22,10 @@ export function GetArchiveMetadata(arg1) {
   return window['go']['services']['ArchiveService']['GetArchiveMetadata'](arg1);
 }
 
+export function ImportPatchFile(arg1, arg2) {
+  return window['go']['services']['ArchiveService']['ImportPatchFile'](arg1, arg2);
+}
+
 export function RenameArchiveByName(arg1, arg2) {
   return window['go']['services']['ArchiveService']['RenameArchiveByName'](arg1, arg2);
 }
@@ -40,4 +44,8 @@ export function SetRepositoryPath(arg1) {
 
 export function Startup(arg1) {
   return window['go']['services']['ArchiveService']['Startup'](arg1);
+}
+
+export function ValidatePatchFile(arg1) {
+  return window['go']['services']['ArchiveService']['ValidatePatchFile'](arg1);
 }

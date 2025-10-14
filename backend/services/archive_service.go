@@ -583,3 +583,245 @@ func splitOnWhitespace(s string) []string {
 
 	return parts
 }
+
+// ImportPatchOptions defines options for importing a patch file
+type ImportPatchOptions struct {
+	ApplyImmediately bool   // If true, apply patch to working tree; if false, create group
+	CreateBackup     bool   // Create backup before applying (only for ApplyImmediately)
+	UseThreeWay      bool   // Use three-way merge (only for ApplyImmediately)
+	AllowReject      bool   // Allow reject files (only for ApplyImmediately)
+	GroupName        string // Name for new group (only when not ApplyImmediately)
+}
+
+// ImportPatchResult contains the result of a patch import operation
+type ImportPatchResult struct {
+	Success           bool               `json:"success"`
+	AppliedPatch      bool               `json:"appliedPatch"` // True if patch was applied
+	CreatedGroup      bool               `json:"createdGroup"` // True if group was created
+	RestoreResult     *RestoreResult     `json:"restoreResult,omitempty"`
+	CreatedChangelist *models.Changelist `json:"createdChangelist,omitempty"`
+	ErrorMessage      string             `json:"errorMessage,omitempty"`
+	FilesAffected     []string           `json:"filesAffected,omitempty"`
+}
+
+// ValidatePatchFile validates if a patch file can be applied
+func (s *ArchiveService) ValidatePatchFile(patchContent string) (bool, []string, error) {
+	if s.executor == nil {
+		return false, nil, fmt.Errorf("executor not initialized")
+	}
+
+	if s.repositoryPath == "" {
+		return false, nil, fmt.Errorf("repository path not set")
+	}
+
+	// Write patch to temporary file
+	tmpFile, err := os.CreateTemp("", "patch-validate-*.patch")
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	_, err = tmpFile.WriteString(patchContent)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to write patch content: %w", err)
+	}
+	tmpFile.Close()
+
+	// Extract file paths from patch
+	filePaths := extractFilePathsFromPatch(patchContent)
+
+	// Validate patch with git apply --check
+	checkResult, err := s.executor.Execute(s.ctx, "apply", "--check", tmpFile.Name())
+
+	// Exit code 0 means patch can be applied cleanly
+	if err == nil && checkResult.ExitCode == 0 {
+		return true, filePaths, nil
+	}
+
+	// Return validation result with file paths
+	return false, filePaths, nil
+}
+
+// extractFilePathsFromPatch extracts file paths from a unified diff patch
+func extractFilePathsFromPatch(patchContent string) []string {
+	filePaths := []string{}
+	filePathMap := make(map[string]bool)
+
+	lines := splitLines(patchContent)
+	for _, line := range lines {
+		// Look for diff header lines: "diff --git a/path b/path"
+		if len(line) > 11 && line[:11] == "diff --git " {
+			// Extract the path after "b/"
+			parts := splitOnWhitespace(line)
+			if len(parts) >= 4 {
+				// Format: diff --git a/oldpath b/newpath
+				newPath := parts[3]
+				if len(newPath) > 2 && newPath[:2] == "b/" {
+					filePath := newPath[2:] // Remove "b/" prefix
+					if !filePathMap[filePath] {
+						filePathMap[filePath] = true
+						filePaths = append(filePaths, filePath)
+					}
+				}
+			}
+		} else if len(line) > 4 && line[:4] == "+++" && line[4] != '+' {
+			// Alternative: look for "+++ b/path" lines
+			if len(line) > 6 && line[4:6] == " b" {
+				filePath := line[6:] // Remove "+++ b/" prefix
+				if !filePathMap[filePath] {
+					filePathMap[filePath] = true
+					filePaths = append(filePaths, filePath)
+				}
+			}
+		}
+	}
+
+	return filePaths
+}
+
+// ImportPatchFile imports a patch file either by applying it or creating a changelist group
+func (s *ArchiveService) ImportPatchFile(patchContent string, options ImportPatchOptions) (*ImportPatchResult, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("executor not initialized")
+	}
+
+	if s.repositoryPath == "" {
+		return nil, fmt.Errorf("repository path not set")
+	}
+
+	result := &ImportPatchResult{
+		Success: false,
+	}
+
+	// Validate patch first
+	canApply, filePaths, validateErr := s.ValidatePatchFile(patchContent)
+	if validateErr != nil {
+		result.ErrorMessage = fmt.Sprintf("Patch validation failed: %v", validateErr)
+		return result, validateErr
+	}
+
+	result.FilesAffected = filePaths
+
+	if len(filePaths) == 0 {
+		result.ErrorMessage = "No files found in patch"
+		return result, fmt.Errorf("no files found in patch")
+	}
+
+	// Option 1: Apply patch immediately
+	if options.ApplyImmediately {
+		// Write patch to temporary file for application
+		tmpFile, err := os.CreateTemp("", "patch-import-*.patch")
+		if err != nil {
+			result.ErrorMessage = fmt.Sprintf("Failed to create temp file: %v", err)
+			return result, fmt.Errorf("failed to create temp file: %w", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		_, err = tmpFile.WriteString(patchContent)
+		tmpFile.Close()
+		if err != nil {
+			result.ErrorMessage = fmt.Sprintf("Failed to write patch file: %v", err)
+			return result, fmt.Errorf("failed to write patch file: %w", err)
+		}
+
+		// Apply patch using similar logic to RestoreArchiveToWorkingTree
+		var applyErr error
+
+		// Create backup if requested
+		if options.CreateBackup {
+			stashRef, stashErr := s.createBackupStash(filePaths)
+			if stashErr != nil {
+				result.ErrorMessage = fmt.Sprintf("Failed to create backup: %v", stashErr)
+				return result, fmt.Errorf("failed to create backup: %w", stashErr)
+			}
+			if result.RestoreResult == nil {
+				result.RestoreResult = &RestoreResult{}
+			}
+			result.RestoreResult.BackupStashRef = stashRef
+		}
+
+		// Try to apply patch
+		if canApply {
+			applyErr = s.applyArchivePatch(tmpFile.Name(), false, false)
+			if applyErr == nil {
+				result.Success = true
+				result.AppliedPatch = true
+				if result.RestoreResult == nil {
+					result.RestoreResult = &RestoreResult{}
+				}
+				result.RestoreResult.Success = true
+				result.RestoreResult.AppliedCleanly = true
+				result.RestoreResult.FilesAffected = filePaths
+				return result, nil
+			}
+		}
+
+		// Try three-way merge if enabled
+		if options.UseThreeWay {
+			applyErr = s.applyArchivePatchThreeWay(tmpFile.Name(), false)
+			if applyErr == nil {
+				result.Success = true
+				result.AppliedPatch = true
+				if result.RestoreResult == nil {
+					result.RestoreResult = &RestoreResult{}
+				}
+				result.RestoreResult.Success = true
+				result.RestoreResult.AppliedCleanly = true
+				result.RestoreResult.FilesAffected = filePaths
+				return result, nil
+			}
+		}
+
+		// Try with reject files if enabled
+		if options.AllowReject {
+			rejectFiles, rejectErr := s.applyArchivePatchWithReject(tmpFile.Name(), false)
+			if rejectErr == nil {
+				result.Success = true
+				result.AppliedPatch = true
+				if result.RestoreResult == nil {
+					result.RestoreResult = &RestoreResult{}
+				}
+				result.RestoreResult.Success = true
+				result.RestoreResult.AppliedCleanly = false
+				result.RestoreResult.RejectFiles = rejectFiles
+				result.RestoreResult.FilesAffected = filePaths
+				return result, nil
+			}
+			applyErr = rejectErr
+		}
+
+		result.ErrorMessage = fmt.Sprintf("Failed to apply patch: %v", applyErr)
+		return result, fmt.Errorf("failed to apply patch: %w", applyErr)
+	}
+
+	// Option 2: Create changelist group from patch
+	if options.GroupName == "" {
+		options.GroupName = fmt.Sprintf("Imported Patch %s", time.Now().Format("2006-01-02 15:04"))
+	}
+
+	// Create changelist service to create the group
+	changelistService := NewChangelistService()
+	changelistService.ctx = s.ctx
+
+	// Create the group
+	newGroup, err := changelistService.CreateChangelistGroup(s.repositoryPath, options.GroupName)
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("Failed to create group: %v", err)
+		return result, fmt.Errorf("failed to create changelist group: %w", err)
+	}
+
+	// Add file paths to the group
+	err = changelistService.AddPathsToChangelistGroup(s.repositoryPath, newGroup.IdentifierValue, filePaths)
+	if err != nil {
+		// Clean up the created group
+		changelistService.DeleteChangelistGroup(s.repositoryPath, newGroup.IdentifierValue)
+		result.ErrorMessage = fmt.Sprintf("Failed to add paths to group: %v", err)
+		return result, fmt.Errorf("failed to add paths to group: %w", err)
+	}
+
+	result.Success = true
+	result.CreatedGroup = true
+	result.CreatedChangelist = newGroup
+	return result, nil
+}

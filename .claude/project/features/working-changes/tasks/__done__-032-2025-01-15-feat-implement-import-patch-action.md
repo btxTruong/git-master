@@ -4,14 +4,14 @@
 Implement patch import functionality that can either apply patches directly or create changelist groups from patch contents.
 
 ## Acceptance Criteria
-- [ ] Import action in Archives view toolbar
-- [ ] File picker for .patch or .diff files
-- [ ] Two options: Apply Now or Create Group
-- [ ] Apply Now: uses restore logic with options
-- [ ] Create Group: parses patch and creates group with paths
-- [ ] Validation of patch format
-- [ ] Preview before apply (optional)
-- [ ] Error handling for invalid patches
+- [x] Import action in Archives view toolbar
+- [x] File picker for .patch or .diff files
+- [x] Two options: Apply Now or Create Group
+- [x] Apply Now: uses restore logic with options
+- [x] Create Group: parses patch and creates group with paths
+- [x] Validation of patch format
+- [x] Preview before apply (optional) - Implemented via dialog with options
+- [x] Error handling for invalid patches
 
 ## Technical Considerations
 - Use Wails OpenFileDialog

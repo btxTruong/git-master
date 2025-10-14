@@ -1,75 +1,80 @@
 import type { Changelist } from '@/types/changelist';
-import { models } from '../../wailsjs/go/models';
-import { SaveFileDialog } from '../../wailsjs/go/main/App';
-import {
-  CreatePatchFile,
-  CreatePatchFileForFiles,
-  GenerateDefaultPatchFileName,
-} from '../../wailsjs/go/services/DiffService';
+// import { models } from '../../wailsjs/go/models';
+// import { SaveFileDialog } from '../../wailsjs/go/main/App';
+// TODO: DiffService bindings need to be generated
+// import {
+//   CreatePatchFile,
+//   CreatePatchFileForFiles,
+//   GenerateDefaultPatchFileName,
+// } from '../../wailsjs/go/services/DiffService';
 
 /**
  * Create a patch file for a changelist group
+ * TODO: Re-enable once DiffService bindings are generated
  */
 export async function createPatchForGroup(
-  group: Changelist,
-  outputPath?: string
+  _group: Changelist,
+  _outputPath?: string
 ): Promise<{ path: string; size: number }> {
-  const wailsGroup = new models.Changelist(group);
+  // const wailsGroup = new models.Changelist(group);
 
-  // If no output path provided, prompt user to select one
-  let finalPath = outputPath;
-  if (!finalPath) {
-    // Generate default filename
-    const defaultFilename = await GenerateDefaultPatchFileName(group.name);
+  // // If no output path provided, prompt user to select one
+  // let finalPath = outputPath;
+  // if (!finalPath) {
+  //   // Generate default filename
+  //   const defaultFilename = await GenerateDefaultPatchFileName(group.name);
 
-    // Show save file dialog
-    finalPath = await SaveFileDialog(defaultFilename);
+  //   // Show save file dialog
+  //   finalPath = await SaveFileDialog(defaultFilename);
 
-    // User cancelled
-    if (!finalPath) {
-      throw new Error('Patch creation cancelled');
-    }
-  }
+  //   // User cancelled
+  //   if (!finalPath) {
+  //     throw new Error('Patch creation cancelled');
+  //   }
+  // }
 
-  // Create the patch file
-  const fileSize = await CreatePatchFile(wailsGroup, finalPath);
+  // // Create the patch file
+  // const fileSize = await CreatePatchFile(wailsGroup, finalPath);
 
-  return {
-    path: finalPath,
-    size: fileSize,
-  };
+  // return {
+  //   path: finalPath,
+  //   size: fileSize,
+  // };
+  throw new Error('createPatchForGroup not implemented - DiffService bindings needed');
 }
 
 /**
  * Create a patch file for specific files
+ * TODO: Re-enable once DiffService bindings are generated
  */
 export async function createPatchForFiles(
-  filePaths: string[],
-  defaultName: string,
-  outputPath?: string
+  _filePaths: string[],
+  _defaultName: string,
+  _outputPath?: string
 ): Promise<{ path: string; size: number }> {
-  // If no output path provided, prompt user to select one
-  let finalPath = outputPath;
-  if (!finalPath) {
-    // Generate default filename
-    const defaultFilename = await GenerateDefaultPatchFileName(defaultName);
+  // // If no output path provided, prompt user to select one
+  // let finalPath = outputPath;
+  // if (!finalPath) {
+  //   // Generate default filename
+  //   const defaultFilename = await GenerateDefaultPatchFileName(defaultName);
 
-    // Show save file dialog
-    finalPath = await SaveFileDialog(defaultFilename);
+  //   // Show save file dialog
+  //   finalPath = await SaveFileDialog(defaultFilename);
 
-    // User cancelled
-    if (!finalPath) {
-      throw new Error('Patch creation cancelled');
-    }
-  }
+  //   // User cancelled
+  //   if (!finalPath) {
+  //     throw new Error('Patch creation cancelled');
+  //   }
+  // }
 
-  // Create the patch file
-  const fileSize = await CreatePatchFileForFiles(filePaths, finalPath);
+  // // Create the patch file
+  // const fileSize = await CreatePatchFileForFiles(filePaths, finalPath);
 
-  return {
-    path: finalPath,
-    size: fileSize,
-  };
+  // return {
+  //   path: finalPath,
+  //   size: fileSize,
+  // };
+  throw new Error('createPatchForFiles not implemented - DiffService bindings needed');
 }
 
 /**

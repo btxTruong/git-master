@@ -568,6 +568,90 @@ export namespace services {
 	        this.modified = source["modified"];
 	    }
 	}
+	export class ImportPatchOptions {
+	    ApplyImmediately: boolean;
+	    CreateBackup: boolean;
+	    UseThreeWay: boolean;
+	    AllowReject: boolean;
+	    GroupName: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportPatchOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ApplyImmediately = source["ApplyImmediately"];
+	        this.CreateBackup = source["CreateBackup"];
+	        this.UseThreeWay = source["UseThreeWay"];
+	        this.AllowReject = source["AllowReject"];
+	        this.GroupName = source["GroupName"];
+	    }
+	}
+	export class RestoreResult {
+	    success: boolean;
+	    backupStashRef?: string;
+	    appliedCleanly: boolean;
+	    rejectFiles?: string[];
+	    errorMessage?: string;
+	    filesAffected?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RestoreResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.backupStashRef = source["backupStashRef"];
+	        this.appliedCleanly = source["appliedCleanly"];
+	        this.rejectFiles = source["rejectFiles"];
+	        this.errorMessage = source["errorMessage"];
+	        this.filesAffected = source["filesAffected"];
+	    }
+	}
+	export class ImportPatchResult {
+	    success: boolean;
+	    appliedPatch: boolean;
+	    createdGroup: boolean;
+	    restoreResult?: RestoreResult;
+	    createdChangelist?: models.Changelist;
+	    errorMessage?: string;
+	    filesAffected?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportPatchResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.appliedPatch = source["appliedPatch"];
+	        this.createdGroup = source["createdGroup"];
+	        this.restoreResult = this.convertValues(source["restoreResult"], RestoreResult);
+	        this.createdChangelist = this.convertValues(source["createdChangelist"], models.Changelist);
+	        this.errorMessage = source["errorMessage"];
+	        this.filesAffected = source["filesAffected"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Remote {
 	    name: string;
 	    url: string;
@@ -630,28 +714,7 @@ export namespace services {
 	        this.ModifyIndex = source["ModifyIndex"];
 	    }
 	}
-	export class RestoreResult {
-	    success: boolean;
-	    backupStashRef?: string;
-	    appliedCleanly: boolean;
-	    rejectFiles?: string[];
-	    errorMessage?: string;
-	    filesAffected?: string[];
 	
-	    static createFrom(source: any = {}) {
-	        return new RestoreResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.success = source["success"];
-	        this.backupStashRef = source["backupStashRef"];
-	        this.appliedCleanly = source["appliedCleanly"];
-	        this.rejectFiles = source["rejectFiles"];
-	        this.errorMessage = source["errorMessage"];
-	        this.filesAffected = source["filesAffected"];
-	    }
-	}
 	export class RevertOptions {
 	    RevertStagedChanges: boolean;
 	    RevertUnstagedChanges: boolean;
