@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
+import { Spinner } from '@/components/common/Spinner';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
@@ -34,6 +35,9 @@ export function ChangelistPanel({
   const customGroups = useChangelistStore((state) => state.groups);
   const deleteGroup = useChangelistStore((state) => state.deleteGroup);
   const renameGroup = useChangelistStore((state) => state.renameGroup);
+  const isLoading = useChangelistStore((state) => state.isLoading);
+  const isReconciling = useChangelistStore((state) => state.isReconciling);
+  const operationInProgress = useChangelistStore((state) => state.operationInProgress);
 
   // Get repository path
   const repositoryPath = useRepositoryStore((state) => state.currentRepository?.path);
@@ -188,20 +192,38 @@ export function ChangelistPanel({
         allExpanded={allExpanded}
       />
 
+      {/* Reconciliation indicator */}
+      {isReconciling && (
+        <div className="bg-blue-50 dark:bg-blue-900 border-b border-blue-200 dark:border-blue-700 px-4 py-2 flex items-center gap-2">
+          <Spinner size="sm" />
+          <span className="text-sm text-blue-700 dark:text-blue-200">Reconciling changes...</span>
+        </div>
+      )}
+
       {/* Groups List */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {allGroups.map((group) => (
-          <ChangelistGroup
-            key={group.id}
-            group={group}
-            isExpanded={expandedGroupIds.has(group.id)}
-            onToggleExpanded={() => toggleGroupExpanded(group.id)}
-            onFileSelect={onFileSelect}
-            selectedFilePath={selectedFilePath}
-            onGroupAction={handleGroupAction}
-            onShowHistory={onShowHistory}
-          />
-        ))}
+      <div className="flex-1 overflow-y-auto p-4 relative">
+        {/* Show loading spinner for initial load */}
+        {isLoading && allGroups.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <Spinner text="Loading changelists..." />
+          </div>
+        ) : (
+          <>
+            {allGroups.map((group) => (
+              <ChangelistGroup
+                key={group.id}
+                group={group}
+                isExpanded={expandedGroupIds.has(group.id)}
+                onToggleExpanded={() => toggleGroupExpanded(group.id)}
+                onFileSelect={onFileSelect}
+                selectedFilePath={selectedFilePath}
+                onGroupAction={handleGroupAction}
+                onShowHistory={onShowHistory}
+                isDisabled={!!operationInProgress}
+              />
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

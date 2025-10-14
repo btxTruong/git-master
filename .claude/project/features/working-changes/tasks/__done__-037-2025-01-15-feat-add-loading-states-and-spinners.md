@@ -4,13 +4,13 @@
 Implement comprehensive loading states for all async operations in the Working Changes feature, providing clear feedback to users.
 
 ## Acceptance Criteria
-- [ ] Loading spinners during group operations
-- [ ] Loading overlay for archive creation/restoration
-- [ ] Loading state in diff preview pane
-- [ ] Loading indicator during reconciliation
-- [ ] Skeleton loaders for lists (optional)
-- [ ] No blocking spinners for fast operations (<200ms)
-- [ ] Consistent spinner styling
+- [x] Loading spinners during group operations
+- [x] Loading overlay for archive creation/restoration
+- [x] Loading state in diff preview pane
+- [x] Loading indicator during reconciliation
+- [x] Skeleton loaders for lists (optional)
+- [x] No blocking spinners for fast operations (<200ms)
+- [x] Consistent spinner styling
 
 ## Technical Considerations
 - Use existing Spinner component

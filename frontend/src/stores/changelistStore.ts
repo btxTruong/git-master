@@ -13,6 +13,7 @@ import {
   removeMissingFilesFromAllGroups,
 } from '@/api/changelist';
 import { CHANGELIST_TYPE_CUSTOM } from '@/types/changelist';
+import { getErrorDetails, logError } from '@/utils/errorHandling';
 
 interface ChangelistState {
   // Core state
@@ -23,6 +24,10 @@ interface ChangelistState {
   expandedGroupIds: string[];
   isLoading: boolean;
   error: string | null;
+
+  // Granular loading states
+  isReconciling: boolean;
+  operationInProgress: string | null; // Track which operation is running
 
   // CRUD Actions
   loadAllChangelistGroups: (repositoryPath: string) => Promise<void>;
@@ -67,6 +72,8 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
   expandedGroupIds: [],
   isLoading: false,
   error: null,
+  isReconciling: false,
+  operationInProgress: null,
 
   // Load all changelist groups
   loadAllChangelistGroups: async (repositoryPath: string) => {
@@ -86,15 +93,20 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
       // Update the path-to-group index
       get().updatePathIndex();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load changelist groups';
-      set({ error: message, isLoading: false });
-      toast.error(message);
+      logError(error, 'loadAllChangelistGroups');
+      const errorDetails = getErrorDetails(error);
+      set({ error: errorDetails.message, isLoading: false });
+      toast.error(errorDetails.message);
+      if (errorDetails.suggestion) {
+        toast(errorDetails.suggestion, { icon: '💡', duration: 4000 });
+      }
     }
   },
 
   // Create a new group
   createGroup: async (repositoryPath: string, groupName: string) => {
     const previousGroups = get().groups;
+    set({ operationInProgress: 'create-group' });
 
     try {
       // Optimistically add the new group to state
@@ -102,16 +114,21 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
 
       set({
         groups: [...previousGroups, newGroup],
+        operationInProgress: null,
       });
 
       get().updatePathIndex();
       toast.success(`Created group "${groupName}"`);
     } catch (error) {
       // Rollback on error
-      set({ groups: previousGroups });
+      set({ groups: previousGroups, operationInProgress: null });
 
-      const message = error instanceof Error ? error.message : 'Failed to create group';
-      toast.error(message);
+      logError(error, 'createGroup');
+      const errorDetails = getErrorDetails(error);
+      toast.error(errorDetails.message);
+      if (errorDetails.suggestion) {
+        toast(errorDetails.suggestion, { icon: '💡', duration: 4000 });
+      }
       throw error;
     }
   },
@@ -119,6 +136,7 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
   // Rename an existing group
   renameGroup: async (repositoryPath: string, groupId: string, newName: string) => {
     const previousGroups = get().groups;
+    set({ operationInProgress: 'rename-group' });
 
     try {
       // Optimistically update the group name
@@ -130,10 +148,11 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
 
       await renameChangelistGroup(repositoryPath, groupId, newName);
 
+      set({ operationInProgress: null });
       toast.success(`Renamed group to "${newName}"`);
     } catch (error) {
       // Rollback on error
-      set({ groups: previousGroups });
+      set({ groups: previousGroups, operationInProgress: null });
 
       const message = error instanceof Error ? error.message : 'Failed to rename group';
       toast.error(message);
@@ -151,6 +170,8 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
       return;
     }
 
+    set({ operationInProgress: 'delete-group' });
+
     try {
       // Optimistically remove the group
       const updatedGroups = previousGroups.filter((g) => g.id !== groupId);
@@ -164,10 +185,11 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
 
       await deleteChangelistGroup(repositoryPath, groupId);
 
+      set({ operationInProgress: null });
       toast.success(`Deleted group "${groupToDelete.name}"`);
     } catch (error) {
       // Rollback on error
-      set({ groups: previousGroups });
+      set({ groups: previousGroups, operationInProgress: null });
       get().updatePathIndex();
 
       const message = error instanceof Error ? error.message : 'Failed to delete group';
@@ -322,14 +344,18 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
 
   // Reconcile with Git status
   reconcileWithGitStatus: async (repositoryPath: string, gitStatusOutput: string) => {
+    set({ isReconciling: true });
+
     try {
       await reconcileChangelistsWithGitStatus(repositoryPath, gitStatusOutput);
 
       // Reload groups after reconciliation
       await get().loadAllChangelistGroups(repositoryPath);
 
+      set({ isReconciling: false });
       // Silent reconciliation - no toast unless error (per acceptance criteria)
     } catch (error) {
+      set({ isReconciling: false });
       const message =
         error instanceof Error ? error.message : 'Failed to reconcile with Git status';
       toast.error(message);
@@ -382,6 +408,8 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
       expandedGroupIds: [],
       isLoading: false,
       error: null,
+      isReconciling: false,
+      operationInProgress: null,
     }),
 
   // Internal helper to maintain path-to-group reverse index

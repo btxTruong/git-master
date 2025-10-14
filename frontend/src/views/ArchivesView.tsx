@@ -4,6 +4,7 @@ import { ArchiveList } from '@/components/archive/ArchiveList';
 import { ArchiveDiffPreview } from '@/components/archive/ArchiveDiffPreview';
 import { ImportPatchDialog } from '@/components/archive/ImportPatchDialog';
 import { EmptyState } from '@/components/common/EmptyState';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useArchiveStore } from '@/stores/archiveStore';
 import toast from 'react-hot-toast';
@@ -22,8 +23,15 @@ const DEFAULT_ARCHIVE_LIST_PERCENT = 40;
  */
 function ArchivesView() {
   const { currentRepository } = useRepositoryStore();
-  const { archives, selectedArchiveId, setSelectedArchive, loadArchives, isLoading, error } =
-    useArchiveStore();
+  const {
+    archives,
+    selectedArchiveId,
+    setSelectedArchive,
+    loadArchives,
+    isLoading,
+    isRestoring,
+    error,
+  } = useArchiveStore();
 
   const [archiveListPercent, setArchiveListPercent] = useState(DEFAULT_ARCHIVE_LIST_PERCENT);
   const [isResizing, setIsResizing] = useState(false);
@@ -207,7 +215,10 @@ function ArchivesView() {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+      <div className="flex flex-col h-full bg-white dark:bg-gray-900 relative">
+        {/* Loading overlay for archive operations */}
+        <LoadingOverlay isVisible={isRestoring} message="Restoring archive..." size="lg" />
+
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
           <div className="flex items-center justify-between">

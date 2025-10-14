@@ -4,14 +4,14 @@
 Implement comprehensive error handling with user-friendly messages and recovery suggestions for all operations.
 
 ## Acceptance Criteria
-- [ ] All errors displayed with actionable messages
-- [ ] Network/backend errors handled gracefully
-- [ ] Git command errors parsed and explained
-- [ ] Lock acquisition failures shown clearly
-- [ ] Recovery suggestions provided
-- [ ] Rollback for failed operations
-- [ ] Error boundaries around major sections
-- [ ] Logging for debugging
+- [x] All errors displayed with actionable messages
+- [x] Network/backend errors handled gracefully
+- [x] Git command errors parsed and explained
+- [x] Lock acquisition failures shown clearly
+- [x] Recovery suggestions provided
+- [x] Rollback for failed operations
+- [x] Error boundaries around major sections
+- [x] Logging for debugging
 
 ## Technical Considerations
 - Parse Git stderr for meaningful errors

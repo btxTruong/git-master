@@ -38,6 +38,10 @@ interface ArchiveState {
   isLoading: boolean;
   error: string | null;
 
+  // Granular loading states
+  isRestoring: boolean;
+  operationInProgress: string | null; // Track which operation is running
+
   // Actions
   loadArchives: () => Promise<void>;
   loadArchiveDetails: (archiveName: string) => Promise<void>;
@@ -59,6 +63,8 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
   archiveDiffContent: null,
   isLoading: false,
   error: null,
+  isRestoring: false,
+  operationInProgress: null,
 
   // Load all archives
   loadArchives: async () => {
@@ -116,7 +122,7 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
 
   // Restore an archive to the working tree
   restoreArchive: async (archiveName: string, options: RestoreOptions): Promise<RestoreResult> => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, isRestoring: true, error: null });
 
     try {
       // Convert frontend options to backend format
@@ -131,7 +137,7 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
 
       const result = await restoreArchiveToWorkingTree(archiveName, backendOptions);
 
-      set({ isLoading: false });
+      set({ isLoading: false, isRestoring: false });
 
       // Convert backend result to frontend format
       const frontendResult: RestoreResult = {
@@ -158,7 +164,7 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
       return frontendResult;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to restore archive';
-      set({ error: message, isLoading: false });
+      set({ error: message, isLoading: false, isRestoring: false });
       toast.error(message);
       throw error;
     }
@@ -167,6 +173,7 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
   // Rename an archive
   renameArchive: async (oldArchiveName: string, newArchiveName: string) => {
     const previousArchives = get().archives;
+    set({ operationInProgress: 'rename-archive' });
 
     try {
       // Optimistically update the archive name
@@ -180,10 +187,11 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
 
       await renameArchiveByName(oldArchiveName, newArchiveName);
 
+      set({ operationInProgress: null });
       toast.success(`Renamed archive to "${newArchiveName}"`);
     } catch (error) {
       // Rollback on error
-      set({ archives: previousArchives });
+      set({ archives: previousArchives, operationInProgress: null });
 
       const message = error instanceof Error ? error.message : 'Failed to rename archive';
       toast.error(message);
@@ -201,6 +209,8 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
       return;
     }
 
+    set({ operationInProgress: 'delete-archive' });
+
     try {
       // Optimistically remove the archive
       const updatedArchives = previousArchives.filter((a) => a.archiveName !== archiveName);
@@ -215,10 +225,11 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
 
       await deleteArchiveByName(archiveName);
 
+      set({ operationInProgress: null });
       toast.success(`Deleted archive "${archiveName}"`);
     } catch (error) {
       // Rollback on error
-      set({ archives: previousArchives });
+      set({ archives: previousArchives, operationInProgress: null });
 
       const message = error instanceof Error ? error.message : 'Failed to delete archive';
       toast.error(message);
@@ -243,5 +254,7 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
       archiveDiffContent: null,
       isLoading: false,
       error: null,
+      isRestoring: false,
+      operationInProgress: null,
     }),
 }));

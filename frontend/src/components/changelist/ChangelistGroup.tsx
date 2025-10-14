@@ -19,6 +19,7 @@ interface ChangelistGroupProps {
   onGroupAction?: (action: GroupAction, groupId: string) => void;
   onShowHistory?: (filePath: string) => void;
   isLoading?: boolean;
+  isDisabled?: boolean;
 }
 
 export type GroupAction = 'edit' | 'delete' | 'archive' | 'commit';
@@ -129,6 +130,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   onGroupAction,
   onShowHistory,
   isLoading = false,
+  isDisabled = false,
 }: ChangelistGroupProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -195,7 +197,9 @@ export const ChangelistGroup = memo(function ChangelistGroup({
     <div className="changelist-group border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-2">
       {/* Group Header */}
       <div
-        className={`${groupTypeStyles.headerClass} px-4 py-3 cursor-pointer select-none transition-colors hover:brightness-95 dark:hover:brightness-110`}
+        className={`${groupTypeStyles.headerClass} px-4 py-3 cursor-pointer select-none transition-colors hover:brightness-95 dark:hover:brightness-110 ${
+          isDisabled ? 'opacity-50 pointer-events-none' : ''
+        }`}
         onClick={onToggleExpanded}
       >
         <div className="flex items-center gap-3">
