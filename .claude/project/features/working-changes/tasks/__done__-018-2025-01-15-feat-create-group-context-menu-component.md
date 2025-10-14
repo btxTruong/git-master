@@ -4,13 +4,13 @@
 Create a context menu component for group-level actions including archive, commit all, rename, delete, and create patch.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/changelist/GroupContextMenu.tsx`
-- [ ] All group actions available
-- [ ] Disabled for default groups (tracked/untracked) appropriately
-- [ ] Confirmation for delete with optional archive
-- [ ] Rename inline or via dialog
-- [ ] Archive name input dialog
-- [ ] Integration with changelistStore actions
+- [x] Component created in `frontend/src/components/changelist/GroupContextMenu.tsx`
+- [x] All group actions available
+- [x] Disabled for default groups (tracked/untracked) appropriately
+- [x] Confirmation for delete with optional archive
+- [x] Rename inline or via dialog
+- [x] Archive name input dialog
+- [x] Integration with changelistStore actions
 
 ## Technical Considerations
 - Similar pattern to FileContextMenu

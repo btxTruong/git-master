@@ -4,14 +4,14 @@
 Create the ChangelistGroup component that displays a single changelist group with its files. This component is reused for tracked, untracked, and custom groups.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/changelist/ChangelistGroup.tsx`
-- [ ] Displays group name and file count
-- [ ] Expand/collapse functionality
-- [ ] Integrates FileTree for file display
-- [ ] Visual distinction for group types (tracked/untracked/custom)
-- [ ] Group action menu (edit, delete, archive)
-- [ ] Loading state during operations
-- [ ] Empty state when no files
+- [x] Component created in `frontend/src/components/changelist/ChangelistGroup.tsx`
+- [x] Displays group name and file count
+- [x] Expand/collapse functionality
+- [x] Integrates FileTree for file display
+- [x] Visual distinction for group types (tracked/untracked/custom)
+- [x] Group action menu (edit, delete, archive)
+- [x] Loading state during operations
+- [x] Empty state when no files
 
 ## Technical Considerations
 - Props: group, onFileSelect, onGroupAction
