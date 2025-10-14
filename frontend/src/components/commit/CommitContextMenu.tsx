@@ -29,7 +29,7 @@ import {
   createBranchAtCommit,
   getBranchesContainingCommit,
 } from '@/api/commitOperations';
-import { CheckoutBranch } from '../../../wailsjs/go/services/RepositoryService';
+import { CheckoutBranch, GetCommitDetail } from '../../../wailsjs/go/services/RepositoryService';
 
 interface CommitContextMenuProps {
   commit: Commit;
@@ -51,7 +51,7 @@ export function CommitContextMenu({
   allCommits = [],
   onSelectCommit,
 }: CommitContextMenuProps) {
-  const { requestScrollToCommit } = useCommitStore();
+  const { requestScrollToCommit, addCommits } = useCommitStore();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const [isNewBranchDialogOpen, setIsNewBranchDialogOpen] = useState(false);
@@ -61,6 +61,38 @@ export function CommitContextMenu({
 
   // Check if this commit has any children
   const hasChildren = allCommits.some((c) => c.parentHashes?.includes(commit.hash));
+
+  const findOrFetchCommit = async (commitHash: string): Promise<Commit | null> => {
+    const localCommit = allCommits.find((c) => c.hash === commitHash);
+    if (localCommit) {
+      return localCommit;
+    }
+
+    try {
+      const commitDetail = await GetCommitDetail(commitHash);
+      const fetchedCommit: Commit = {
+        hash: commitDetail.hash,
+        shortHash: commitDetail.shortHash,
+        author: commitDetail.author,
+        committer: commitDetail.committer,
+        message: commitDetail.message,
+        shortMessage: commitDetail.shortMessage,
+        date: commitDetail.date,
+        parentHashes: commitDetail.parentHashes,
+        refs: commitDetail.refs,
+        filesChanged: commitDetail.filesChanged,
+        insertions: commitDetail.insertions,
+        deletions: commitDetail.deletions,
+      };
+
+      addCommits([fetchedCommit]);
+
+      return fetchedCommit;
+    } catch (error) {
+      console.error('Failed to fetch commit:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -213,30 +245,33 @@ export function CommitContextMenu({
     onOperationComplete?.();
   };
 
-  const handleGoToParent = () => {
+  const handleGoToParent = async () => {
     if (commit.parentHashes && commit.parentHashes.length > 0) {
       const parentHash = commit.parentHashes[0];
-      const parentCommit = allCommits.find((c) => c.hash === parentHash);
+      const parentCommit = await findOrFetchCommit(parentHash);
       if (parentCommit && onSelectCommit) {
         onSelectCommit(parentCommit);
         requestScrollToCommit(parentCommit.hash);
         toast.success(`Navigated to parent commit ${parentCommit.shortHash}`);
       } else {
-        toast.error('Parent commit not found in current view');
+        toast.error('Failed to find or fetch parent commit');
       }
     } else {
       toast('No parent commit');
     }
   };
 
-  const handleGoToChild = () => {
+  const handleGoToChild = async () => {
     const childCommit = allCommits.find((c) => c.parentHashes?.includes(commit.hash));
+
     if (childCommit && onSelectCommit) {
       onSelectCommit(childCommit);
       requestScrollToCommit(childCommit.hash);
       toast.success(`Navigated to child commit ${childCommit.shortHash}`);
     } else {
-      toast.error('No child commit found in current view');
+      toast.error(
+        'No child commit found in loaded commits. Try loading more commits or using search.'
+      );
     }
   };
 

@@ -37,6 +37,11 @@ function HistoryView() {
     } else {
       reset();
     }
+
+    // Reset local state when repository changes
+    setCommitDetail(null);
+    setSelectedFile(null);
+    setFileContent(null);
   }, [currentRepository, loadCommits, reset]);
 
   // Load commit details when a commit is selected
