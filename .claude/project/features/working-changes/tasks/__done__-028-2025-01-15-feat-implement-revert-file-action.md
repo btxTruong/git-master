@@ -4,14 +4,14 @@
 Implement the revert file functionality that discards changes based on file state (tracked, unstaged, untracked).
 
 ## Acceptance Criteria
-- [ ] Revert action available in file context menu
-- [ ] Confirmation dialog for destructive action
-- [ ] Handles staged files (restore --staged)
-- [ ] Handles modified files (restore --source HEAD)
-- [ ] Handles untracked files (delete with OS trash)
-- [ ] Feedback via toast notifications
-- [ ] Error handling with recovery suggestions
-- [ ] Refreshes Git status after revert
+- [x] Revert action available in file context menu
+- [x] Confirmation dialog for destructive action
+- [x] Handles staged files (restore --staged)
+- [x] Handles modified files (restore --source HEAD)
+- [x] Handles untracked files (delete with OS trash)
+- [x] Feedback via toast notifications
+- [x] Error handling with recovery suggestions
+- [x] Refreshes Git status after revert
 
 ## Technical Considerations
 - Use extended StagingService.RevertFileChanges

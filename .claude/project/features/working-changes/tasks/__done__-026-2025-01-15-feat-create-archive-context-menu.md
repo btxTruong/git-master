@@ -4,13 +4,13 @@
 Create context menu for archive actions: restore, create group, rename, delete, and export.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/archive/ArchiveContextMenu.tsx`
-- [ ] Restore action with options dialog
-- [ ] Create Group from Archive action
-- [ ] Rename with validation
-- [ ] Delete with confirmation
-- [ ] Export as patch file action
-- [ ] All actions integrated with archiveStore
+- [x] Component created in `frontend/src/components/archive/ArchiveContextMenu.tsx`
+- [x] Restore action with options dialog
+- [x] Create Group from Archive action
+- [x] Rename with validation
+- [x] Delete with confirmation
+- [x] Export as patch file action
+- [x] All actions integrated with archiveStore
 
 ## Technical Considerations
 - Radix UI DropdownMenu

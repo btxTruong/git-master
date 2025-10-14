@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useRevertFile } from '@/hooks/useRevertFile';
 import toast from 'react-hot-toast';
 
 interface FileContextMenuProps {
@@ -43,6 +44,7 @@ export function FileContextMenu({
 
   const { groups, removeFilesFromGroup, moveFilesBetweenGroups } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
+  const { revertFile } = useRevertFile();
 
   // Filter groups to show only other groups (not current one) for move action
   const otherGroups = groups.filter((g) => g.id !== currentGroupId);
@@ -126,37 +128,10 @@ export function FileContextMenu({
   };
 
   const handleRevertFile = async () => {
-    if (!currentRepository) {
-      toast.error('No repository selected');
-      return;
-    }
-
-    if (!window.confirm(`Are you sure you want to revert changes in "${filePath}"?`)) {
-      return;
-    }
-
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { RevertFileChanges } = await import('../../../wailsjs/go/services/StagingService');
-      const { services } = await import('../../../wailsjs/go/models');
-
-      // Revert both staged and unstaged changes
-      const revertOptions = new services.RevertOptions({
-        RevertStagedChanges: true,
-        RevertUnstagedChanges: true,
-        DeleteUntrackedFiles: false,
-      });
-
-      await RevertFileChanges(currentRepository.path, revertOptions);
-
-      // Remove file from changelist after reverting
-      await removeFilesFromGroup(currentRepository.path, currentGroupId, [filePath]);
-
-      toast.success(`Reverted changes in "${filePath}"`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to revert file';
-      toast.error(message);
-    }
+    await revertFile({
+      filePath,
+      groupId: currentGroupId,
+    });
   };
 
   const handleCommitFile = () => {
