@@ -4,13 +4,13 @@
 Create a pane that displays file diffs when a file is selected from any changelist group. Reuses existing diff viewer components.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/changelist/DiffPreviewPane.tsx`
-- [ ] Displays diff for selected file
-- [ ] Lazy loads diff on file selection
-- [ ] Shows loading state while fetching
-- [ ] Error state for diff failures
-- [ ] Empty state when no file selected
-- [ ] Reuses existing DiffViewer component
+- [x] Component created in `frontend/src/components/changelist/DiffPreviewPane.tsx`
+- [x] Displays diff for selected file
+- [x] Lazy loads diff on file selection
+- [x] Shows loading state while fetching
+- [x] Error state for diff failures
+- [x] Empty state when no file selected
+- [x] Reuses existing DiffViewer component
 
 ## Technical Considerations
 - Fetch diff from backend on file select

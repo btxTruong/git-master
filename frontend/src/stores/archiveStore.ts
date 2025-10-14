@@ -147,12 +147,9 @@ export const useArchiveStore = create<ArchiveState>()((set, get) => ({
         if (result.appliedCleanly) {
           toast.success(`Restored archive "${archiveName}" successfully`);
         } else {
-          toast.success(
-            `Restored archive "${archiveName}" with conflicts. Check reject files.`,
-            {
-              duration: 5000,
-            }
-          );
+          toast.success(`Restored archive "${archiveName}" with conflicts. Check reject files.`, {
+            duration: 5000,
+          });
         }
       } else {
         toast.error(result.errorMessage || 'Failed to restore archive');

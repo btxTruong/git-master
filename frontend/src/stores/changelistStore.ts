@@ -221,11 +221,7 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
   },
 
   // Remove files from a group
-  removeFilesFromGroup: async (
-    repositoryPath: string,
-    groupId: string,
-    filePaths: string[]
-  ) => {
+  removeFilesFromGroup: async (repositoryPath: string, groupId: string, filePaths: string[]) => {
     const previousGroups = get().groups;
 
     try {
@@ -317,7 +313,8 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
       set({ groups: previousGroups });
       get().updatePathIndex();
 
-      const message = error instanceof Error ? error.message : 'Failed to move files between groups';
+      const message =
+        error instanceof Error ? error.message : 'Failed to move files between groups';
       toast.error(message);
       throw error;
     }

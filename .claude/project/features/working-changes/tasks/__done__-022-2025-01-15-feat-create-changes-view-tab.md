@@ -4,13 +4,13 @@
 Create the main Changes view that integrates the changelist panel and diff preview pane. This is Tab 1 of the Working Changes feature.
 
 ## Acceptance Criteria
-- [ ] View created in `frontend/src/views/ChangesView.tsx`
-- [ ] Two-column layout: changelist panel (left) and diff preview (right)
-- [ ] Resizable splitter between panels (optional for v1)
-- [ ] Loads changelists on mount
-- [ ] Auto-refresh on Git status changes
-- [ ] Keyboard shortcuts for common actions
-- [ ] Overall loading and error states
+- [x] View created in `frontend/src/views/ChangesView.tsx`
+- [x] Two-column layout: changelist panel (left) and diff preview (right)
+- [x] Resizable splitter between panels (optional for v1)
+- [x] Loads changelists on mount
+- [x] Auto-refresh on Git status changes
+- [x] Keyboard shortcuts for common actions
+- [x] Overall loading and error states
 
 ## Technical Considerations
 - Replace existing placeholder ChangesView
