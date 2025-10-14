@@ -26,9 +26,10 @@ export function CommitFilters({ mode = 'modal' }: CommitFiltersProps) {
   useEffect(() => {
     GetBranches()
       .then((branchList) => {
-        // Extract branch names from local and remote branches
+        // For local branches, use just the name
         const localBranches = branchList.local.map((b) => b.name);
-        const remoteBranches = branchList.remote.map((b) => b.name);
+        // For remote branches, use remote/name format for git log
+        const remoteBranches = branchList.remote.map((b) => `${b.remote}/${b.name}`);
         // Combine and deduplicate
         const allBranches = Array.from(new Set([...localBranches, ...remoteBranches])).sort();
         setBranches(allBranches);
