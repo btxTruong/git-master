@@ -12,14 +12,14 @@ Key functionality:
 - Support binary files with --binary flag
 
 ## Acceptance Criteria
-- [ ] GetChangelistGroupDiff generates complete diff for all files in group
-- [ ] GetSingleFileDiff generates diff for individual file
-- [ ] Staged files use `git diff --staged --binary`
-- [ ] Modified files use `git diff --binary`
-- [ ] Untracked files use `git diff --no-index --binary -- /dev/null <path>`
-- [ ] Diff output includes proper headers for each file
-- [ ] Binary files handled correctly with binary indicator
-- [ ] Service respects Git config (quotepath, CRLF)
+- [x] GetChangelistGroupDiff generates complete diff for all files in group
+- [x] GetSingleFileDiff generates diff for individual file
+- [x] Staged files use `git diff --staged --binary`
+- [x] Modified files use `git diff --binary`
+- [x] Untracked files use `git diff --no-index --binary -- /dev/null <path>`
+- [x] Diff output includes proper headers for each file
+- [x] Binary files handled correctly with binary indicator
+- [x] Service respects Git config (quotepath, CRLF)
 
 ## Technical Considerations
 - Use full descriptive function names (e.g., `GetChangelistGroupDiff`)
