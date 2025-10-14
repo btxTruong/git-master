@@ -256,6 +256,15 @@ func (s *ArchiveService) GetArchiveDiffContent(archiveName string) (string, erro
 	return string(diffBytes), nil
 }
 
+// RenameArchiveByName renames an archive
+func (s *ArchiveService) RenameArchiveByName(oldArchiveName string, newArchiveName string) error {
+	if s.repositoryPath == "" {
+		return fmt.Errorf("repository path not set")
+	}
+
+	return RenameArchive(s.repositoryPath, oldArchiveName, newArchiveName)
+}
+
 // DeleteArchiveByName removes an archive from disk
 func (s *ArchiveService) DeleteArchiveByName(archiveName string) error {
 	if s.repositoryPath == "" {

@@ -269,6 +269,92 @@ func GetArchiveMetadataPath(repositoryPath string, archiveName string) (string, 
 	return filepath.Join(archiveDirectory, archiveName+ArchiveMetadataExtension), nil
 }
 
+// RenameArchive renames an archive atomically (both .diff and .meta.json files)
+func RenameArchive(repositoryPath string, oldArchiveName string, newArchiveName string) error {
+	// Validate that the old archive exists
+	oldDiffPath, err := GetArchiveDiffPath(repositoryPath, oldArchiveName)
+	if err != nil {
+		return err
+	}
+
+	oldMetadataPath, err := GetArchiveMetadataPath(repositoryPath, oldArchiveName)
+	if err != nil {
+		return err
+	}
+
+	// Check if old archive files exist
+	_, diffErr := os.Stat(oldDiffPath)
+	if os.IsNotExist(diffErr) {
+		return fmt.Errorf("archive does not exist: %s", oldArchiveName)
+	}
+
+	_, metaErr := os.Stat(oldMetadataPath)
+	if os.IsNotExist(metaErr) {
+		return fmt.Errorf("archive metadata does not exist: %s", oldArchiveName)
+	}
+
+	// Sanitize the new archive name
+	sanitizedNewName := SanitizeArchiveName(newArchiveName)
+
+	// Get new file paths
+	newDiffPath, err := GetArchiveDiffPath(repositoryPath, sanitizedNewName)
+	if err != nil {
+		return err
+	}
+
+	newMetadataPath, err := GetArchiveMetadataPath(repositoryPath, sanitizedNewName)
+	if err != nil {
+		return err
+	}
+
+	// Check for name conflicts (prevent overwrite)
+	_, newDiffErr := os.Stat(newDiffPath)
+	_, newMetaErr := os.Stat(newMetadataPath)
+	if !os.IsNotExist(newDiffErr) || !os.IsNotExist(newMetaErr) {
+		return fmt.Errorf("archive with name '%s' already exists", sanitizedNewName)
+	}
+
+	// Rename diff file first
+	err = os.Rename(oldDiffPath, newDiffPath)
+	if err != nil {
+		return fmt.Errorf("failed to rename diff file: %w", err)
+	}
+
+	// Rename metadata file (with rollback on failure)
+	err = os.Rename(oldMetadataPath, newMetadataPath)
+	if err != nil {
+		// Rollback: rename diff file back to original name
+		rollbackErr := os.Rename(newDiffPath, oldDiffPath)
+		if rollbackErr != nil {
+			return fmt.Errorf("failed to rename metadata file and rollback failed: %w (rollback error: %v)", err, rollbackErr)
+		}
+		return fmt.Errorf("failed to rename metadata file: %w", err)
+	}
+
+	// Update the ArchiveName field in the metadata file
+	metadata, err := ReadArchiveMetadata(repositoryPath, sanitizedNewName)
+	if err != nil {
+		// Rollback both renames if we can't read metadata
+		os.Rename(newMetadataPath, oldMetadataPath)
+		os.Rename(newDiffPath, oldDiffPath)
+		return fmt.Errorf("failed to read metadata after rename: %w", err)
+	}
+
+	// Update the archive name in metadata
+	metadata.ArchiveName = sanitizedNewName
+
+	// Write the updated metadata
+	err = WriteArchiveMetadata(repositoryPath, sanitizedNewName, metadata)
+	if err != nil {
+		// Rollback both renames if we can't update metadata
+		os.Rename(newMetadataPath, oldMetadataPath)
+		os.Rename(newDiffPath, oldDiffPath)
+		return fmt.Errorf("failed to update metadata with new name: %w", err)
+	}
+
+	return nil
+}
+
 // DeleteArchive removes an archive and its metadata from disk
 func DeleteArchive(repositoryPath string, archiveName string) error {
 	// Get both file paths

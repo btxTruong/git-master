@@ -4,14 +4,14 @@
 Implement operations for managing archives: listing, renaming, deleting, and retrieving archive metadata. These provide the backend API for the Archives tab UI.
 
 ## Acceptance Criteria
-- [ ] ListAllArchivesForRepository returns all archives with metadata
-- [ ] GetArchiveMetadata reads and parses .meta.json file
-- [ ] RenameArchive renames both .diff and .meta.json atomically
-- [ ] DeleteArchive removes both files atomically
-- [ ] Operations validate archive existence before proceeding
-- [ ] Rename handles name conflicts (prevents overwrite)
-- [ ] Metadata parsing handles missing or corrupt files gracefully
-- [ ] All operations return detailed errors
+- [x] ListAllArchivesForRepository returns all archives with metadata
+- [x] GetArchiveMetadata reads and parses .meta.json file
+- [x] RenameArchive renames both .diff and .meta.json atomically
+- [x] DeleteArchive removes both files atomically
+- [x] Operations validate archive existence before proceeding
+- [x] Rename handles name conflicts (prevents overwrite)
+- [x] Metadata parsing handles missing or corrupt files gracefully
+- [x] All operations return detailed errors
 
 ## Technical Considerations
 - List archives by scanning directory for .diff files
