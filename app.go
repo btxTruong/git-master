@@ -83,3 +83,16 @@ func (a *App) OpenDirectoryDialog() (*models.Repository, error) {
 	// Open the repository
 	return a.repositoryService.OpenRepository(dirPath)
 }
+
+// SelectSaveDirectory opens a directory selection dialog for saving files
+func (a *App) SelectSaveDirectory() (string, error) {
+	dirPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Directory to Save Patch File",
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return dirPath, nil
+}

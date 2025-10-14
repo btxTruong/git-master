@@ -6,8 +6,28 @@ export function CheckoutBranch(arg1) {
   return window['go']['services']['RepositoryService']['CheckoutBranch'](arg1);
 }
 
+export function CheckoutCommit(arg1) {
+  return window['go']['services']['RepositoryService']['CheckoutCommit'](arg1);
+}
+
+export function CherryPickCommit(arg1) {
+  return window['go']['services']['RepositoryService']['CherryPickCommit'](arg1);
+}
+
 export function CreateBranch(arg1) {
   return window['go']['services']['RepositoryService']['CreateBranch'](arg1);
+}
+
+export function CreateBranchAtCommit(arg1, arg2) {
+  return window['go']['services']['RepositoryService']['CreateBranchAtCommit'](arg1, arg2);
+}
+
+export function CreatePatchFile(arg1, arg2, arg3) {
+  return window['go']['services']['RepositoryService']['CreatePatchFile'](arg1, arg2, arg3);
+}
+
+export function CreateTag(arg1, arg2, arg3) {
+  return window['go']['services']['RepositoryService']['CreateTag'](arg1, arg2, arg3);
 }
 
 export function DeleteBranch(arg1, arg2) {
@@ -16,6 +36,10 @@ export function DeleteBranch(arg1, arg2) {
 
 export function GetBranches() {
   return window['go']['services']['RepositoryService']['GetBranches']();
+}
+
+export function GetBranchesContainingCommit(arg1) {
+  return window['go']['services']['RepositoryService']['GetBranchesContainingCommit'](arg1);
 }
 
 export function GetCommitDetail(arg1) {
@@ -40,6 +64,14 @@ export function GetStatus() {
 
 export function OpenRepository(arg1) {
   return window['go']['services']['RepositoryService']['OpenRepository'](arg1);
+}
+
+export function ResetBranch(arg1, arg2) {
+  return window['go']['services']['RepositoryService']['ResetBranch'](arg1, arg2);
+}
+
+export function RevertCommit(arg1) {
+  return window['go']['services']['RepositoryService']['RevertCommit'](arg1);
 }
 
 export function SetCommitService(arg1) {

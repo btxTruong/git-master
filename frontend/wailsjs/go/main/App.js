@@ -17,3 +17,7 @@ export function GetStagingService() {
 export function OpenDirectoryDialog() {
   return window['go']['main']['App']['OpenDirectoryDialog']();
 }
+
+export function SelectSaveDirectory() {
+  return window['go']['main']['App']['SelectSaveDirectory']();
+}

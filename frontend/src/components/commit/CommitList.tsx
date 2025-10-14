@@ -43,6 +43,10 @@ export function CommitList() {
     [selectCommit]
   );
 
+  const handleOperationComplete = useCallback(() => {
+    loadCommits(0);
+  }, [loadCommits]);
+
   // Infinite scroll - load more when near bottom
   useEffect(() => {
     const [lastItem] = [...virtualItems].reverse();
@@ -99,8 +103,11 @@ export function CommitList() {
                 commit={commit}
                 isSelected={isSelected}
                 onClick={() => handleSelectCommit(commit)}
+                onOperationComplete={handleOperationComplete}
                 laneInfo={laneInfo}
                 showGraph={true}
+                allCommits={commits}
+                onSelectCommit={handleSelectCommit}
               />
             </div>
           );

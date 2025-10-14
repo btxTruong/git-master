@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git-master/backend/git"
 	"git-master/backend/models"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -478,4 +479,179 @@ func (s *RepositoryService) GetFileContentAtCommit(commitHash string, filePath s
 	}
 
 	return result.Stdout, nil
+}
+
+// CheckoutCommit checks out a specific commit (detached HEAD state)
+func (s *RepositoryService) CheckoutCommit(commitHash string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "checkout", commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to checkout commit: %w", err)
+	}
+
+	if s.repo != nil {
+		s.repo.CurrentBranch = "HEAD"
+		s.repo.IsDetached = true
+	}
+
+	return nil
+}
+
+// ResetBranch resets the current branch to a specific commit
+func (s *RepositoryService) ResetBranch(commitHash string, mode string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	validModes := map[string]bool{"soft": true, "mixed": true, "hard": true}
+	if !validModes[mode] {
+		return fmt.Errorf("invalid reset mode: %s", mode)
+	}
+
+	_, err := s.executor.Execute(s.ctx, "reset", fmt.Sprintf("--%s", mode), commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to reset branch: %w", err)
+	}
+
+	return nil
+}
+
+// RevertCommit reverts a specific commit by creating a new commit
+func (s *RepositoryService) RevertCommit(commitHash string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "revert", "--no-edit", commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to revert commit: %w", err)
+	}
+
+	return nil
+}
+
+// CherryPickCommit cherry-picks a commit onto the current branch
+func (s *RepositoryService) CherryPickCommit(commitHash string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "cherry-pick", commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to cherry-pick commit: %w", err)
+	}
+
+	return nil
+}
+
+// CreatePatchFile creates a .diff file for a specific commit
+func (s *RepositoryService) CreatePatchFile(commitHash string, filename string, outputPath string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	// Generate diff from parent to commit
+	// Use commitHash^..commitHash format to get diff of the commit
+	diffSpec := fmt.Sprintf("%s^..%s", commitHash, commitHash)
+	result, err := s.executor.Execute(s.ctx, "diff", diffSpec)
+	if err != nil {
+		return fmt.Errorf("failed to create patch file: %w", err)
+	}
+
+	if result.Stdout == "" {
+		return fmt.Errorf("no patch generated")
+	}
+
+	// Resolve full path
+	var fullPath string
+	if filepath.IsAbs(outputPath) {
+		fullPath = filepath.Join(outputPath, filename)
+	} else {
+		fullPath = filepath.Join(s.repo.Path, outputPath, filename)
+	}
+
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(fullPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	// Write diff to file
+	err = os.WriteFile(fullPath, []byte(result.Stdout), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write patch file: %w", err)
+	}
+
+	return nil
+}
+
+// CreateTag creates a new tag at a specific commit
+func (s *RepositoryService) CreateTag(tagName string, commitHash string, message string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	args := []string{"tag"}
+	if message != "" {
+		args = append(args, "-a", tagName, "-m", message, commitHash)
+	} else {
+		args = append(args, tagName, commitHash)
+	}
+
+	_, err := s.executor.Execute(s.ctx, args...)
+	if err != nil {
+		return fmt.Errorf("failed to create tag: %w", err)
+	}
+
+	return nil
+}
+
+// CreateBranchAtCommit creates a new branch at a specific commit
+func (s *RepositoryService) CreateBranchAtCommit(branchName string, commitHash string) error {
+	if s.executor == nil {
+		return fmt.Errorf("no repository opened")
+	}
+
+	_, err := s.executor.Execute(s.ctx, "branch", branchName, commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	return nil
+}
+
+// GetBranchesContainingCommit gets the list of branches that contain a specific commit
+func (s *RepositoryService) GetBranchesContainingCommit(commitHash string) ([]string, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	result, err := s.executor.Execute(s.ctx, "branch", "-a", "--contains", commitHash, "--format=%(refname:short)")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get branches containing commit: %w", err)
+	}
+
+	if result.Stdout == "" {
+		return []string{}, nil
+	}
+
+	branches := strings.Split(strings.TrimSpace(result.Stdout), "\n")
+
+	// Filter out remote HEAD references and clean up remote branch names
+	filteredBranches := []string{}
+	for _, branch := range branches {
+		branch = strings.TrimSpace(branch)
+		// Skip remotes/origin/HEAD or similar
+		if strings.Contains(branch, "HEAD") {
+			continue
+		}
+		// Clean up "remotes/" prefix if present
+		branch = strings.TrimPrefix(branch, "remotes/")
+		filteredBranches = append(filteredBranches, branch)
+	}
+
+	return filteredBranches, nil
 }

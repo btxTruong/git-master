@@ -10,3 +10,5 @@ export function GetRepositoryService():Promise<services.RepositoryService>;
 export function GetStagingService():Promise<services.StagingService>;
 
 export function OpenDirectoryDialog():Promise<models.Repository>;
+
+export function SelectSaveDirectory():Promise<string>;

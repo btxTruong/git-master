@@ -6,11 +6,23 @@ import {context} from '../models';
 
 export function CheckoutBranch(arg1:string):Promise<void>;
 
+export function CheckoutCommit(arg1:string):Promise<void>;
+
+export function CherryPickCommit(arg1:string):Promise<void>;
+
 export function CreateBranch(arg1:string):Promise<void>;
+
+export function CreateBranchAtCommit(arg1:string,arg2:string):Promise<void>;
+
+export function CreatePatchFile(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function CreateTag(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function DeleteBranch(arg1:string,arg2:boolean):Promise<void>;
 
 export function GetBranches():Promise<models.BranchList>;
+
+export function GetBranchesContainingCommit(arg1:string):Promise<Array<string>>;
 
 export function GetCommitDetail(arg1:string):Promise<models.CommitDetail>;
 
@@ -23,6 +35,10 @@ export function GetFileContentAtCommit(arg1:string,arg2:string):Promise<string>;
 export function GetStatus():Promise<models.RepositoryStatus>;
 
 export function OpenRepository(arg1:string):Promise<models.Repository>;
+
+export function ResetBranch(arg1:string,arg2:string):Promise<void>;
+
+export function RevertCommit(arg1:string):Promise<void>;
 
 export function SetCommitService(arg1:services.CommitService):Promise<void>;
 

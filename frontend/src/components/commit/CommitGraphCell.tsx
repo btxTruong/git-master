@@ -132,7 +132,6 @@ export const CommitGraphCell = memo(function CommitGraphCell({
         />
       )}
 
-
       {/* Draw merge lines from source lanes (INCOMING - bringing code IN) */}
       {laneInfo.mergeSourceLanes.map((sourceLane, idx) => {
         const sourceX = sourceLane * LANE_WIDTH + LANE_WIDTH / 2;
