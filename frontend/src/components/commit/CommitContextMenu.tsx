@@ -99,26 +99,31 @@ export function CommitContextMenu({
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const menuWidth = 240;
-    const menuHeight = 450;
+    const menuHeight = 520;
+    const padding = 10;
 
     let x = e.clientX;
     let y = e.clientY;
 
-    if (x + menuWidth > viewportWidth) {
-      x = viewportWidth - menuWidth - 10;
+    // Adjust horizontal position if menu would overflow right edge
+    if (x + menuWidth > viewportWidth - padding) {
+      x = Math.max(padding, viewportWidth - menuWidth - padding);
     }
 
-    if (y + menuHeight > viewportHeight) {
-      y = viewportHeight - menuHeight - 10;
+    // Adjust vertical position if menu would overflow bottom edge
+    if (y + menuHeight > viewportHeight - padding) {
+      // Position menu above cursor
+      y = Math.max(padding, e.clientY - menuHeight);
+
+      // If it still doesn't fit above, position it at the top with padding
+      if (y < padding) {
+        y = padding;
+      }
     }
 
-    if (x < 10) {
-      x = 10;
-    }
-
-    if (y < 10) {
-      y = 10;
-    }
+    // Ensure minimum padding from edges
+    x = Math.max(padding, Math.min(x, viewportWidth - menuWidth - padding));
+    y = Math.max(padding, Math.min(y, viewportHeight - menuHeight - padding));
 
     setPosition({ x, y });
     setIsOpen(true);
