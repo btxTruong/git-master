@@ -442,7 +442,7 @@ export function FullFileSplitDiffViewer({
               aria-label="Previous Diff"
             >
               <ChevronUp className="w-3.5 h-3.5" />
-              Previous
+              Previous Diff
             </button>
             <button
               onClick={handleNextDiff}
@@ -451,7 +451,7 @@ export function FullFileSplitDiffViewer({
               aria-label="Next Diff"
             >
               <ChevronDown className="w-3.5 h-3.5" />
-              Next
+              Next Diff
             </button>
           </div>
           {totalChanges > 0 && (
