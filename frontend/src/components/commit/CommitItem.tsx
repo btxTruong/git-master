@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { type Commit } from '@/stores/commitStore';
-import { User, Calendar, GitMerge } from 'lucide-react';
+import { User, Calendar, GitMerge, GitBranch } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDate } from '@/utils/dateFormat';
 import { CommitGraphCell } from './CommitGraphCell';
@@ -51,6 +51,14 @@ export const CommitItem = memo(function CommitItem({
   const isMergeCommit = commit.parentHashes && commit.parentHashes.length >= 2;
   const isOctopusMerge = commit.parentHashes && commit.parentHashes.length >= 3;
 
+  // Check if this commit is the start of a branch (where the curved line appears in graph)
+  // This happens when the commit's parent is in a different lane (cross-lane parent)
+  // The badge appears on commits with curved lines indicating branch starts
+  const isCheckedOut =
+    laneInfo &&
+    laneInfo.primaryParentLane !== null &&
+    laneInfo.primaryParentLane !== laneInfo.laneIndex;
+
   return (
     <CommitContextMenu
       commit={commit}
@@ -94,6 +102,16 @@ export const CommitItem = memo(function CommitItem({
               <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
                 {commit.shortHash}
               </span>
+              {isCheckedOut && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded
+                           bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
+                           border border-green-200 dark:border-green-700"
+                  title="Checked out commit (HEAD)"
+                >
+                  <GitBranch className="w-3 h-3" />
+                </span>
+              )}
               {isMergeCommit && (
                 <span
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded
