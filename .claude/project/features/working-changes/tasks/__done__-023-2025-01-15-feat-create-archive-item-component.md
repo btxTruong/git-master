@@ -4,13 +4,13 @@
 Create a component for displaying a single archive in the archives list, including metadata and context menu.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/archive/ArchiveItem.tsx`
-- [ ] Displays archive name, date, branch, file count
-- [ ] Context menu for archive actions
-- [ ] Click to select archive
-- [ ] Visual selected state
-- [ ] Metadata formatted nicely (relative dates)
-- [ ] Icon based on archive age or size
+- [x] Component created in `frontend/src/components/archive/ArchiveItem.tsx`
+- [x] Displays archive name, date, branch, file count
+- [x] Context menu for archive actions
+- [x] Click to select archive
+- [x] Visual selected state
+- [x] Metadata formatted nicely (relative dates)
+- [x] Icon based on archive age or size
 
 ## Technical Considerations
 - Props: archive, isSelected, onSelect, onAction
