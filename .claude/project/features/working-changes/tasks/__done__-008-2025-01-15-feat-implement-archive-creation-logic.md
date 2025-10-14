@@ -4,14 +4,14 @@
 Implement the core archive creation functionality that generates Git patch files from changelist groups. This combines diffs from different file states into a single unified patch file with accompanying metadata.
 
 ## Acceptance Criteria
-- [ ] ArchiveChangelistGroup creates .diff and .meta.json files atomically
-- [ ] Handles staged, modified tracked, and untracked files correctly
-- [ ] Generates valid Git patches compatible with `git apply`
-- [ ] Metadata includes all required fields (branch, commit, paths, etc.)
-- [ ] Binary files included with --binary flag
-- [ ] Archive creation is atomic (both files or neither)
-- [ ] Proper error handling with cleanup on failure
-- [ ] Progress can be monitored for large archives
+- [x] ArchiveChangelistGroup creates .diff and .meta.json files atomically
+- [x] Handles staged, modified tracked, and untracked files correctly
+- [x] Generates valid Git patches compatible with `git apply`
+- [x] Metadata includes all required fields (branch, commit, paths, etc.)
+- [x] Binary files included with --binary flag
+- [x] Archive creation is atomic (both files or neither)
+- [x] Proper error handling with cleanup on failure
+- [x] Progress can be monitored for large archives
 
 ## Technical Considerations
 - Use DiffService to generate individual file diffs
