@@ -4,13 +4,13 @@
 Create the main changelist panel that displays all groups (tracked, untracked, custom) and coordinates group and file interactions.
 
 ## Acceptance Criteria
-- [ ] Component created in `frontend/src/components/changelist/ChangelistPanel.tsx`
-- [ ] Displays tracked group first, then untracked, then custom groups
-- [ ] File selection synchronized across groups
-- [ ] Group expansion state managed
+- [x] Component created in `frontend/src/components/changelist/ChangelistPanel.tsx`
+- [x] Displays tracked group first, then untracked, then custom groups
+- [x] File selection synchronized across groups
+- [x] Group expansion state managed
 - [ ] Virtualized list for many groups
-- [ ] Smooth scrolling and interactions
-- [ ] Empty state when no changes
+- [x] Smooth scrolling and interactions
+- [x] Empty state when no changes
 
 ## Technical Considerations
 - Use ChangelistGroup component for each group

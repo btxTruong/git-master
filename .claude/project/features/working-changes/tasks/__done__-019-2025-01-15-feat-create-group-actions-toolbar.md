@@ -4,12 +4,12 @@
 Create a toolbar component for global changelist actions like creating new groups and managing group display options.
 
 ## Acceptance Criteria
-- [ ] Toolbar component created in `frontend/src/components/changelist/GroupActionsToolbar.tsx`
-- [ ] "Create Group" button opens creation dialog
-- [ ] Group name input with validation
+- [x] Toolbar component created in `frontend/src/components/changelist/GroupActionsToolbar.tsx`
+- [x] "Create Group" button opens creation dialog
+- [x] Group name input with validation
 - [ ] Optional: filter/search groups
-- [ ] Optional: expand/collapse all groups
-- [ ] Consistent styling with existing toolbars
+- [x] Optional: expand/collapse all groups
+- [x] Consistent styling with existing toolbars
 
 ## Technical Considerations
 - Position at top of changelist panel
