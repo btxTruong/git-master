@@ -4,14 +4,14 @@
 Create the main Zustand store for managing changelist state in the frontend. This store handles custom groups, file-to-group mappings, and coordinates with the backend API.
 
 ## Acceptance Criteria
-- [ ] Store created in `frontend/src/stores/changelistStore.ts`
-- [ ] State includes groups, pathToGroupIds map, selected items
-- [ ] All CRUD actions implemented with backend API calls
-- [ ] Optimistic updates with rollback on error
-- [ ] Path-to-group reverse index maintained
-- [ ] Loading and error states tracked
-- [ ] Actions use full descriptive names
-- [ ] Toast notifications for user feedback
+- [x] Store created in `frontend/src/stores/changelistStore.ts`
+- [x] State includes groups, pathToGroupIds map, selected items
+- [x] All CRUD actions implemented with backend API calls
+- [x] Optimistic updates with rollback on error
+- [x] Path-to-group reverse index maintained
+- [x] Loading and error states tracked
+- [x] Actions use full descriptive names
+- [x] Toast notifications for user feedback
 
 ## Technical Considerations
 - Use curried Zustand syntax for TypeScript: `create<State>()()`

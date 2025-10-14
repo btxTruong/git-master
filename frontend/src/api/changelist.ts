@@ -1,7 +1,7 @@
 import type { Changelist, ArchiveMetadata, ArchiveListEntry } from '@/types/changelist';
 import * as ChangelistServiceBindings from '../../wailsjs/go/services/ChangelistService';
 import * as ArchiveServiceBindings from '../../wailsjs/go/services/ArchiveService';
-import type { models } from '../../wailsjs/go/models';
+import type { models, services } from '../../wailsjs/go/models';
 
 // ========================================
 // Changelist CRUD Operations
@@ -275,4 +275,28 @@ export async function renameArchiveByName(
   newArchiveName: string
 ): Promise<void> {
   await ArchiveServiceBindings.RenameArchiveByName(oldArchiveName, newArchiveName);
+}
+
+/**
+ * Restores an archive to the working tree.
+ *
+ * @param archiveName - Name of the archive to restore
+ * @param options - Restore options
+ * @returns Result of the restore operation
+ *
+ * @example
+ * const result = await restoreArchiveToWorkingTree('feature-v1-backup', {
+ *   CreateBackup: true,
+ *   TargetGroupID: '',
+ *   NewGroupName: 'Restored Feature',
+ *   UseThreeWay: true,
+ *   AllowReject: true,
+ *   ModifyIndex: false,
+ * });
+ */
+export async function restoreArchiveToWorkingTree(
+  archiveName: string,
+  options: services.RestoreOptions
+): Promise<services.RestoreResult> {
+  return await ArchiveServiceBindings.RestoreArchiveToWorkingTree(archiveName, options);
 }

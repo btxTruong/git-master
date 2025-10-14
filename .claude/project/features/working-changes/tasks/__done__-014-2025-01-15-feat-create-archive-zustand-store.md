@@ -4,14 +4,14 @@
 Create a Zustand store for managing archive state including listing archives, selected archive, and archive operations (restore, rename, delete).
 
 ## Acceptance Criteria
-- [ ] Store created in `frontend/src/stores/archiveStore.ts`
-- [ ] State includes archives list, selected archive, loading/error states
-- [ ] loadArchives fetches all archives for current repository
-- [ ] restoreArchive handles restore with options
-- [ ] Archive management operations (rename, delete) implemented
-- [ ] Toast notifications for all operations
-- [ ] Error handling with user-friendly messages
-- [ ] Integration with changelistStore for group creation from archive
+- [x] Store created in `frontend/src/stores/archiveStore.ts`
+- [x] State includes archives list, selected archive, loading/error states
+- [x] loadArchives fetches all archives for current repository
+- [x] restoreArchive handles restore with options
+- [x] Archive management operations (rename, delete) implemented
+- [x] Toast notifications for all operations
+- [x] Error handling with user-friendly messages
+- [x] Integration with changelistStore for group creation from archive
 
 ## Technical Considerations
 - Similar structure to changelistStore
