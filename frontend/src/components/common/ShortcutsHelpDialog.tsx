@@ -20,6 +20,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl+B', description: 'Go to Branches view' },
       { keys: 'Ctrl+H', description: 'Go to History view' },
       { keys: 'Ctrl+C', description: 'Go to Changes view' },
+      { keys: 'Arrow Up/Down', description: 'Navigate files and groups' },
     ],
   },
   {
@@ -28,6 +29,24 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl+K', description: 'Open commit dialog (when on Changes view)' },
       { keys: 'Ctrl+P', description: 'Pull changes from remote' },
       { keys: 'Ctrl+Shift+P', description: 'Push changes to remote' },
+      { keys: 'Ctrl+R', description: 'Refresh current view' },
+    ],
+  },
+  {
+    title: 'Working Changes',
+    shortcuts: [
+      { keys: 'Ctrl+N', description: 'Create new group' },
+      { keys: 'Ctrl+S', description: 'Commit selected group' },
+      { keys: 'Ctrl+D', description: 'View diff for selected file' },
+      { keys: 'Delete', description: 'Delete selected group' },
+    ],
+  },
+  {
+    title: 'Archives',
+    shortcuts: [
+      { keys: 'Ctrl+I', description: 'Import patch file' },
+      { keys: 'Ctrl+D', description: 'View diff for selected archive' },
+      { keys: 'Delete', description: 'Delete selected archive' },
     ],
   },
   {

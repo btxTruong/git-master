@@ -4,13 +4,13 @@
 Add virtualization to file and group lists to maintain performance with large numbers of items using @tanstack/react-virtual.
 
 ## Acceptance Criteria
-- [ ] Group list virtualized if >50 groups
-- [ ] File lists virtualized if >100 files
-- [ ] Archive list virtualized if >50 archives
-- [ ] Smooth scrolling maintained
-- [ ] Selection state preserved
-- [ ] Expand/collapse works with virtualization
-- [ ] No performance degradation with 1000+ items
+- [x] Group list virtualized if >50 groups
+- [x] File lists virtualized if >100 files
+- [x] Archive list virtualized if >50 archives
+- [x] Smooth scrolling maintained
+- [x] Selection state preserved
+- [x] Expand/collapse works with virtualization
+- [x] No performance degradation with 1000+ items
 
 ## Technical Considerations
 - Use @tanstack/react-virtual (already in dependencies)

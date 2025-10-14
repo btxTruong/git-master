@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useArchiveStore } from '@/stores/archiveStore';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import toast from 'react-hot-toast';
 
 const MIN_ARCHIVE_LIST_PERCENT = 25;
@@ -145,25 +146,109 @@ function ArchivesView() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + R: Refresh
-      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
-        e.preventDefault();
-        handleManualRefresh();
-      }
+  // Keyboard shortcuts for Archives
+  const isMac =
+    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
+  const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
 
-      // Escape: Clear selection
-      if (e.key === 'Escape' && selectedArchiveId) {
-        e.preventDefault();
-        setSelectedArchive(null);
-      }
-    };
+  useKeyboardShortcuts(
+    [
+      {
+        key: 'i',
+        [modifierKey]: true,
+        callback: () => {
+          if (!currentRepository) return;
+          handleImportPatch();
+        },
+        description: 'Import patch',
+      },
+      {
+        key: 'd',
+        [modifierKey]: true,
+        callback: () => {
+          if (!selectedArchiveId) return;
+          // Archive diff is already showing in preview pane
+          // Focus the diff preview pane
+          const diffPane = document.querySelector('[data-archive-diff-preview]');
+          if (diffPane) {
+            (diffPane as HTMLElement).focus();
+          }
+        },
+        description: 'View diff for selected archive',
+      },
+      {
+        key: 'Delete',
+        callback: () => {
+          if (!currentRepository || !selectedArchiveId) return;
+          // Dispatch custom event for delete archive action
+          // This will be handled by ArchiveContextMenu or archive management
+          window.dispatchEvent(
+            new CustomEvent('archive:delete', { detail: { archiveId: selectedArchiveId } })
+          );
+        },
+        description: 'Delete selected archive',
+      },
+      {
+        key: 'Escape',
+        callback: () => {
+          // Close import dialog first
+          if (showImportDialog) {
+            setShowImportDialog(false);
+            return;
+          }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleManualRefresh, selectedArchiveId, setSelectedArchive]);
+          // Then clear selection
+          if (selectedArchiveId) {
+            setSelectedArchive(null);
+          }
+        },
+        description: 'Close dialogs/deselect',
+      },
+      {
+        key: 'ArrowDown',
+        callback: (e) => {
+          // Navigate to next archive
+          e.preventDefault();
+          const archiveItems = document.querySelectorAll('[data-archive-item]');
+          const currentIndex = Array.from(archiveItems).findIndex(
+            (el) => el === document.activeElement || el.contains(document.activeElement)
+          );
+          if (currentIndex < archiveItems.length - 1) {
+            (archiveItems[currentIndex + 1] as HTMLElement).focus();
+          }
+        },
+        description: 'Navigate down',
+        preventDefault: true,
+      },
+      {
+        key: 'ArrowUp',
+        callback: (e) => {
+          // Navigate to previous archive
+          e.preventDefault();
+          const archiveItems = document.querySelectorAll('[data-archive-item]');
+          const currentIndex = Array.from(archiveItems).findIndex(
+            (el) => el === document.activeElement || el.contains(document.activeElement)
+          );
+          if (currentIndex > 0) {
+            (archiveItems[currentIndex - 1] as HTMLElement).focus();
+          }
+        },
+        description: 'Navigate up',
+        preventDefault: true,
+      },
+      {
+        key: 'r',
+        [modifierKey]: true,
+        callback: () => {
+          handleManualRefresh();
+        },
+        description: 'Refresh',
+      },
+    ],
+    {
+      enabled: !!currentRepository,
+    }
+  );
 
   // Empty state - no repository
   if (!currentRepository) {

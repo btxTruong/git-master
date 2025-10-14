@@ -4,14 +4,14 @@
 Implement keyboard shortcuts for common actions in the Working Changes feature for improved accessibility and power user experience.
 
 ## Acceptance Criteria
-- [ ] Cmd/Ctrl+N: Create new group
-- [ ] Cmd/Ctrl+S: Commit selected group
-- [ ] Cmd/Ctrl+D: View diff for selected file
-- [ ] Delete: Delete selected group
-- [ ] Escape: Close dialogs/deselect
-- [ ] Arrow keys: Navigate files/groups
-- [ ] Shortcuts listed in help dialog
-- [ ] Shortcuts work across tabs
+- [x] Cmd/Ctrl+N: Create new group
+- [x] Cmd/Ctrl+S: Commit selected group
+- [x] Cmd/Ctrl+D: View diff for selected file
+- [x] Delete: Delete selected group
+- [x] Escape: Close dialogs/deselect
+- [x] Arrow keys: Navigate files/groups
+- [x] Shortcuts listed in help dialog
+- [x] Shortcuts work across tabs
 
 ## Technical Considerations
 - Use existing keyboard event handling patterns

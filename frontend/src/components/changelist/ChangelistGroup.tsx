@@ -1,5 +1,6 @@
-import { memo, useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown, FolderOpen, MoreVertical, Loader2 } from 'lucide-react';
+import { memo, useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { ChevronRight, ChevronDown, FolderOpen, MoreVertical, Loader2, File } from 'lucide-react';
 import type { Changelist, ChangelistItem } from '@/types/changelist';
 import {
   CHANGELIST_TYPE_CUSTOM,
@@ -7,6 +8,7 @@ import {
   CHANGELIST_TYPE_UNTRACKED,
 } from '@/types/changelist';
 import { FileTree } from '@/components/staging/FileTree';
+import { FileContextMenu } from '@/components/changelist/FileContextMenu';
 import { EmptyState } from '@/components/common/EmptyState';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
@@ -134,6 +136,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   isDisabled = false,
 }: ChangelistGroupProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const fileListRef = useRef<HTMLDivElement>(null);
 
   // Visual styling based on group type
   const groupTypeStyles = useMemo(() => {
@@ -188,10 +191,70 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   const fileCount = group.items.length;
   const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
+  // Use virtualization for file lists with more than 100 items
+  const shouldVirtualizeFiles = fileCount > 100;
+
+  const fileVirtualizer = useVirtualizer({
+    count: stagingFiles.length,
+    getScrollElement: () => fileListRef.current,
+    estimateSize: () => 32, // Estimated height of each file item
+    enabled: shouldVirtualizeFiles && isExpanded,
+    overscan: 10,
+  });
+
   const handleAction = (action: GroupAction) => {
     if (onGroupAction) {
       onGroupAction(action, group.id);
     }
+  };
+
+  // Helper to render a single file item
+  const renderFileItem = (file: StagingFileChange) => {
+    const isSelected = file.path === selectedFilePath;
+    const statusColor = {
+      [FileStatus.Modified]: 'text-blue-600 dark:text-blue-400',
+      [FileStatus.Added]: 'text-green-600 dark:text-green-400',
+      [FileStatus.Deleted]: 'text-red-600 dark:text-red-400',
+      [FileStatus.Renamed]: 'text-purple-600 dark:text-purple-400',
+      [FileStatus.Copied]: 'text-purple-600 dark:text-purple-400',
+      [FileStatus.Untracked]: 'text-gray-600 dark:text-gray-400',
+    }[file.status];
+
+    const statusLabel = {
+      [FileStatus.Modified]: 'M',
+      [FileStatus.Added]: 'A',
+      [FileStatus.Deleted]: 'D',
+      [FileStatus.Renamed]: 'R',
+      [FileStatus.Copied]: 'C',
+      [FileStatus.Untracked]: 'U',
+    }[file.status];
+
+    const fileNode = (
+      <div
+        className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+          isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500' : ''
+        }`}
+        onClick={() => onFileSelect(file)}
+      >
+        <File className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+        <span className="flex-1 text-sm truncate text-gray-900 dark:text-gray-100">
+          {file.path}
+        </span>
+        <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+      </div>
+    );
+
+    return onShowHistory && group.id ? (
+      <FileContextMenu
+        filePath={file.path}
+        currentGroupId={group.id}
+        onHistoryClick={() => onShowHistory(file.path)}
+      >
+        {fileNode}
+      </FileContextMenu>
+    ) : (
+      fileNode
+    );
   };
 
   return (
@@ -261,8 +324,39 @@ export const ChangelistGroup = memo(function ChangelistGroup({
                 description="Add files by dragging them here or using the context menu"
               />
             </div>
+          ) : shouldVirtualizeFiles ? (
+            // Virtualized File List for large datasets (>100 files)
+            <div ref={fileListRef} className="bg-white dark:bg-gray-900 max-h-96 overflow-auto">
+              <div
+                style={{
+                  height: `${fileVirtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {fileVirtualizer.getVirtualItems().map((virtualItem) => {
+                  const file = stagingFiles[virtualItem.index];
+                  return (
+                    <div
+                      key={file.path}
+                      data-index={virtualItem.index}
+                      ref={fileVirtualizer.measureElement}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
+                    >
+                      {renderFileItem(file)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ) : (
-            // File Tree
+            // File Tree for smaller datasets (<= 100 files)
             <div className="bg-white dark:bg-gray-900">
               <FileTree
                 files={stagingFiles}

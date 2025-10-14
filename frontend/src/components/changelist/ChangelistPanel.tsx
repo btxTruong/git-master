@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
@@ -50,6 +51,9 @@ export function ChangelistPanel({
   // Manage expanded state for each group
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set());
 
+  // Ref for virtualization
+  const parentRef = useRef<HTMLDivElement>(null);
+
   // Combine all groups in the correct order
   const allGroups = useMemo(() => {
     const groups: Changelist[] = [];
@@ -70,6 +74,34 @@ export function ChangelistPanel({
 
     return groups;
   }, [trackedGroup, untrackedGroup, customGroups]);
+
+  // Use virtualization for lists with more than 50 groups
+  const shouldVirtualize = allGroups.length > 50;
+
+  // Estimate size based on whether groups are expanded
+  // Collapsed group: ~60px, Expanded group: dynamic based on file count
+  const estimateGroupSize = useCallback(
+    (index: number) => {
+      const group = allGroups[index];
+      if (!group) return 60;
+
+      const isExpanded = expandedGroupIds.has(group.id);
+      if (!isExpanded) return 60; // Collapsed group height
+
+      // Expanded group: header (60px) + files (40px each) + padding
+      const fileCount = group.items.length;
+      return 60 + fileCount * 40 + 16;
+    },
+    [allGroups, expandedGroupIds]
+  );
+
+  const virtualizer = useVirtualizer({
+    count: allGroups.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: estimateGroupSize,
+    enabled: shouldVirtualize,
+    overscan: 3,
+  });
 
   // Toggle group expansion
   const toggleGroupExpanded = useCallback((groupId: string) => {
@@ -213,13 +245,53 @@ export function ChangelistPanel({
       )}
 
       {/* Groups List */}
-      <div className="flex-1 overflow-y-auto p-4 relative">
+      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">
         {/* Show loading spinner for initial load */}
         {isLoading && allGroups.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Spinner text="Loading changelists..." />
           </div>
+        ) : shouldVirtualize ? (
+          // Virtualized list for large datasets
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const group = allGroups[virtualItem.index];
+              return (
+                <div
+                  key={group.id}
+                  data-index={virtualItem.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                  className="pb-2"
+                >
+                  <ChangelistGroup
+                    group={group}
+                    isExpanded={expandedGroupIds.has(group.id)}
+                    onToggleExpanded={() => toggleGroupExpanded(group.id)}
+                    onFileSelect={onFileSelect}
+                    selectedFilePath={selectedFilePath}
+                    onGroupAction={handleGroupAction}
+                    onShowHistory={onShowHistory}
+                    isDisabled={!!operationInProgress}
+                  />
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          // Regular list for smaller datasets
           <>
             {allGroups.map((group) => (
               <ChangelistGroup

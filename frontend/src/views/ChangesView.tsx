@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { getWorkingDirectoryStatus } from '@/api/staging';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import type { StagingFileChange, BlameResult } from '@/types/git';
 
 const MIN_CHANGELIST_PERCENT = 25;
@@ -27,7 +28,15 @@ const AUTO_REFRESH_INTERVAL = 5000; // 5 seconds
  */
 function ChangesView() {
   const { currentRepository } = useRepositoryStore();
-  const { loadAllChangelistGroups, reconcileWithGitStatus } = useChangelistStore();
+  const {
+    loadAllChangelistGroups,
+    reconcileWithGitStatus,
+    createGroup,
+    deleteGroup,
+    selectedGroupId,
+    setSelectedGroup,
+    groups,
+  } = useChangelistStore();
 
   const [selectedFile, setSelectedFile] = useState<StagingFileChange | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +56,10 @@ function ChangesView() {
 
   // Auto-refresh state
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
+
+  // Dialog state for keyboard shortcuts
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
 
   const changelistPanelRef = useRef<HTMLDivElement>(null);
   const autoRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -205,25 +218,166 @@ function ChangesView() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + R: Refresh
-      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
-        e.preventDefault();
-        handleManualRefresh();
-      }
+  // Keyboard shortcuts for Working Changes
+  const isMac =
+    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
+  const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
 
-      // Escape: Clear selection
-      if (e.key === 'Escape' && selectedFile) {
-        e.preventDefault();
-        setSelectedFile(null);
-      }
-    };
+  useKeyboardShortcuts(
+    [
+      {
+        key: 'n',
+        [modifierKey]: true,
+        callback: () => {
+          if (!currentRepository) return;
+          setShowCreateGroupDialog(true);
+        },
+        description: 'Create new group',
+      },
+      {
+        key: 's',
+        [modifierKey]: true,
+        callback: () => {
+          if (!currentRepository || !selectedGroupId) return;
+          // Dispatch custom event for commit action
+          // This will be handled by ChangelistPanel or a future commit integration
+          window.dispatchEvent(
+            new CustomEvent('changelist:commit-group', { detail: { groupId: selectedGroupId } })
+          );
+        },
+        description: 'Commit selected group',
+      },
+      {
+        key: 'd',
+        [modifierKey]: true,
+        callback: () => {
+          if (!selectedFile) return;
+          // File is already selected, diff is showing in preview pane
+          // We could scroll to ensure it's visible or focus the pane
+          const diffPane = document.querySelector('[data-diff-preview]');
+          if (diffPane) {
+            (diffPane as HTMLElement).focus();
+          }
+        },
+        description: 'View diff for selected file',
+      },
+      {
+        key: 'Delete',
+        callback: () => {
+          if (!currentRepository || !selectedGroupId) return;
+          setShowDeleteConfirmDialog(true);
+        },
+        description: 'Delete selected group',
+      },
+      {
+        key: 'Escape',
+        callback: () => {
+          // Close dialogs first
+          if (showCreateGroupDialog) {
+            setShowCreateGroupDialog(false);
+            return;
+          }
+          if (showDeleteConfirmDialog) {
+            setShowDeleteConfirmDialog(false);
+            return;
+          }
+          if (isBlameViewerOpen) {
+            setIsBlameViewerOpen(false);
+            return;
+          }
+          if (isHistoryDialogOpen) {
+            setIsHistoryDialogOpen(false);
+            return;
+          }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleManualRefresh, selectedFile]);
+          // Then clear selections
+          if (selectedFile) {
+            setSelectedFile(null);
+            return;
+          }
+          if (selectedGroupId) {
+            setSelectedGroup(null);
+          }
+        },
+        description: 'Close dialogs/deselect',
+      },
+      {
+        key: 'ArrowDown',
+        callback: (e) => {
+          // Navigate to next file/group
+          e.preventDefault();
+          // This will be enhanced when we have better navigation support
+          const focusableElements = document.querySelectorAll(
+            '[data-file-item], [data-group-item]'
+          );
+          const currentIndex = Array.from(focusableElements).findIndex(
+            (el) => el === document.activeElement || el.contains(document.activeElement)
+          );
+          if (currentIndex < focusableElements.length - 1) {
+            (focusableElements[currentIndex + 1] as HTMLElement).focus();
+          }
+        },
+        description: 'Navigate down',
+        preventDefault: true,
+      },
+      {
+        key: 'ArrowUp',
+        callback: (e) => {
+          // Navigate to previous file/group
+          e.preventDefault();
+          const focusableElements = document.querySelectorAll(
+            '[data-file-item], [data-group-item]'
+          );
+          const currentIndex = Array.from(focusableElements).findIndex(
+            (el) => el === document.activeElement || el.contains(document.activeElement)
+          );
+          if (currentIndex > 0) {
+            (focusableElements[currentIndex - 1] as HTMLElement).focus();
+          }
+        },
+        description: 'Navigate up',
+        preventDefault: true,
+      },
+      {
+        key: 'r',
+        [modifierKey]: true,
+        callback: () => {
+          handleManualRefresh();
+        },
+        description: 'Refresh',
+      },
+    ],
+    {
+      enabled: !!currentRepository,
+    }
+  );
+
+  // Handle create group
+  const handleCreateGroup = useCallback(
+    async (groupName: string) => {
+      if (!currentRepository?.path) return;
+      try {
+        await createGroup(currentRepository.path, groupName);
+        setShowCreateGroupDialog(false);
+      } catch (error) {
+        // Error is already handled in the store
+        console.error('Failed to create group:', error);
+      }
+    },
+    [currentRepository, createGroup]
+  );
+
+  // Handle delete group
+  const handleDeleteGroup = useCallback(async () => {
+    if (!currentRepository?.path || !selectedGroupId) return;
+    try {
+      await deleteGroup(currentRepository.path, selectedGroupId);
+      setShowDeleteConfirmDialog(false);
+    } catch (error) {
+      // Error is already handled in the store
+      console.error('Failed to delete group:', error);
+    }
+  }, [currentRepository, selectedGroupId, deleteGroup]);
 
   // Empty state - no repository
   if (!currentRepository) {
@@ -385,6 +539,80 @@ function ChangesView() {
         onClose={handleCloseHistoryDialog}
         filePath={historyFilePath}
       />
+
+      {/* Create Group Dialog */}
+      {showCreateGroupDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Create New Group
+            </h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const groupName = formData.get('groupName') as string;
+                if (groupName.trim()) {
+                  handleCreateGroup(groupName.trim());
+                }
+              }}
+            >
+              <input
+                type="text"
+                name="groupName"
+                placeholder="Enter group name"
+                autoFocus
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateGroupDialog(false)}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Confirmation Dialog */}
+      {showDeleteConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Delete Group
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete &quot;
+              {groups.find((g) => g.id === selectedGroupId)?.name}
+              &quot;? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteConfirmDialog(false)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteGroup}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
