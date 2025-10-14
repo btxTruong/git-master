@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FileSearch, AlertCircle, Loader2 } from 'lucide-react';
-import { GetFileDiff } from '@/../../wailsjs/go/services/StagingService';
+import { GetFileDiff } from '../../../wailsjs/go/services/StagingService';
 import { VirtualizedUnifiedDiff } from '@/components/diff/VirtualizedUnifiedDiff';
 import { VirtualizedSplitDiff } from '@/components/diff/VirtualizedSplitDiff';
 import { EmptyState } from '@/components/common/EmptyState';
