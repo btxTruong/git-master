@@ -10,14 +10,14 @@ New capabilities:
 - Revert file changes (staged, unstaged, untracked)
 
 ## Acceptance Criteria
-- [ ] StageMultipleFilePaths stages all provided paths in single Git operation
-- [ ] UnstageMultipleFilePaths unstages all provided paths in single Git operation
-- [ ] GetStatusForSpecificFilePaths returns status for specified files only
-- [ ] RevertFileChanges handles tracked, untracked, and deleted files correctly
-- [ ] Batch operations maintain atomicity (all succeed or all fail)
-- [ ] Functions reuse existing Git executor patterns
-- [ ] Error messages indicate which files failed in batch operations
-- [ ] Status parsing reuses existing parseStatus logic
+- [x] StageMultipleFilePaths stages all provided paths in single Git operation
+- [x] UnstageMultipleFilePaths unstages all provided paths in single Git operation
+- [x] GetStatusForSpecificFilePaths returns status for specified files only
+- [x] RevertFileChanges handles tracked, untracked, and deleted files correctly
+- [x] Batch operations maintain atomicity (all succeed or all fail)
+- [x] Functions reuse existing Git executor patterns
+- [x] Error messages indicate which files failed in batch operations
+- [x] Status parsing reuses existing parseStatus logic
 
 ## Technical Considerations
 - Use full descriptive function names (e.g., `StageMultipleFilePaths`, not `StageFiles`)
