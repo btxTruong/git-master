@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"git-master/backend/git"
 	"git-master/backend/models"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 // DiffService handles generating Git diffs for changelist groups
@@ -198,4 +201,123 @@ func (s *DiffService) generateUntrackedFileDiff(filePath string) (string, error)
 	}
 
 	return result.Stdout, nil
+}
+
+// CreatePatchFile creates a patch file for a changelist group
+func (s *DiffService) CreatePatchFile(changelist *models.Changelist, outputPath string, stagingService *StagingService) (int64, error) {
+	// Generate the diff/patch content
+	patchContent, err := s.GetChangelistGroupDiff(changelist, stagingService)
+	if err != nil {
+		return 0, fmt.Errorf("failed to generate patch: %w", err)
+	}
+
+	// Ensure the output directory exists
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return 0, fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Write patch content to file
+	if err := os.WriteFile(outputPath, []byte(patchContent), 0644); err != nil {
+		return 0, fmt.Errorf("failed to write patch file: %w", err)
+	}
+
+	// Get file size for feedback
+	fileInfo, err := os.Stat(outputPath)
+	if err != nil {
+		// File was created but we can't stat it - return 0 size
+		return 0, nil
+	}
+
+	return fileInfo.Size(), nil
+}
+
+// CreatePatchFileForFiles creates a patch file for specific files
+func (s *DiffService) CreatePatchFileForFiles(filePaths []string, outputPath string, stagingService *StagingService) (int64, error) {
+	if len(filePaths) == 0 {
+		return 0, fmt.Errorf("no files provided")
+	}
+
+	// Get file statuses
+	fileStatuses, err := stagingService.GetStatusForSpecificFilePaths(filePaths)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get file statuses: %w", err)
+	}
+
+	// Create a map of file paths to their statuses
+	statusMap := make(map[string]FileStatus)
+	for _, fs := range fileStatuses {
+		statusMap[fs.Path] = fs
+	}
+
+	var diffs []string
+
+	// Generate diff for each file
+	for _, filePath := range filePaths {
+		fileStatus, exists := statusMap[filePath]
+		if !exists {
+			// File not in current status - skip it
+			continue
+		}
+
+		fileDiff, err := s.generateDiffForFileStatus(filePath, fileStatus)
+		if err != nil {
+			// Log error but continue with other files
+			continue
+		}
+
+		if fileDiff != "" {
+			diffs = append(diffs, fileDiff)
+		}
+	}
+
+	if len(diffs) == 0 {
+		return 0, fmt.Errorf("no diffs generated for files")
+	}
+
+	// Combine all diffs
+	patchContent := strings.Join(diffs, "\n\n")
+
+	// Ensure the output directory exists
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return 0, fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Write patch content to file
+	if err := os.WriteFile(outputPath, []byte(patchContent), 0644); err != nil {
+		return 0, fmt.Errorf("failed to write patch file: %w", err)
+	}
+
+	// Get file size for feedback
+	fileInfo, err := os.Stat(outputPath)
+	if err != nil {
+		// File was created but we can't stat it - return 0 size
+		return 0, nil
+	}
+
+	return fileInfo.Size(), nil
+}
+
+// GenerateDefaultPatchFileName generates a default patch file name for a changelist
+func (s *DiffService) GenerateDefaultPatchFileName(groupName string) string {
+	// Format: {group-name}-{date}.patch
+	// Replace spaces and special characters with hyphens
+	sanitizedName := strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return '-'
+	}, groupName)
+
+	// Remove duplicate hyphens
+	sanitizedName = strings.Trim(sanitizedName, "-")
+	for strings.Contains(sanitizedName, "--") {
+		sanitizedName = strings.ReplaceAll(sanitizedName, "--", "-")
+	}
+
+	// Add date suffix
+	dateStr := time.Now().Format("2006-01-02")
+
+	return fmt.Sprintf("%s-%s.patch", sanitizedName, dateStr)
 }

@@ -4,14 +4,14 @@
 Implement export functionality to create patch files from selected files or entire groups, similar to existing commit patch feature.
 
 ## Acceptance Criteria
-- [ ] Create patch action for files and groups
-- [ ] File save dialog for output location
-- [ ] Generates valid Git patch format
-- [ ] Includes file header information
-- [ ] Works for staged, unstaged, and untracked files
-- [ ] Binary file support
-- [ ] Success feedback with file location
-- [ ] Error handling for write failures
+- [x] Create patch action for files and groups
+- [x] File save dialog for output location
+- [x] Generates valid Git patch format
+- [x] Includes file header information
+- [x] Works for staged, unstaged, and untracked files
+- [x] Binary file support
+- [x] Success feedback with file location
+- [x] Error handling for write failures
 
 ## Technical Considerations
 - Reuse DiffService patch generation

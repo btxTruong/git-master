@@ -13,6 +13,8 @@ import {
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useRevertFile } from '@/hooks/useRevertFile';
+import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
+import { CommitDialog } from '@/components/staging/CommitDialog';
 import toast from 'react-hot-toast';
 
 interface FileContextMenuProps {
@@ -45,9 +47,11 @@ export function FileContextMenu({
   const { groups, removeFilesFromGroup, moveFilesBetweenGroups } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const { revertFile } = useRevertFile();
+  const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
   // Filter groups to show only other groups (not current one) for move action
   const otherGroups = groups.filter((g) => g.id !== currentGroupId);
+  const currentGroup = groups.find((g) => g.id === currentGroupId);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -134,10 +138,17 @@ export function FileContextMenu({
     });
   };
 
-  const handleCommitFile = () => {
-    // This would trigger a commit dialog with just this file
-    // Implementation depends on commit dialog component
-    toast('Commit dialog not yet implemented');
+  const handleCommitFile = async () => {
+    if (!currentGroup) {
+      toast.error('Group not found');
+      return;
+    }
+
+    await commitFromGroup({
+      groupId: currentGroupId,
+      groupName: currentGroup.name,
+      filePaths: [filePath],
+    });
   };
 
   const handleRemoveFromGroup = async () => {
@@ -202,8 +213,24 @@ export function FileContextMenu({
     }
   };
 
-  const handleCreatePatch = () => {
-    toast('Create patch not yet implemented');
+  const handleCreatePatch = async () => {
+    try {
+      const { createPatchForFiles, formatFileSize } = await import('@/api/patch');
+
+      // Use the file name (without path) as the default name
+      const fileName = filePath.split('/').pop() || 'file';
+      const result = await createPatchForFiles([filePath], fileName);
+
+      toast.success(`Created patch file: ${result.path} (${formatFileSize(result.size)})`);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Patch creation cancelled') {
+        // User cancelled - don't show error
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Failed to create patch';
+      toast.error(message);
+    }
   };
 
   const menuContent = isOpen ? (
@@ -337,6 +364,9 @@ export function FileContextMenu({
       </div>
 
       {menuContent && createPortal(menuContent, document.body)}
+
+      {/* Commit Dialog */}
+      <CommitDialog isOpen={isCommitDialogOpen} onClose={closeCommitDialog} />
     </>
   );
 }

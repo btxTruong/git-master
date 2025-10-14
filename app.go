@@ -131,3 +131,27 @@ func (a *App) SelectSaveDirectory() (string, error) {
 
 	return dirPath, nil
 }
+
+// SaveFileDialog opens a file save dialog
+func (a *App) SaveFileDialog(defaultFilename string) (string, error) {
+	filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Save Patch File",
+		DefaultFilename: defaultFilename,
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Patch Files (*.patch)",
+				Pattern:     "*.patch",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return filePath, nil
+}

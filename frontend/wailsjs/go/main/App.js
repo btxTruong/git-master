@@ -30,6 +30,10 @@ export function OpenDirectoryDialog() {
   return window['go']['main']['App']['OpenDirectoryDialog']();
 }
 
+export function SaveFileDialog(arg1) {
+  return window['go']['main']['App']['SaveFileDialog'](arg1);
+}
+
 export function SelectSaveDirectory() {
   return window['go']['main']['App']['SelectSaveDirectory']();
 }

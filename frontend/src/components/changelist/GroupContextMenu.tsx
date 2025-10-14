@@ -4,6 +4,8 @@ import { Archive, GitCommit, Edit3, Trash2, FileText, FolderPlus } from 'lucide-
 import type { Changelist } from '@/types/changelist';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
+import { CommitDialog } from '@/components/staging/CommitDialog';
 import { ArchiveChangelistGroup } from '../../../wailsjs/go/services/ArchiveService';
 import { models } from '../../../wailsjs/go/models';
 import toast from 'react-hot-toast';
@@ -35,6 +37,7 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
 
   const { renameGroup, deleteGroup } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
+  const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
   // System-generated groups have limited actions
   const isSystemGroup = group.isSystemGenerated;
@@ -132,13 +135,30 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
     if (onAction) onAction('delete');
   };
 
-  const handleCommit = () => {
-    toast('Commit dialog not yet implemented');
+  const handleCommit = async () => {
+    await commitFromGroup({
+      groupId: group.id,
+      groupName: group.name,
+    });
     if (onAction) onAction('commit');
   };
 
-  const handleCreatePatch = () => {
-    toast('Create patch not yet implemented');
+  const handleCreatePatch = async () => {
+    try {
+      const { createPatchForGroup, formatFileSize } = await import('@/api/patch');
+
+      const result = await createPatchForGroup(group);
+      toast.success(`Created patch file: ${result.path} (${formatFileSize(result.size)})`);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Patch creation cancelled') {
+        // User cancelled - don't show error
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Failed to create patch';
+      toast.error(message);
+    }
+
     if (onAction) onAction('patch');
   };
 
@@ -422,6 +442,9 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
           </div>
         </div>
       )}
+
+      {/* Commit Dialog */}
+      <CommitDialog isOpen={isCommitDialogOpen} onClose={closeCommitDialog} />
     </>
   );
 }
