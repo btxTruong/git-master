@@ -119,6 +119,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   setFilter: (key, value) => {
     set((state) => ({
       filters: { ...state.filters, [key]: value },
+      selectedCommit: null,
     }));
 
     // Reload commits with new filter
@@ -126,7 +127,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   },
 
   clearFilters: () => {
-    set({ filters: initialFilters });
+    set({ filters: initialFilters, selectedCommit: null });
     get().loadCommits(0);
   },
 
