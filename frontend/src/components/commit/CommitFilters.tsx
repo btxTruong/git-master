@@ -4,7 +4,11 @@ import { useCommitStore } from '@/stores/commitStore';
 import { SearchableDropdown } from '@/components/common/SearchableDropdown';
 import { DatePicker } from '@/components/common/DatePicker';
 
-export function CommitFilters() {
+interface CommitFiltersProps {
+  mode?: 'inline' | 'modal';
+}
+
+export function CommitFilters({ mode = 'modal' }: CommitFiltersProps) {
   const { filters, setFilter, commits } = useCommitStore();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -48,6 +52,48 @@ export function CommitFilters() {
     filters.dateTo,
   ].filter(Boolean).length;
 
+  // Inline mode: render filters horizontally
+  if (mode === 'inline') {
+    return (
+      <div className="flex items-center gap-3">
+        <SearchableDropdown
+          label=""
+          value={filters.author}
+          onChange={(value) => setFilter('author', value)}
+          options={authors}
+          placeholder="Author..."
+          className="min-w-[160px]"
+        />
+
+        <SearchableDropdown
+          label=""
+          value={filters.branch}
+          onChange={(value) => setFilter('branch', value)}
+          options={branches}
+          placeholder="Branch..."
+          className="min-w-[160px]"
+        />
+
+        <DatePicker
+          label=""
+          value={filters.dateFrom}
+          onChange={(date) => setFilter('dateFrom', date)}
+          placeholder="From date"
+          className="w-40"
+        />
+
+        <DatePicker
+          label=""
+          value={filters.dateTo}
+          onChange={(date) => setFilter('dateTo', date)}
+          placeholder="To date"
+          className="w-40"
+        />
+      </div>
+    );
+  }
+
+  // Modal mode: render as dropdown button
   if (!isOpen) {
     return (
       <button

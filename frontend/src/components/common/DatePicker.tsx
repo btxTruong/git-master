@@ -20,7 +20,10 @@ export function DatePicker({
   className = '',
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>('bottom');
+  const [pickerAlign, setPickerAlign] = useState<'left' | 'right'>('left');
   const containerRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,6 +41,45 @@ export function DatePicker({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const calculatePosition = () => {
+      if (!containerRef.current || !isOpen) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const pickerHeight = 350;
+      const pickerWidth = 300;
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      const spaceBelow = viewportHeight - containerRect.bottom;
+      const spaceAbove = containerRect.top;
+      const spaceRight = viewportWidth - containerRect.left;
+
+      if (spaceBelow < pickerHeight && spaceAbove > spaceBelow) {
+        setPickerPosition('top');
+      } else {
+        setPickerPosition('bottom');
+      }
+
+      if (spaceRight < pickerWidth) {
+        setPickerAlign('right');
+      } else {
+        setPickerAlign('left');
+      }
+    };
+
+    if (isOpen) {
+      calculatePosition();
+      window.addEventListener('resize', calculatePosition);
+      window.addEventListener('scroll', calculatePosition, true);
+
+      return () => {
+        window.removeEventListener('resize', calculatePosition);
+        window.removeEventListener('scroll', calculatePosition, true);
+      };
+    }
+  }, [isOpen]);
+
   const handleDateSelect = (date: Date | undefined) => {
     onChange(date || null);
     setIsOpen(false);
@@ -52,7 +94,9 @@ export function DatePicker({
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
-      <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{label}</label>
+      {label && (
+        <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">{label}</label>
+      )}
 
       <button
         type="button"
@@ -71,7 +115,7 @@ export function DatePicker({
         "
       >
         <span className={value ? '' : 'text-gray-500 dark:text-gray-400'}>
-          {value ? format(value, 'PPP') : placeholder}
+          {value ? format(value, 'yyyy-MM-dd') : placeholder}
         </span>
         <div className="flex items-center gap-1">
           {value && (
@@ -86,13 +130,16 @@ export function DatePicker({
 
       {isOpen && (
         <div
-          className="
-            absolute top-full left-0 mt-2 z-50
+          ref={pickerRef}
+          className={`
+            absolute z-50
+            ${pickerAlign === 'left' ? 'left-0' : 'right-0'}
+            ${pickerPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'}
             bg-white dark:bg-gray-800
             border border-gray-200 dark:border-gray-700
             rounded-lg shadow-lg
             p-3
-          "
+          `}
         >
           <DayPicker
             mode="single"
