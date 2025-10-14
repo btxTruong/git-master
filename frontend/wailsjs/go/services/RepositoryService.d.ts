@@ -42,7 +42,11 @@ export function ResetBranch(arg1:string,arg2:string):Promise<void>;
 
 export function RevertCommit(arg1:string):Promise<void>;
 
+export function SetArchiveService(arg1:services.ArchiveService):Promise<void>;
+
 export function SetCommitService(arg1:services.CommitService):Promise<void>;
+
+export function SetDiffService(arg1:services.DiffService):Promise<void>;
 
 export function SetRemoteService(arg1:services.RemoteService):Promise<void>;
 

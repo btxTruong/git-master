@@ -3,7 +3,13 @@
 import {services} from '../models';
 import {models} from '../models';
 
+export function GetArchiveService():Promise<services.ArchiveService>;
+
+export function GetChangelistService():Promise<services.ChangelistService>;
+
 export function GetCommitService():Promise<services.CommitService>;
+
+export function GetDiffService():Promise<services.DiffService>;
 
 export function GetRepositoryService():Promise<services.RepositoryService>;
 

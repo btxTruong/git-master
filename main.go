@@ -30,6 +30,8 @@ func main() {
 			app.repositoryService,
 			app.stagingService,
 			app.remoteService,
+			app.changelistService,
+			app.archiveService,
 		},
 	})
 

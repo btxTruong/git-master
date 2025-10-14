@@ -78,8 +78,16 @@ export function RevertCommit(arg1) {
   return window['go']['services']['RepositoryService']['RevertCommit'](arg1);
 }
 
+export function SetArchiveService(arg1) {
+  return window['go']['services']['RepositoryService']['SetArchiveService'](arg1);
+}
+
 export function SetCommitService(arg1) {
   return window['go']['services']['RepositoryService']['SetCommitService'](arg1);
+}
+
+export function SetDiffService(arg1) {
+  return window['go']['services']['RepositoryService']['SetDiffService'](arg1);
 }
 
 export function SetRemoteService(arg1) {
