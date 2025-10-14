@@ -11,14 +11,14 @@ Key responsibilities:
 - Provide cleanup function for missing files
 
 ## Acceptance Criteria
-- [ ] ReconcileChangelistsWithGitStatus processes Git status and updates groups
-- [ ] Renamed files update paths in all affected groups
-- [ ] Deleted files marked as missing with special indicator
-- [ ] Missing files can be bulk-removed via cleanup function
-- [ ] Function detects and processes porcelain v2 rename entries (status "R")
-- [ ] Path mappings updated atomically with lock protection
-- [ ] Reconciliation preserves file tracked snapshot data
-- [ ] Function handles multiple renames in single batch
+- [x] ReconcileChangelistsWithGitStatus processes Git status and updates groups
+- [x] Renamed files update paths in all affected groups
+- [x] Deleted files marked as missing with special indicator
+- [x] Missing files can be bulk-removed via cleanup function
+- [x] Function detects and processes porcelain v2 rename entries (status "R")
+- [x] Path mappings updated atomically with lock protection
+- [x] Reconciliation preserves file tracked snapshot data
+- [x] Function handles multiple renames in single batch
 
 ## Technical Considerations
 - Use full descriptive function names (e.g., `reconcileChangelistsWithGitRepositoryStatus`)

@@ -378,6 +378,22 @@ export namespace services {
 	
 	    }
 	}
+	export class RevertOptions {
+	    RevertStagedChanges: boolean;
+	    RevertUnstagedChanges: boolean;
+	    DeleteUntrackedFiles: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RevertOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.RevertStagedChanges = source["RevertStagedChanges"];
+	        this.RevertUnstagedChanges = source["RevertUnstagedChanges"];
+	        this.DeleteUntrackedFiles = source["DeleteUntrackedFiles"];
+	    }
+	}
 	export class StagingService {
 	
 	

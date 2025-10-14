@@ -8,10 +8,18 @@ export function GetFileDiff(arg1:string,arg2:boolean):Promise<string>;
 
 export function GetStatus():Promise<services.WorkingDirectoryStatus>;
 
+export function GetStatusForSpecificFilePaths(arg1:Array<string>):Promise<Array<services.FileStatus>>;
+
+export function RevertFileChanges(arg1:string,arg2:services.RevertOptions):Promise<void>;
+
 export function StageAll():Promise<void>;
 
 export function StageFile(arg1:string):Promise<void>;
 
+export function StageMultipleFilePaths(arg1:Array<string>):Promise<void>;
+
 export function UnstageAll():Promise<void>;
 
 export function UnstageFile(arg1:string):Promise<void>;
+
+export function UnstageMultipleFilePaths(arg1:Array<string>):Promise<void>;

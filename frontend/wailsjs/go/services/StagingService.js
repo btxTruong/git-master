@@ -14,6 +14,14 @@ export function GetStatus() {
   return window['go']['services']['StagingService']['GetStatus']();
 }
 
+export function GetStatusForSpecificFilePaths(arg1) {
+  return window['go']['services']['StagingService']['GetStatusForSpecificFilePaths'](arg1);
+}
+
+export function RevertFileChanges(arg1, arg2) {
+  return window['go']['services']['StagingService']['RevertFileChanges'](arg1, arg2);
+}
+
 export function StageAll() {
   return window['go']['services']['StagingService']['StageAll']();
 }
@@ -22,10 +30,18 @@ export function StageFile(arg1) {
   return window['go']['services']['StagingService']['StageFile'](arg1);
 }
 
+export function StageMultipleFilePaths(arg1) {
+  return window['go']['services']['StagingService']['StageMultipleFilePaths'](arg1);
+}
+
 export function UnstageAll() {
   return window['go']['services']['StagingService']['UnstageAll']();
 }
 
 export function UnstageFile(arg1) {
   return window['go']['services']['StagingService']['UnstageFile'](arg1);
+}
+
+export function UnstageMultipleFilePaths(arg1) {
+  return window['go']['services']['StagingService']['UnstageMultipleFilePaths'](arg1);
 }

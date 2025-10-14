@@ -34,11 +34,12 @@ type Changelist struct {
 
 // ChangelistItem represents a single file within a changelist group
 type ChangelistItem struct {
-	FilePath              string    `json:"path"`
-	TrackedSnapshotHash   string    `json:"trackedSnapshotHash,omitempty"` // git hash when added (optional)
-	NotesText             string    `json:"notes,omitempty"`               // user notes about this file
-	AddedAtTimestamp      time.Time `json:"addedAt"`
-	LastModifiedTimestamp time.Time `json:"lastModifiedAt"`
+	FilePath                 string    `json:"path"`
+	TrackedSnapshotHash      string    `json:"trackedSnapshotHash,omitempty"`      // git hash when added (optional)
+	NotesText                string    `json:"notes,omitempty"`                    // user notes about this file
+	IsMissingFromWorkingTree bool      `json:"isMissingFromWorkingTree,omitempty"` // true if file was deleted
+	AddedAtTimestamp         time.Time `json:"addedAt"`
+	LastModifiedTimestamp    time.Time `json:"lastModifiedAt"`
 }
 
 // ChangelistConfiguration represents the root configuration file structure

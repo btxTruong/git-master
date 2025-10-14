@@ -569,3 +569,223 @@ func (service *ChangelistService) GetAllChangelistGroups(repositoryPath string) 
 
 	return configuration.CustomGroups, nil
 }
+
+// Path Reconciliation Operations
+
+// FileRenameInformation represents a file rename detected from Git status
+type FileRenameInformation struct {
+	OriginalFilePath string
+	NewFilePath      string
+	SimilarityScore  int
+}
+
+// parseGitPorcelainStatusForRenames extracts rename information from Git porcelain v2 status output
+func (service *ChangelistService) parseGitPorcelainStatusForRenames(statusOutput string) []FileRenameInformation {
+	renames := make([]FileRenameInformation, 0)
+
+	lines := strings.Split(statusOutput, "\n")
+	for _, line := range lines {
+		// Porcelain v2 rename entries start with "2"
+		if !strings.HasPrefix(line, "2 ") {
+			continue
+		}
+
+		// Format: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
+		fields := strings.Fields(line)
+		if len(fields) < 10 {
+			continue
+		}
+
+		// The score field contains the similarity (e.g., "R100")
+		scoreField := fields[8]
+		similarityScore := 0
+		if len(scoreField) > 1 && (scoreField[0] == 'R' || scoreField[0] == 'C') {
+			// Parse similarity percentage
+			fmt.Sscanf(scoreField[1:], "%d", &similarityScore)
+		}
+
+		// The last field contains "newPath<tab>oldPath"
+		pathField := strings.Join(fields[9:], " ")
+		pathParts := strings.Split(pathField, "\t")
+
+		if len(pathParts) == 2 {
+			renameInfo := FileRenameInformation{
+				OriginalFilePath: normalizeFilePath(pathParts[1]),
+				NewFilePath:      normalizeFilePath(pathParts[0]),
+				SimilarityScore:  similarityScore,
+			}
+			renames = append(renames, renameInfo)
+		}
+	}
+
+	return renames
+}
+
+// updatePathInAllGroups updates a file path across all changelist groups
+func (service *ChangelistService) updatePathInAllGroups(repositoryPath string, oldPath string, newPath string) error {
+	// Normalize paths
+	normalizedOldPath := normalizeFilePath(oldPath)
+	normalizedNewPath := normalizeFilePath(newPath)
+
+	// Load configuration
+	configuration, loadError := service.loadChangelistConfiguration(repositoryPath)
+	if loadError != nil {
+		return fmt.Errorf("failed to load changelist configuration: %w", loadError)
+	}
+
+	// Track if any changes were made
+	changesMade := false
+
+	// Update path in all groups
+	for groupIndex := range configuration.CustomGroups {
+		group := &configuration.CustomGroups[groupIndex]
+
+		for itemIndex := range group.FileItems {
+			item := &group.FileItems[itemIndex]
+
+			if item.FilePath == normalizedOldPath {
+				item.FilePath = normalizedNewPath
+				item.LastModifiedTimestamp = time.Now()
+				changesMade = true
+			}
+		}
+
+		if changesMade {
+			group.UpdatedAtTimestamp = time.Now()
+		}
+	}
+
+	// Save if changes were made
+	if changesMade {
+		if saveError := service.saveChangelistConfiguration(repositoryPath, configuration); saveError != nil {
+			return fmt.Errorf("failed to save changelist configuration after path update: %w", saveError)
+		}
+	}
+
+	return nil
+}
+
+// ReconcileChangelistsWithGitRepositoryStatus reconciles changelist paths with Git repository status
+func (service *ChangelistService) ReconcileChangelistsWithGitRepositoryStatus(repositoryPath string, gitStatusOutput string) error {
+	// Parse renames from Git status
+	renames := service.parseGitPorcelainStatusForRenames(gitStatusOutput)
+
+	// Process each rename
+	for _, renameInfo := range renames {
+		if updateError := service.updatePathInAllGroups(repositoryPath, renameInfo.OriginalFilePath, renameInfo.NewFilePath); updateError != nil {
+			return fmt.Errorf("failed to update path from '%s' to '%s': %w", renameInfo.OriginalFilePath, renameInfo.NewFilePath, updateError)
+		}
+	}
+
+	// Parse status to identify existing files
+	existingFiles := make(map[string]bool)
+	lines := strings.Split(gitStatusOutput, "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Handle different porcelain v2 entry types
+		if strings.HasPrefix(line, "1 ") || strings.HasPrefix(line, "2 ") {
+			// Ordinary or renamed entry
+			fields := strings.Fields(line)
+			if len(fields) >= 9 {
+				// For type 1: path is last field
+				// For type 2: path is in fields[9] before tab
+				pathField := strings.Join(fields[8:], " ")
+				pathParts := strings.Split(pathField, "\t")
+				existingFiles[normalizeFilePath(pathParts[0])] = true
+			}
+		} else if strings.HasPrefix(line, "? ") {
+			// Untracked file
+			filePath := strings.TrimPrefix(line, "? ")
+			existingFiles[normalizeFilePath(filePath)] = true
+		}
+	}
+
+	// Load configuration
+	configuration, loadError := service.loadChangelistConfiguration(repositoryPath)
+	if loadError != nil {
+		return fmt.Errorf("failed to load changelist configuration: %w", loadError)
+	}
+
+	// Mark missing files
+	changesMade := false
+	for groupIndex := range configuration.CustomGroups {
+		group := &configuration.CustomGroups[groupIndex]
+
+		for itemIndex := range group.FileItems {
+			item := &group.FileItems[itemIndex]
+
+			// Check if file exists in working tree
+			fileExists := existingFiles[item.FilePath]
+
+			// Update missing status if it changed
+			if fileExists && item.IsMissingFromWorkingTree {
+				// File was restored
+				item.IsMissingFromWorkingTree = false
+				item.LastModifiedTimestamp = time.Now()
+				changesMade = true
+			} else if !fileExists && !item.IsMissingFromWorkingTree {
+				// File was deleted
+				item.IsMissingFromWorkingTree = true
+				item.LastModifiedTimestamp = time.Now()
+				changesMade = true
+			}
+		}
+
+		if changesMade {
+			group.UpdatedAtTimestamp = time.Now()
+		}
+	}
+
+	// Save if changes were made
+	if changesMade {
+		if saveError := service.saveChangelistConfiguration(repositoryPath, configuration); saveError != nil {
+			return fmt.Errorf("failed to save changelist configuration after reconciliation: %w", saveError)
+		}
+	}
+
+	return nil
+}
+
+// RemoveMissingFilesFromAllGroups removes all files marked as missing from all groups
+func (service *ChangelistService) RemoveMissingFilesFromAllGroups(repositoryPath string) (removedCount int, errorResult error) {
+	// Load configuration
+	configuration, loadError := service.loadChangelistConfiguration(repositoryPath)
+	if loadError != nil {
+		return 0, fmt.Errorf("failed to load changelist configuration: %w", loadError)
+	}
+
+	removedCount = 0
+
+	// Remove missing files from all groups
+	for groupIndex := range configuration.CustomGroups {
+		group := &configuration.CustomGroups[groupIndex]
+
+		newItems := make([]models.ChangelistItem, 0, len(group.FileItems))
+		for _, item := range group.FileItems {
+			if item.IsMissingFromWorkingTree {
+				removedCount++
+			} else {
+				newItems = append(newItems, item)
+			}
+		}
+
+		if len(newItems) != len(group.FileItems) {
+			group.FileItems = newItems
+			group.UpdatedAtTimestamp = time.Now()
+		}
+	}
+
+	// Save if any files were removed
+	if removedCount > 0 {
+		if saveError := service.saveChangelistConfiguration(repositoryPath, configuration); saveError != nil {
+			return removedCount, fmt.Errorf("failed to save changelist configuration after removing missing files: %w", saveError)
+		}
+	}
+
+	return removedCount, nil
+}
