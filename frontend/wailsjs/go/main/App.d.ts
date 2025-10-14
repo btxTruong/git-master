@@ -5,6 +5,8 @@ import {models} from '../models';
 
 export function GetArchiveService():Promise<services.ArchiveService>;
 
+export function GetBlameService():Promise<services.BlameService>;
+
 export function GetChangelistService():Promise<services.ChangelistService>;
 
 export function GetCommitService():Promise<services.CommitService>;

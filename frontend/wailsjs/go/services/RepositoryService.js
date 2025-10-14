@@ -82,6 +82,10 @@ export function SetArchiveService(arg1) {
   return window['go']['services']['RepositoryService']['SetArchiveService'](arg1);
 }
 
+export function SetBlameService(arg1) {
+  return window['go']['services']['RepositoryService']['SetBlameService'](arg1);
+}
+
 export function SetCommitService(arg1) {
   return window['go']['services']['RepositoryService']['SetCommitService'](arg1);
 }

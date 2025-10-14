@@ -32,6 +32,7 @@ func main() {
 			app.remoteService,
 			app.changelistService,
 			app.archiveService,
+			app.blameService,
 		},
 	})
 

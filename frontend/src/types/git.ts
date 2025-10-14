@@ -182,3 +182,23 @@ export interface CherryPickState {
   currentCommit: string | null;
   hasConflicts: boolean;
 }
+
+// Blame
+export interface BlameLine {
+  lineNumber: number;
+  content: string;
+  commitHash: string;
+  shortHash: string;
+  author: string;
+  authorEmail: string;
+  authorTime: string;
+  committerName: string;
+  committerEmail: string;
+  committerTime: string;
+  summary: string;
+}
+
+export interface BlameResult {
+  filePath: string;
+  lines: BlameLine[];
+}

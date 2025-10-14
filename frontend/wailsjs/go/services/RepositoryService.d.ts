@@ -44,6 +44,8 @@ export function RevertCommit(arg1:string):Promise<void>;
 
 export function SetArchiveService(arg1:services.ArchiveService):Promise<void>;
 
+export function SetBlameService(arg1:services.BlameService):Promise<void>;
+
 export function SetCommitService(arg1:services.CommitService):Promise<void>;
 
 export function SetDiffService(arg1:services.DiffService):Promise<void>;

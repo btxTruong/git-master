@@ -76,9 +76,7 @@ export function ImportPatchDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Import Patch
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Patch</h2>
           </div>
           <button
             onClick={onClose}
@@ -134,9 +132,7 @@ export function ImportPatchDialog({
                   disabled={isImporting}
                 />
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                    Apply Now
-                  </div>
+                  <div className="font-medium text-gray-900 dark:text-gray-100">Apply Now</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Applies the patch directly to your working tree
                   </div>

@@ -4,13 +4,13 @@
 Integrate Git blame functionality into file context menu, showing line-by-line authorship information.
 
 ## Acceptance Criteria
-- [ ] Blame action in file context menu
-- [ ] Opens blame view/modal with file annotations
-- [ ] Shows commit hash, author, date per line
-- [ ] Click line to view commit details
-- [ ] Handles files not in Git history
-- [ ] Loading state during blame fetch
-- [ ] Error handling for blame failures
+- [x] Blame action in file context menu
+- [x] Opens blame view/modal with file annotations
+- [x] Shows commit hash, author, date per line
+- [x] Click line to view commit details
+- [x] Handles files not in Git history
+- [x] Loading state during blame fetch
+- [x] Error handling for blame failures
 
 ## Technical Considerations
 - Create new BlameService or extend existing service

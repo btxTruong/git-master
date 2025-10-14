@@ -21,6 +21,7 @@ type RepositoryService struct {
 	commitService  *CommitService
 	diffService    *DiffService
 	archiveService *ArchiveService
+	blameService   *BlameService
 }
 
 // NewRepositoryService creates a new repository service
@@ -51,6 +52,11 @@ func (s *RepositoryService) SetDiffService(diffService *DiffService) {
 // SetArchiveService sets the archive service reference
 func (s *RepositoryService) SetArchiveService(archiveService *ArchiveService) {
 	s.archiveService = archiveService
+}
+
+// SetBlameService sets the blame service reference
+func (s *RepositoryService) SetBlameService(blameService *BlameService) {
+	s.blameService = blameService
 }
 
 // Startup is called when the app starts
@@ -87,6 +93,9 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 	if s.archiveService != nil {
 		s.archiveService.SetExecutor(s.executor)
 		s.archiveService.SetRepositoryPath(rootPath)
+	}
+	if s.blameService != nil {
+		s.blameService.SetExecutor(s.executor)
 	}
 
 	// Get current branch

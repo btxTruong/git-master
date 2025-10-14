@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { FolderOpen, GitBranch, RefreshCw } from 'lucide-react';
 import { ChangelistPanel } from '@/components/changelist/ChangelistPanel';
 import { DiffPreviewPane } from '@/components/changelist/DiffPreviewPane';
+import { BlameViewer } from '@/components/blame/BlameViewer';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { getWorkingDirectoryStatus } from '@/api/staging';
-import type { StagingFileChange } from '@/types/git';
+import type { StagingFileChange, BlameResult } from '@/types/git';
 
 const MIN_CHANGELIST_PERCENT = 25;
 const MAX_CHANGELIST_PERCENT = 75;
@@ -32,6 +33,12 @@ function ChangesView() {
   const [error, setError] = useState<string | null>(null);
   const [changelistPercent, setChangelistPercent] = useState(DEFAULT_CHANGELIST_PERCENT);
   const [isResizing, setIsResizing] = useState(false);
+
+  // Blame viewer state
+  // Note: These states are prepared for future integration when FileContextMenu
+  // is connected to FileItem/FileTree components
+  const [isBlameViewerOpen, setIsBlameViewerOpen] = useState(false);
+  const [blameData, setBlameData] = useState<BlameResult | null>(null);
 
   const changelistPanelRef = useRef<HTMLDivElement>(null);
   const autoRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -125,6 +132,15 @@ function ChangesView() {
   const handleManualRefresh = useCallback(() => {
     refreshGitStatus();
   }, [refreshGitStatus]);
+
+  // Handle closing blame viewer
+  const handleCloseBlameViewer = useCallback(() => {
+    setIsBlameViewerOpen(false);
+    setBlameData(null);
+  }, []);
+
+  // Note: handleShowBlame will be added when FileContextMenu is integrated with FileItem/FileTree
+  // The BlameViewer component and backend service are ready for use
 
   // Resizable splitter handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -305,6 +321,14 @@ function ChangesView() {
           <DiffPreviewPane selectedFile={selectedFile} className="h-full" />
         </div>
       </div>
+
+      {/* Blame Viewer Modal */}
+      <BlameViewer
+        isOpen={isBlameViewerOpen}
+        onClose={handleCloseBlameViewer}
+        blameData={blameData}
+        isLoading={false}
+      />
     </div>
   );
 }

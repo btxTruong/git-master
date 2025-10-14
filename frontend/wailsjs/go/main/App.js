@@ -6,6 +6,10 @@ export function GetArchiveService() {
   return window['go']['main']['App']['GetArchiveService']();
 }
 
+export function GetBlameService() {
+  return window['go']['main']['App']['GetBlameService']();
+}
+
 export function GetChangelistService() {
   return window['go']['main']['App']['GetChangelistService']();
 }

@@ -18,6 +18,7 @@ type App struct {
 	changelistService *services.ChangelistService
 	diffService       *services.DiffService
 	archiveService    *services.ArchiveService
+	blameService      *services.BlameService
 }
 
 // NewApp creates a new App application struct
@@ -29,6 +30,7 @@ func NewApp() *App {
 	changelistService := services.NewChangelistService()
 	diffService := services.NewDiffService()
 	archiveService := services.NewArchiveService(diffService, stagingService)
+	blameService := services.NewBlameService()
 
 	// Link services together so they can share the executor
 	repoService.SetStagingService(stagingService)
@@ -36,6 +38,7 @@ func NewApp() *App {
 	repoService.SetCommitService(commitService)
 	repoService.SetDiffService(diffService)
 	repoService.SetArchiveService(archiveService)
+	repoService.SetBlameService(blameService)
 
 	return &App{
 		repositoryService: repoService,
@@ -45,6 +48,7 @@ func NewApp() *App {
 		changelistService: changelistService,
 		diffService:       diffService,
 		archiveService:    archiveService,
+		blameService:      blameService,
 	}
 }
 
@@ -67,6 +71,9 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if a.archiveService != nil {
 		a.archiveService.Startup(ctx)
+	}
+	if a.blameService != nil {
+		a.blameService.Startup(ctx)
 	}
 }
 
@@ -98,6 +105,11 @@ func (a *App) GetDiffService() *services.DiffService {
 // GetArchiveService returns the archive service for Wails binding
 func (a *App) GetArchiveService() *services.ArchiveService {
 	return a.archiveService
+}
+
+// GetBlameService returns the blame service for Wails binding
+func (a *App) GetBlameService() *services.BlameService {
+	return a.blameService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository
