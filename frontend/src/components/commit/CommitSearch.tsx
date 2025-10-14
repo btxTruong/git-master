@@ -1,27 +1,133 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CommitFilters } from './CommitFilters';
 
 export function CommitSearch() {
-  const { filters, setFilter, clearFilters } = useCommitStore();
+  const {
+    filters,
+    setFilter,
+    clearFilters,
+    selectedCommit,
+    selectCommit,
+    requestScrollToCommit,
+    isLoading,
+    commits,
+    loadCommits,
+    currentPage,
+    hasMore,
+  } = useCommitStore();
   const [searchInput, setSearchInput] = useState(filters.searchText);
+  const [pendingScrollHash, setPendingScrollHash] = useState<string | null>(null);
   const debouncedSearch = useDebounce(searchInput, 300);
+  const prevLoadingRef = useRef(isLoading);
+  const loadingMoreRef = useRef(false);
+
+  const isHashSearch = (searchText: string): boolean => {
+    const trimmed = searchText.trim();
+    const hasNoSpecialChars = /^[a-f0-9]+$/.test(trimmed);
+    return trimmed.length >= 4 && hasNoSpecialChars;
+  };
 
   // Update store when debounced value changes
   useEffect(() => {
     setFilter('searchText', debouncedSearch);
   }, [debouncedSearch, setFilter]);
 
+  // Handle pending scroll after commits finish loading
+  useEffect(() => {
+    const wasLoading = prevLoadingRef.current;
+    const justFinishedLoading = wasLoading && !isLoading;
+
+    if (pendingScrollHash && justFinishedLoading && commits.length > 0) {
+      const commit = commits.find((c) => c.hash === pendingScrollHash);
+
+      if (commit) {
+        selectCommit(commit);
+        requestScrollToCommit(pendingScrollHash);
+        loadingMoreRef.current = false;
+
+        queueMicrotask(() => {
+          setPendingScrollHash(null);
+        });
+      } else if (hasMore && !loadingMoreRef.current && currentPage === 0) {
+        // Only start loading more if we're on page 0 (initial load after clear)
+        loadingMoreRef.current = true;
+        setTimeout(() => {
+          loadCommits(1);
+        }, 50);
+      } else if (hasMore && loadingMoreRef.current && currentPage > 0) {
+        // Continue loading if we've already started
+        setTimeout(() => {
+          loadCommits(currentPage + 1);
+        }, 50);
+      } else if (!hasMore) {
+        loadingMoreRef.current = false;
+        queueMicrotask(() => {
+          setPendingScrollHash(null);
+        });
+      }
+    }
+
+    prevLoadingRef.current = isLoading;
+  }, [
+    pendingScrollHash,
+    isLoading,
+    commits,
+    selectCommit,
+    requestScrollToCommit,
+    loadCommits,
+    currentPage,
+    hasMore,
+  ]);
+
   const handleClear = () => {
+    const wasHashSearch = isHashSearch(searchInput);
+    let commitHashToScrollTo = selectedCommit?.hash;
+
+    // If no commit is selected but we have a hash search, find the first matching commit
+    if (wasHashSearch && !commitHashToScrollTo && commits.length > 0) {
+      const searchHash = searchInput.trim().toLowerCase();
+      const matchingCommit = commits.find(
+        (c) =>
+          c.hash.toLowerCase().includes(searchHash) ||
+          c.shortHash.toLowerCase().includes(searchHash)
+      );
+      commitHashToScrollTo = matchingCommit?.hash;
+    }
+
     setSearchInput('');
     setFilter('searchText', '');
+
+    if (wasHashSearch && commitHashToScrollTo) {
+      loadingMoreRef.current = false;
+      setPendingScrollHash(commitHashToScrollTo);
+    }
   };
 
   const handleClearAll = () => {
+    const wasHashSearch = isHashSearch(searchInput);
+    let commitHashToScrollTo = selectedCommit?.hash;
+
+    // If no commit is selected but we have a hash search, find the first matching commit
+    if (wasHashSearch && !commitHashToScrollTo && commits.length > 0) {
+      const searchHash = searchInput.trim().toLowerCase();
+      const matchingCommit = commits.find(
+        (c) =>
+          c.hash.toLowerCase().includes(searchHash) ||
+          c.shortHash.toLowerCase().includes(searchHash)
+      );
+      commitHashToScrollTo = matchingCommit?.hash;
+    }
+
     setSearchInput('');
     clearFilters();
+
+    if (wasHashSearch && commitHashToScrollTo) {
+      loadingMoreRef.current = false;
+      setPendingScrollHash(commitHashToScrollTo);
+    }
   };
 
   const hasActiveFilters =
