@@ -3,14 +3,38 @@ import { X, User, GitBranch } from 'lucide-react';
 import { useCommitStore } from '@/stores/commitStore';
 import { SearchableDropdown } from '@/components/common/SearchableDropdown';
 import { DatePicker } from '@/components/common/DatePicker';
+import { GetAuthors, GetBranches } from '../../../wailsjs/go/services/RepositoryService';
 
 interface CommitFiltersProps {
   mode?: 'inline' | 'modal';
 }
 
 export function CommitFilters({ mode = 'modal' }: CommitFiltersProps) {
-  const { filters, setFilter, commits } = useCommitStore();
+  const { filters, setFilter } = useCommitStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [authors, setAuthors] = useState<string[]>([]);
+  const [branches, setBranches] = useState<string[]>([]);
+
+  // Fetch all authors from backend
+  useEffect(() => {
+    GetAuthors()
+      .then((authorList) => setAuthors(authorList))
+      .catch((err) => console.error('Failed to fetch authors:', err));
+  }, []);
+
+  // Fetch all branches from backend
+  useEffect(() => {
+    GetBranches()
+      .then((branchList) => {
+        // Extract branch names from local and remote branches
+        const localBranches = branchList.local.map((b) => b.name);
+        const remoteBranches = branchList.remote.map((b) => b.name);
+        // Combine and deduplicate
+        const allBranches = Array.from(new Set([...localBranches, ...remoteBranches])).sort();
+        setBranches(allBranches);
+      })
+      .catch((err) => console.error('Failed to fetch branches:', err));
+  }, []);
 
   // Sync filters with URL params
   useEffect(() => {
@@ -32,18 +56,6 @@ export function CommitFilters({ mode = 'modal' }: CommitFiltersProps) {
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     window.history.replaceState({}, '', newUrl);
   }, [filters]);
-
-  // Extract unique authors from commits
-  const authors = Array.from(new Set(commits.map((c) => c.author.email))).sort();
-
-  // Extract unique branches from commit refs
-  const branches = Array.from(
-    new Set(
-      commits.flatMap((c) =>
-        c.refs.filter((ref) => ref.startsWith('origin/') || !ref.includes('/'))
-      )
-    )
-  ).sort();
 
   const activeFilterCount = [
     filters.author,

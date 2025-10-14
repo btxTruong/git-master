@@ -689,3 +689,46 @@ func (s *RepositoryService) GetBranchesContainingCommit(commitHash string) ([]st
 
 	return filteredBranches, nil
 }
+
+// GetAuthors retrieves all unique commit authors in the repository
+func (s *RepositoryService) GetAuthors() ([]string, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	result, err := s.executor.Execute(s.ctx, "log", "--all", "--format=%ae", "--")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get authors: %w", err)
+	}
+
+	if result.Stdout == "" {
+		return []string{}, nil
+	}
+
+	// Use map to deduplicate authors
+	authorSet := make(map[string]bool)
+	lines := strings.Split(strings.TrimSpace(result.Stdout), "\n")
+	for _, line := range lines {
+		email := strings.TrimSpace(line)
+		if email != "" {
+			authorSet[email] = true
+		}
+	}
+
+	// Convert map to sorted slice
+	authors := make([]string, 0, len(authorSet))
+	for email := range authorSet {
+		authors = append(authors, email)
+	}
+
+	// Sort alphabetically
+	for i := 0; i < len(authors); i++ {
+		for j := i + 1; j < len(authors); j++ {
+			if authors[i] > authors[j] {
+				authors[i], authors[j] = authors[j], authors[i]
+			}
+		}
+	}
+
+	return authors, nil
+}

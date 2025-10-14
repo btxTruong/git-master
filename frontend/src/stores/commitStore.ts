@@ -103,10 +103,22 @@ export const useCommitStore = create<CommitState>((set, get) => ({
       // If page 0, replace commits; otherwise append
       const updatedCommits = page === 0 ? newCommits : [...commits, ...newCommits];
 
+      const hasMoreCommits = newCommits.length === pageSize;
+
+      console.log('[CommitStore] Loaded commits:', {
+        page,
+        offset,
+        requestedPageSize: pageSize,
+        receivedCommits: newCommits.length,
+        totalCommits: updatedCommits.length,
+        hasMore: hasMoreCommits,
+        filters: backendFilters,
+      });
+
       set({
         commits: updatedCommits,
         currentPage: page,
-        hasMore: newCommits.length === pageSize, // If we got full page, there might be more
+        hasMore: hasMoreCommits, // If we got full page, there might be more
         isLoading: false,
       });
     } catch (error) {

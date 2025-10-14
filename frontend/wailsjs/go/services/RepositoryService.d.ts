@@ -20,6 +20,8 @@ export function CreateTag(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function DeleteBranch(arg1:string,arg2:boolean):Promise<void>;
 
+export function GetAuthors():Promise<Array<string>>;
+
 export function GetBranches():Promise<models.BranchList>;
 
 export function GetBranchesContainingCommit(arg1:string):Promise<Array<string>>;

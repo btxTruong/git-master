@@ -34,6 +34,10 @@ export function DeleteBranch(arg1, arg2) {
   return window['go']['services']['RepositoryService']['DeleteBranch'](arg1, arg2);
 }
 
+export function GetAuthors() {
+  return window['go']['services']['RepositoryService']['GetAuthors']();
+}
+
 export function GetBranches() {
   return window['go']['services']['RepositoryService']['GetBranches']();
 }
