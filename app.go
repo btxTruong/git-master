@@ -15,6 +15,9 @@ type App struct {
 	commitService     *services.CommitService
 	stagingService    *services.StagingService
 	remoteService     *services.RemoteService
+	changelistService *services.ChangelistService
+	diffService       *services.DiffService
+	archiveService    *services.ArchiveService
 }
 
 // NewApp creates a new App application struct
@@ -23,17 +26,25 @@ func NewApp() *App {
 	commitService := services.NewCommitService(nil)
 	stagingService := services.NewStagingService(repoService)
 	remoteService := services.NewRemoteService(repoService)
+	changelistService := services.NewChangelistService()
+	diffService := services.NewDiffService()
+	archiveService := services.NewArchiveService(diffService, stagingService)
 
 	// Link services together so they can share the executor
 	repoService.SetStagingService(stagingService)
 	repoService.SetRemoteService(remoteService)
 	repoService.SetCommitService(commitService)
+	repoService.SetDiffService(diffService)
+	repoService.SetArchiveService(archiveService)
 
 	return &App{
 		repositoryService: repoService,
 		commitService:     commitService,
 		stagingService:    stagingService,
 		remoteService:     remoteService,
+		changelistService: changelistService,
+		diffService:       diffService,
+		archiveService:    archiveService,
 	}
 }
 
@@ -47,6 +58,15 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if a.remoteService != nil {
 		a.remoteService.Startup(ctx)
+	}
+	if a.changelistService != nil {
+		a.changelistService.Startup(ctx)
+	}
+	if a.diffService != nil {
+		a.diffService.Startup(ctx)
+	}
+	if a.archiveService != nil {
+		a.archiveService.Startup(ctx)
 	}
 }
 
@@ -63,6 +83,21 @@ func (a *App) GetStagingService() *services.StagingService {
 // GetCommitService returns the commit service for Wails binding
 func (a *App) GetCommitService() *services.CommitService {
 	return a.commitService
+}
+
+// GetChangelistService returns the changelist service for Wails binding
+func (a *App) GetChangelistService() *services.ChangelistService {
+	return a.changelistService
+}
+
+// GetDiffService returns the diff service for Wails binding
+func (a *App) GetDiffService() *services.DiffService {
+	return a.diffService
+}
+
+// GetArchiveService returns the archive service for Wails binding
+func (a *App) GetArchiveService() *services.ArchiveService {
+	return a.archiveService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository

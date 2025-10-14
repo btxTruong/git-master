@@ -19,6 +19,8 @@ type RepositoryService struct {
 	remoteService  *RemoteService
 	stagingService *StagingService
 	commitService  *CommitService
+	diffService    *DiffService
+	archiveService *ArchiveService
 }
 
 // NewRepositoryService creates a new repository service
@@ -39,6 +41,16 @@ func (s *RepositoryService) SetStagingService(stagingService *StagingService) {
 // SetCommitService sets the commit service reference
 func (s *RepositoryService) SetCommitService(commitService *CommitService) {
 	s.commitService = commitService
+}
+
+// SetDiffService sets the diff service reference
+func (s *RepositoryService) SetDiffService(diffService *DiffService) {
+	s.diffService = diffService
+}
+
+// SetArchiveService sets the archive service reference
+func (s *RepositoryService) SetArchiveService(archiveService *ArchiveService) {
+	s.archiveService = archiveService
 }
 
 // Startup is called when the app starts
@@ -68,6 +80,13 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 	}
 	if s.commitService != nil {
 		s.commitService.SetExecutor(s.executor)
+	}
+	if s.diffService != nil {
+		s.diffService.SetExecutor(s.executor)
+	}
+	if s.archiveService != nil {
+		s.archiveService.SetExecutor(s.executor)
+		s.archiveService.SetRepositoryPath(rootPath)
 	}
 
 	// Get current branch

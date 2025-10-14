@@ -4,13 +4,13 @@
 Integrate the ChangelistService with Wails by creating the service instance, binding it to the app, and ensuring all methods are accessible from the frontend.
 
 ## Acceptance Criteria
-- [ ] ChangelistService instantiated in app.go
-- [ ] Service bound via GetChangelistService() method
-- [ ] All public methods callable from TypeScript
-- [ ] Service has access to existing RepositoryService and StagingService
-- [ ] TypeScript bindings generated correctly
-- [ ] Error types propagate correctly to frontend
-- [ ] Context passed to service for Wails runtime access
+- [x] ChangelistService instantiated in app.go
+- [x] Service bound via GetChangelistService() method
+- [x] All public methods callable from TypeScript
+- [x] Service has access to existing RepositoryService and StagingService
+- [x] TypeScript bindings generated correctly
+- [x] Error types propagate correctly to frontend
+- [x] Context passed to service for Wails runtime access
 
 ## Technical Considerations
 - Add ChangelistService field to App struct
