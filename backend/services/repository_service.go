@@ -162,10 +162,32 @@ func (s *RepositoryService) GetCommits(limit, offset int, filters models.CommitF
 
 	args := []string{
 		"log",
-		fmt.Sprintf("--max-count=%d", limit),
-		fmt.Sprintf("--skip=%d", offset),
 		fmt.Sprintf("--pretty=format:%s", format),
 		"--date=format:%Y-%m-%d %H:%M:%S %z",
+	}
+
+	// Check if search text looks like a commit hash
+	searchingByHash := false
+	if filters.SearchText != "" {
+		searchText := strings.TrimSpace(filters.SearchText)
+		// Check if search text looks like a commit hash (hexadecimal, at least 4 chars)
+		isLikelyHash := len(searchText) >= 4 && searchText == strings.ToLower(searchText) &&
+			!strings.ContainsAny(searchText, " \t\n\r!@#$%^&*()+=[]{}|;:'\",.<>?/\\")
+
+		if isLikelyHash {
+			// For hash search, don't use pagination - search all commits
+			searchingByHash = true
+			// Don't add --grep for hash search, we'll filter after
+		} else {
+			// For message search, use git's built-in grep
+			args = append(args, "--grep="+searchText, "--regexp-ignore-case")
+		}
+	}
+
+	// Only apply pagination if not searching by hash
+	if !searchingByHash {
+		args = append(args, fmt.Sprintf("--max-count=%d", limit))
+		args = append(args, fmt.Sprintf("--skip=%d", offset))
 	}
 
 	// Apply branch filter
@@ -198,20 +220,32 @@ func (s *RepositoryService) GetCommits(limit, offset int, filters models.CommitF
 		return nil, err
 	}
 
-	// Apply search text filter (searches commit message OR hash)
-	// We do this client-side to support searching both fields
-	if filters.SearchText != "" {
-		searchLower := strings.ToLower(filters.SearchText)
+	// If searching by hash, filter commits to only those matching the hash
+	if searchingByHash && filters.SearchText != "" {
+		searchText := strings.TrimSpace(filters.SearchText)
+		searchLower := strings.ToLower(searchText)
 		filteredCommits := []models.Commit{}
+
 		for _, commit := range commits {
-			// Check if hash or message contains search text
 			if strings.Contains(strings.ToLower(commit.Hash), searchLower) ||
-				strings.Contains(strings.ToLower(commit.ShortHash), searchLower) ||
-				strings.Contains(strings.ToLower(commit.Message), searchLower) {
+				strings.Contains(strings.ToLower(commit.ShortHash), searchLower) {
 				filteredCommits = append(filteredCommits, commit)
 			}
 		}
+
 		commits = filteredCommits
+
+		// Apply pagination to filtered results
+		start := offset
+		end := offset + limit
+		if start > len(commits) {
+			commits = []models.Commit{}
+		} else {
+			if end > len(commits) {
+				end = len(commits)
+			}
+			commits = commits[start:end]
+		}
 	}
 
 	return commits, nil
