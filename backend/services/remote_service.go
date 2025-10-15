@@ -219,25 +219,12 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 		return err
 	}
 
-	// Get the actual upstream remote to check if we're already up to date
-	upstreamResult, _ := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", fmt.Sprintf("%s@{upstream}", currentBranch))
-	upstreamBranch := strings.TrimSpace(upstreamResult.Stdout)
-	fmt.Printf("DEBUG: Current branch: %s, Upstream: %s, Target remote: %s\n", currentBranch, upstreamBranch, currentRemote)
-
-	// Check if there are actually commits to push
-	if upstreamBranch != "" {
-		countResult, _ := s.executor.Execute(s.ctx, "rev-list", "--count", fmt.Sprintf("%s..%s", upstreamBranch, currentBranch))
-		commitCount := strings.TrimSpace(countResult.Stdout)
-		fmt.Printf("DEBUG: Commits ahead of upstream: %s\n", commitCount)
-	}
-
 	// Get the current remote URL
 	result, err := s.executor.Execute(s.ctx, "remote", "get-url", currentRemote)
 	if err != nil {
 		return fmt.Errorf("failed to get remote URL: %w", err)
 	}
 	remoteURL := strings.TrimSpace(result.Stdout)
-	fmt.Printf("DEBUG: Original remote URL: %s\n", remoteURL)
 
 	args := []string{"push"}
 
@@ -253,7 +240,6 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 	// This avoids issues with temporary remotes
 	if token != "" {
 		tokenURL := injectTokenIntoURL(remoteURL, token)
-		fmt.Printf("DEBUG: Token injected URL (masked): %s\n", strings.Replace(tokenURL, token, "***TOKEN***", 1))
 
 		if tokenURL != remoteURL {
 			// Push directly to the URL with token
@@ -267,9 +253,7 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 		args = append(args, currentRemote, currentBranch)
 	}
 
-	fmt.Printf("DEBUG: Executing push command: git %v\n", args)
 	result, err = s.executor.Execute(s.ctx, args...)
-	fmt.Printf("DEBUG: Push result - stdout: %q, stderr: %q, err: %v\n", result.Stdout, result.Stderr, err)
 
 	if err != nil {
 		// Check if it's an authentication error

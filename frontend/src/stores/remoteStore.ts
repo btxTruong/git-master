@@ -99,6 +99,9 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       });
 
       toast.success('Pushed changes successfully');
+
+      // Dispatch custom event to notify push button to update counter
+      window.dispatchEvent(new CustomEvent('pushCompleted'));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to push changes';
       set({

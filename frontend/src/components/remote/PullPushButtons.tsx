@@ -36,15 +36,20 @@ export function PullPushButtons() {
     // Refresh count every 10 seconds
     const interval = setInterval(loadUnpushedCount, 10000);
 
-    // Listen for commit completed events to immediately update counter
+    // Listen for commit and push completed events to immediately update counter
     const handleCommitCompleted = () => {
       loadUnpushedCount();
     };
+    const handlePushCompleted = () => {
+      loadUnpushedCount();
+    };
     window.addEventListener('commitCompleted', handleCommitCompleted);
+    window.addEventListener('pushCompleted', handlePushCompleted);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('commitCompleted', handleCommitCompleted);
+      window.removeEventListener('pushCompleted', handlePushCompleted);
     };
   }, [currentRepository?.currentBranch]);
 
