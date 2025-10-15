@@ -101,14 +101,20 @@ interface DraggableFileProps {
   groupId?: string;
   children: React.ReactNode;
   isDraggingEnabled?: boolean;
+  selectedFilePaths: string[]; // All selected file paths
 }
 
-function DraggableFile({ filePath, groupId, children, isDraggingEnabled = true }: DraggableFileProps) {
+function DraggableFile({ filePath, groupId, children, isDraggingEnabled = true, selectedFilePaths }: DraggableFileProps) {
+  // Determine if this file is part of a multi-selection
+  const isPartOfSelection = selectedFilePaths.includes(filePath);
+  const filesToDrag = isPartOfSelection && selectedFilePaths.length > 1 ? selectedFilePaths : [filePath];
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `file-${filePath}-${groupId}`,
     data: {
       type: 'file',
-      filePath,
+      filePath,  // Keep single filePath for backward compatibility
+      filePaths: filesToDrag, // Add array of all files being dragged
       groupId,
     },
     disabled: !isDraggingEnabled || !groupId,
@@ -263,7 +269,7 @@ export function FileTree({
     // Wrap with context menu and draggable if groupId is provided
     if (groupId) {
       return (
-        <DraggableFile key={`${file.path}-${index}`} filePath={file.path} groupId={groupId}>
+        <DraggableFile key={`${file.path}-${index}`} filePath={file.path} groupId={groupId} selectedFilePaths={selectedFilePaths}>
           <FileContextMenu
             filePath={file.path}
             currentGroupId={groupId}
@@ -334,7 +340,7 @@ export function FileTree({
       // Wrap with context menu and draggable if groupId is provided
       if (groupId) {
         return (
-          <DraggableFile key={node.path} filePath={node.file!.path} groupId={groupId}>
+          <DraggableFile key={node.path} filePath={node.file!.path} groupId={groupId} selectedFilePaths={selectedFilePaths}>
             <FileContextMenu
               filePath={node.file!.path}
               currentGroupId={groupId}

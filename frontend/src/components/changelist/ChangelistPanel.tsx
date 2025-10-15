@@ -219,7 +219,7 @@ export function ChangelistPanel({
     }
   }, [repositoryPath]);
 
-  // Handle drag end - move file between groups
+  // Handle drag end - move file(s) between groups
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
@@ -232,7 +232,8 @@ export function ChangelistPanel({
       // Ensure we're dragging a file onto a group
       if (activeData?.type !== 'file' || overData?.type !== 'group') return;
 
-      const filePath = activeData.filePath;
+      // Support both single file (filePath) and multiple files (filePaths)
+      const filePaths = activeData.filePaths || [activeData.filePath];
       const sourceGroupId = activeData.groupId;
       const targetGroupId = overData.groupId;
 
@@ -252,39 +253,48 @@ export function ChangelistPanel({
         return;
       }
 
+      const fileCount = filePaths.length;
+      const fileText = fileCount === 1 ? `"${filePaths[0]}"` : `${fileCount} file(s)`;
+
       try {
         // Handle moves involving system groups (tracked/untracked)
         if (sourceGroup.type === CHANGELIST_TYPE_TRACKED || targetGroup.type === CHANGELIST_TYPE_TRACKED) {
           // Moving from tracked to custom: keep file staged, just add to custom group
           // Don't unstage! If we unstage a file that was originally untracked, it becomes untracked again
           if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-            await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
-            toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+            await addFilesToGroup(repositoryPath, targetGroupId, filePaths);
+            toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
           }
-          // Moving from custom/untracked to tracked: stage the file
+          // Moving from custom/untracked to tracked: stage the file(s)
           else if (targetGroup.type === CHANGELIST_TYPE_TRACKED) {
             if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM) {
-              await removeFilesFromGroup(repositoryPath, sourceGroupId, [filePath]);
+              await removeFilesFromGroup(repositoryPath, sourceGroupId, filePaths);
             }
-            await stageFile(filePath);
+            // Stage all files
+            for (const filePath of filePaths) {
+              await stageFile(filePath);
+            }
             await loadChanges();
-            toast.success(`Staged "${filePath}"`);
+            toast.success(`Staged ${fileText}`);
           }
         }
         // Handle moves from untracked to custom group
         else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-          // Moving from untracked to custom: stage the file first, then add to group
-          await stageFile(filePath);
+          // Moving from untracked to custom: stage the file(s) first, then add to group
+          for (const filePath of filePaths) {
+            await stageFile(filePath);
+          }
           await loadChanges(); // Refresh Git status first
-          await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
-          toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+          await addFilesToGroup(repositoryPath, targetGroupId, filePaths);
+          toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
         }
         // Both are custom groups: use moveFilesBetweenGroups
         else if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-          await moveFilesBetweenGroups(repositoryPath, sourceGroupId, targetGroupId, [filePath]);
+          await moveFilesBetweenGroups(repositoryPath, sourceGroupId, targetGroupId, filePaths);
+          toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to move file';
+        const message = error instanceof Error ? error.message : 'Failed to move file(s)';
         toast.error(message);
       }
     },

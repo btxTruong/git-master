@@ -22,7 +22,6 @@ import {
 } from '@/types/changelist';
 import { FileTree } from '@/components/staging/FileTree';
 import { FileContextMenu } from '@/components/changelist/FileContextMenu';
-import { EmptyState } from '@/components/common/EmptyState';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
 import { useStagingStore } from '@/stores/stagingStore';
