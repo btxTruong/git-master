@@ -10,17 +10,17 @@ import (
 
 // App struct
 type App struct {
-	ctx                 context.Context
-	repositoryService   *services.RepositoryService
-	commitService       *services.CommitService
-	stagingService      *services.StagingService
-	remoteService       *services.RemoteService
-	changelistService   *services.ChangelistService
-	diffService         *services.DiffService
-	archiveService      *services.ArchiveService
-	blameService        *services.BlameService
-	credentialsService  *services.CredentialsService
-	configService       *services.ConfigService
+	ctx                context.Context
+	repositoryService  *services.RepositoryService
+	commitService      *services.CommitService
+	stagingService     *services.StagingService
+	remoteService      *services.RemoteService
+	changelistService  *services.ChangelistService
+	diffService        *services.DiffService
+	archiveService     *services.ArchiveService
+	blameService       *services.BlameService
+	credentialsService *services.CredentialsService
+	appConfigService   *services.AppConfigService
 }
 
 // NewApp creates a new App application struct
@@ -29,8 +29,8 @@ func NewApp() *App {
 	commitService := services.NewCommitService(nil)
 	stagingService := services.NewStagingService(repoService)
 	credentialsService := services.NewCredentialsService()
-	configService := services.NewConfigService()
-	remoteService := services.NewRemoteService(repoService, credentialsService, configService)
+	appConfigService := services.NewAppConfigService()
+	remoteService := services.NewRemoteService(repoService, credentialsService, appConfigService)
 	changelistService := services.NewChangelistService()
 	diffService := services.NewDiffService(stagingService)
 	archiveService := services.NewArchiveService(diffService, stagingService)
@@ -43,7 +43,7 @@ func NewApp() *App {
 	repoService.SetDiffService(diffService)
 	repoService.SetArchiveService(archiveService)
 	repoService.SetBlameService(blameService)
-	credentialsService.SetConfigService(configService)
+	credentialsService.SetAppConfigService(appConfigService)
 
 	return &App{
 		repositoryService:  repoService,
@@ -55,7 +55,7 @@ func NewApp() *App {
 		archiveService:     archiveService,
 		blameService:       blameService,
 		credentialsService: credentialsService,
-		configService:      configService,
+		appConfigService:   appConfigService,
 	}
 }
 
@@ -85,8 +85,8 @@ func (a *App) startup(ctx context.Context) {
 	if a.credentialsService != nil {
 		a.credentialsService.Startup(ctx)
 	}
-	if a.configService != nil {
-		a.configService.Startup(ctx)
+	if a.appConfigService != nil {
+		a.appConfigService.Startup(ctx)
 	}
 }
 
@@ -130,9 +130,9 @@ func (a *App) GetCredentialsService() *services.CredentialsService {
 	return a.credentialsService
 }
 
-// GetConfigService returns the config service for Wails binding
-func (a *App) GetConfigService() *services.ConfigService {
-	return a.configService
+// GetAppConfigService returns the app config service for Wails binding
+func (a *App) GetAppConfigService() *services.AppConfigService {
+	return a.appConfigService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository

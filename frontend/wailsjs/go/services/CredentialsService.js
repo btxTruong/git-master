@@ -38,8 +38,8 @@ export function HasGitHubToken() {
   return window['go']['services']['CredentialsService']['HasGitHubToken']();
 }
 
-export function SetConfigService(arg1) {
-  return window['go']['services']['CredentialsService']['SetConfigService'](arg1);
+export function SetAppConfigService(arg1) {
+  return window['go']['services']['CredentialsService']['SetAppConfigService'](arg1);
 }
 
 export function SetGitHubToken(arg1) {

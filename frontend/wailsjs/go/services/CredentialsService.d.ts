@@ -21,7 +21,7 @@ export function GetGitHubTokenForRepoWithSelection(arg1:string,arg2:string):Prom
 
 export function HasGitHubToken():Promise<boolean>;
 
-export function SetConfigService(arg1:services.ConfigService):Promise<void>;
+export function SetAppConfigService(arg1:services.AppConfigService):Promise<void>;
 
 export function SetGitHubToken(arg1:string):Promise<void>;
 

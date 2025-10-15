@@ -3,6 +3,8 @@
 import {services} from '../models';
 import {models} from '../models';
 
+export function GetAppConfigService():Promise<services.AppConfigService>;
+
 export function GetArchiveService():Promise<services.ArchiveService>;
 
 export function GetBlameService():Promise<services.BlameService>;
@@ -10,8 +12,6 @@ export function GetBlameService():Promise<services.BlameService>;
 export function GetChangelistService():Promise<services.ChangelistService>;
 
 export function GetCommitService():Promise<services.CommitService>;
-
-export function GetConfigService():Promise<services.ConfigService>;
 
 export function GetCredentialsService():Promise<services.CredentialsService>;
 

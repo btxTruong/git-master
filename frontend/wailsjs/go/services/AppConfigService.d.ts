@@ -7,10 +7,16 @@ export function ClearSelectedToken(arg1:string):Promise<void>;
 
 export function ClearTokenFromAllRepos(arg1:string):Promise<void>;
 
-export function GetRepositoryConfig(arg1:string):Promise<services.RepositoryConfig>;
+export function GetRecentRepositories():Promise<Array<services.RepositoryConfig>>;
 
 export function GetSelectedToken(arg1:string):Promise<string>;
+
+export function GetUIPreferences():Promise<services.UIPreferences>;
+
+export function SaveUIPreferences(arg1:services.UIPreferences):Promise<void>;
 
 export function SetSelectedToken(arg1:string,arg2:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
+
+export function UpdateRepositoryAccess(arg1:string,arg2:string):Promise<void>;

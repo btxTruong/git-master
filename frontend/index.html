@@ -7,22 +7,9 @@
     <!-- Preload theme to prevent FOUC (Flash of Unstyled Content) -->
     <script>
         (function() {
-            try {
-                const stored = localStorage.getItem('ui-preferences');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    const theme = parsed.state?.theme || 'system';
-                    const isDark = theme === 'dark' ||
-                        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                    if (isDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
-            } catch (e) {
-                // If error, check system preference as fallback
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                }
+            // Default to system preference until preferences are loaded from backend
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
             }
         })();
     </script>

@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	serviceName      = "git-master"
-	tokenKey         = "github-token"        // Legacy single token
-	tokenListKey     = "github-tokens-list"  // List of token IDs
-	tokenKeyPrefix   = "github-token-"       // Prefix for individual tokens
+	serviceName    = "git-master"
+	tokenKey       = "github-token"       // Legacy single token
+	tokenListKey   = "github-tokens-list" // List of token IDs
+	tokenKeyPrefix = "github-token-"      // Prefix for individual tokens
 )
 
 // GitHubToken represents a GitHub personal access token with metadata
@@ -26,8 +26,8 @@ type GitHubToken struct {
 
 // CredentialsService handles secure storage of credentials
 type CredentialsService struct {
-	ctx           context.Context
-	configService *ConfigService
+	ctx              context.Context
+	appConfigService *AppConfigService
 }
 
 // NewCredentialsService creates a new credentials service
@@ -35,9 +35,9 @@ func NewCredentialsService() *CredentialsService {
 	return &CredentialsService{}
 }
 
-// SetConfigService sets the config service (for clearing token selections when deleting tokens)
-func (s *CredentialsService) SetConfigService(configService *ConfigService) {
-	s.configService = configService
+// SetAppConfigService sets the app config service (for clearing token selections when deleting tokens)
+func (s *CredentialsService) SetAppConfigService(appConfigService *AppConfigService) {
+	s.appConfigService = appConfigService
 }
 
 // Startup is called when the app starts
@@ -235,8 +235,8 @@ func (s *CredentialsService) DeleteGitHubTokenWithRepo(id string) error {
 	}
 
 	// Clear this token from all repository selections
-	if s.configService != nil {
-		if err := s.configService.ClearTokenFromAllRepos(id); err != nil {
+	if s.appConfigService != nil {
+		if err := s.appConfigService.ClearTokenFromAllRepos(id); err != nil {
 			// Log the error but don't fail the deletion
 			fmt.Printf("Warning: failed to clear token selections: %v\n", err)
 		}

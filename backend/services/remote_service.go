@@ -16,19 +16,19 @@ type Remote struct {
 
 // RemoteService handles remote operations
 type RemoteService struct {
-	ctx               context.Context
-	executor          *git.Executor
+	ctx                context.Context
+	executor           *git.Executor
 	credentialsService *CredentialsService
-	configService     *ConfigService
-	repoPath          string // Current repository path
+	appConfigService   *AppConfigService
+	repoPath           string // Current repository path
 }
 
 // NewRemoteService creates a new remote service
-func NewRemoteService(repoService *RepositoryService, credentialsService *CredentialsService, configService *ConfigService) *RemoteService {
+func NewRemoteService(repoService *RepositoryService, credentialsService *CredentialsService, appConfigService *AppConfigService) *RemoteService {
 	return &RemoteService{
-		executor:          nil, // Will be set when repository is opened
+		executor:           nil, // Will be set when repository is opened
 		credentialsService: credentialsService,
-		configService:     configService,
+		appConfigService:   appConfigService,
 	}
 }
 
@@ -65,8 +65,8 @@ func (s *RemoteService) getGitHubToken(remoteName string) (string, error) {
 
 	// Get selected token ID from config if available
 	var selectedTokenID string
-	if s.configService != nil && s.repoPath != "" {
-		selectedTokenID, _ = s.configService.GetSelectedToken(s.repoPath)
+	if s.appConfigService != nil && s.repoPath != "" {
+		selectedTokenID, _ = s.appConfigService.GetSelectedToken(s.repoPath)
 	}
 
 	// Try to get a token specific to this repository
@@ -88,18 +88,18 @@ func (s *RemoteService) getGitHubToken(remoteName string) (string, error) {
 
 // GetSelectedTokenForCurrentRepo returns the selected token ID for the current repository
 func (s *RemoteService) GetSelectedTokenForCurrentRepo() (string, error) {
-	if s.configService == nil || s.repoPath == "" {
+	if s.appConfigService == nil || s.repoPath == "" {
 		return "", nil
 	}
-	return s.configService.GetSelectedToken(s.repoPath)
+	return s.appConfigService.GetSelectedToken(s.repoPath)
 }
 
 // SetSelectedTokenForCurrentRepo sets the selected token ID for the current repository
 func (s *RemoteService) SetSelectedTokenForCurrentRepo(tokenID string) error {
-	if s.configService == nil || s.repoPath == "" {
-		return fmt.Errorf("config service or repository path not available")
+	if s.appConfigService == nil || s.repoPath == "" {
+		return fmt.Errorf("app config service or repository path not available")
 	}
-	return s.configService.SetSelectedToken(s.repoPath, tokenID)
+	return s.appConfigService.SetSelectedToken(s.repoPath, tokenID)
 }
 
 // injectTokenIntoURL injects a GitHub token into an HTTPS URL

@@ -238,55 +238,65 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
 
                 {/* Diff Content with Blame */}
                 <div className="flex-1 overflow-auto bg-white dark:bg-gray-900">
-                  {diff.split('\n').filter((line) => {
-                    // Filter out all git metadata lines - only keep actual content
-                    if (line.startsWith('diff ')) return false;
-                    if (line.startsWith('index ')) return false;
-                    if (line.startsWith('--- a/') || line.startsWith('--- /dev/null')) return false;
-                    if (line.startsWith('+++ b/') || line.startsWith('+++ /dev/null')) return false;
-                    if (line.startsWith('@@')) return false;
-                    if (line.startsWith('new file mode')) return false;
-                    if (line.startsWith('deleted file mode')) return false;
-                    if (line.startsWith('similarity index')) return false;
-                    if (line.startsWith('rename from')) return false;
-                    if (line.startsWith('rename to')) return false;
-                    if (line.startsWith('copy from')) return false;
-                    if (line.startsWith('copy to')) return false;
-                    if (line.startsWith('old mode')) return false;
-                    if (line.startsWith('new mode')) return false;
-                    if (line.startsWith('dissimilarity index')) return false;
-                    if (line.startsWith('Binary files')) return false;
-                    if (line.startsWith('GIT binary patch')) return false;
-                    if (line.startsWith('\\')) return false; // "\ No newline at end of file"
-                    return true;
-                  }).map((line, index) => {
-                    let textColor = '';
-                    let bgColor = '';
-                    let displayLine = line;
+                  {diff
+                    .split('\n')
+                    .filter((line) => {
+                      // Filter out all git metadata lines - only keep actual content
+                      if (line.startsWith('diff ')) return false;
+                      if (line.startsWith('index ')) return false;
+                      if (line.startsWith('--- a/') || line.startsWith('--- /dev/null'))
+                        return false;
+                      if (line.startsWith('+++ b/') || line.startsWith('+++ /dev/null'))
+                        return false;
+                      if (line.startsWith('@@')) return false;
+                      if (line.startsWith('new file mode')) return false;
+                      if (line.startsWith('deleted file mode')) return false;
+                      if (line.startsWith('similarity index')) return false;
+                      if (line.startsWith('rename from')) return false;
+                      if (line.startsWith('rename to')) return false;
+                      if (line.startsWith('copy from')) return false;
+                      if (line.startsWith('copy to')) return false;
+                      if (line.startsWith('old mode')) return false;
+                      if (line.startsWith('new mode')) return false;
+                      if (line.startsWith('dissimilarity index')) return false;
+                      if (line.startsWith('Binary files')) return false;
+                      if (line.startsWith('GIT binary patch')) return false;
+                      if (line.startsWith('\\')) return false; // "\ No newline at end of file"
+                      return true;
+                    })
+                    .map((line, index) => {
+                      let textColor = '';
+                      let bgColor = '';
+                      let displayLine = line;
 
-                    // Determine line type and strip prefix for display
-                    if (line.startsWith('+')) {
-                      textColor = 'text-green-700 dark:text-green-300';
-                      bgColor = 'bg-green-50 dark:bg-green-900/20';
-                      displayLine = line.substring(1); // Remove + prefix
-                    } else if (line.startsWith('-')) {
-                      textColor = 'text-red-700 dark:text-red-300';
-                      bgColor = 'bg-red-50 dark:bg-red-900/20';
-                      displayLine = line.substring(1); // Remove - prefix
-                    } else {
-                      textColor = 'text-gray-700 dark:text-gray-300';
-                      displayLine = line.startsWith(' ') ? line.substring(1) : line; // Remove space prefix if present
-                    }
+                      // Determine line type and strip prefix for display
+                      if (line.startsWith('+')) {
+                        textColor = 'text-green-700 dark:text-green-300';
+                        bgColor = 'bg-green-50 dark:bg-green-900/20';
+                        displayLine = line.substring(1); // Remove + prefix
+                      } else if (line.startsWith('-')) {
+                        textColor = 'text-red-700 dark:text-red-300';
+                        bgColor = 'bg-red-50 dark:bg-red-900/20';
+                        displayLine = line.substring(1); // Remove - prefix
+                      } else {
+                        textColor = 'text-gray-700 dark:text-gray-300';
+                        displayLine = line.startsWith(' ') ? line.substring(1) : line; // Remove space prefix if present
+                      }
 
-                    return (
-                      <div key={index} className={`${bgColor} border-b border-gray-100 dark:border-gray-800`}>
-                        {/* Code content - display without +/- prefix */}
-                        <div className={`${textColor} px-4 py-2 whitespace-pre font-mono text-sm leading-relaxed`}>
-                          {displayLine || ' '}
+                      return (
+                        <div
+                          key={index}
+                          className={`${bgColor} border-b border-gray-100 dark:border-gray-800`}
+                        >
+                          {/* Code content - display without +/- prefix */}
+                          <div
+                            className={`${textColor} px-4 py-2 whitespace-pre font-mono text-sm leading-relaxed`}
+                          >
+                            {displayLine || ' '}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
             )}

@@ -1,13 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  FileText,
-  RotateCcw,
-  FolderInput,
-  History,
-  ArrowRightLeft,
-  Copy,
-} from 'lucide-react';
+import { FileText, RotateCcw, FolderInput, History, ArrowRightLeft, Copy } from 'lucide-react';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';

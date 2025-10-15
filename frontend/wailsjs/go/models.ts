@@ -566,6 +566,18 @@ export namespace models {
 
 export namespace services {
 	
+	export class AppConfigService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new AppConfigService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class ArchiveService {
 	
 	
@@ -607,18 +619,6 @@ export namespace services {
 	
 	    static createFrom(source: any = {}) {
 	        return new CommitService(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
-	    }
-	}
-	export class ConfigService {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new ConfigService(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -797,8 +797,11 @@ export namespace services {
 	    }
 	}
 	export class RepositoryConfig {
-	    repositoryPath: string;
+	    path: string;
+	    name: string;
 	    selectedToken: string;
+	    // Go type: time
+	    lastOpened: any;
 	
 	    static createFrom(source: any = {}) {
 	        return new RepositoryConfig(source);
@@ -806,9 +809,29 @@ export namespace services {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.repositoryPath = source["repositoryPath"];
+	        this.path = source["path"];
+	        this.name = source["name"];
 	        this.selectedToken = source["selectedToken"];
+	        this.lastOpened = this.convertValues(source["lastOpened"], null);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class RepositoryService {
 	
@@ -871,6 +894,34 @@ export namespace services {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+	export class UIPreferences {
+	    sidebarOpen: boolean;
+	    currentView: string;
+	    diffViewMode: string;
+	    theme: string;
+	    virtualizationThreshold: number;
+	    dateFormat: string;
+	    showLineNumbers: boolean;
+	    autoRefresh: boolean;
+	    commitLimit: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new UIPreferences(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sidebarOpen = source["sidebarOpen"];
+	        this.currentView = source["currentView"];
+	        this.diffViewMode = source["diffViewMode"];
+	        this.theme = source["theme"];
+	        this.virtualizationThreshold = source["virtualizationThreshold"];
+	        this.dateFormat = source["dateFormat"];
+	        this.showLineNumbers = source["showLineNumbers"];
+	        this.autoRefresh = source["autoRefresh"];
+	        this.commitLimit = source["commitLimit"];
 	    }
 	}
 	export class WorkingDirectoryStatus {

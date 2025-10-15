@@ -35,7 +35,7 @@ func main() {
 			app.archiveService,
 			app.blameService,
 			app.credentialsService,
-			app.configService,
+			app.appConfigService,
 		},
 	})
 

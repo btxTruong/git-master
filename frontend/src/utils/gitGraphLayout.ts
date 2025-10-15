@@ -39,7 +39,7 @@ function extractBranchName(refs: string[] | undefined): string | null {
     // Skip HEAD and tags
     if (ref.includes('HEAD') || ref.includes('tag:')) continue;
     // Remove common prefixes
-    const cleaned = ref.replace(/^(origin\/|remotes\/origin\/)/,  '');
+    const cleaned = ref.replace(/^(origin\/|remotes\/origin\/)/, '');
     return cleaned;
   }
 
@@ -181,7 +181,11 @@ function hashCode(str: string): number {
  * Get color for a lane based on branch name
  * Falls back to lane index if branch name is not available
  */
-export function getLaneColor(laneIndex: number, isDark: boolean, branchName?: string | null): string {
+export function getLaneColor(
+  laneIndex: number,
+  isDark: boolean,
+  branchName?: string | null
+): string {
   const colors = isDark
     ? [
         '#60a5fa', // blue-400

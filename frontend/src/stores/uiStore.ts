@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { GetUIPreferences, SaveUIPreferences } from '../../wailsjs/go/services/AppConfigService';
+import { services } from '../../wailsjs/go/models';
 
 export type ViewType = 'history' | 'changes' | 'branches' | 'merge' | 'settings';
 export type DiffViewMode = 'unified' | 'split';
@@ -11,15 +12,15 @@ interface UIState {
   currentView: ViewType;
   diffViewMode: DiffViewMode;
   theme: Theme;
-
-  // User preferences
-  virtualizationThreshold: number; // Number of items before virtualization kicks in
+  virtualizationThreshold: number;
   dateFormat: DateFormat;
   showLineNumbers: boolean;
   autoRefresh: boolean;
-  commitLimit: number; // Number of commits to load per page
+  commitLimit: number;
+  isLoaded: boolean;
 
   // Actions
+  loadPreferences: () => Promise<void>;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setView: (view: ViewType) => void;
@@ -32,40 +33,58 @@ interface UIState {
   setCommitLimit: (limit: number) => void;
 }
 
-export const useUIStore = create<UIState>()(
-  persist(
-    (set) => ({
-      sidebarOpen: true,
-      currentView: 'history',
-      diffViewMode: 'unified',
-      theme: 'system',
+const saveToBackend = async (state: Partial<services.UIPreferences>) => {
+  try {
+    const currentStore = useUIStore.getState();
+    const prefs: services.UIPreferences = {
+      sidebarOpen: state.sidebarOpen ?? currentStore.sidebarOpen,
+      currentView: state.currentView ?? currentStore.currentView,
+      diffViewMode: state.diffViewMode ?? currentStore.diffViewMode,
+      theme: state.theme ?? currentStore.theme,
+      virtualizationThreshold:
+        state.virtualizationThreshold ?? currentStore.virtualizationThreshold,
+      dateFormat: state.dateFormat ?? currentStore.dateFormat,
+      showLineNumbers: state.showLineNumbers ?? currentStore.showLineNumbers,
+      autoRefresh: state.autoRefresh ?? currentStore.autoRefresh,
+      commitLimit: state.commitLimit ?? currentStore.commitLimit,
+    };
+    await SaveUIPreferences(prefs);
+  } catch (error) {
+    console.error('Failed to save UI preferences:', error);
+  }
+};
 
-      // Default preferences
-      virtualizationThreshold: 100,
-      dateFormat: 'relative',
-      showLineNumbers: true,
-      autoRefresh: true,
-      commitLimit: 100,
+export const useUIStore = create<UIState>((set, get) => ({
+  sidebarOpen: true,
+  currentView: 'history',
+  diffViewMode: 'unified',
+  theme: 'system',
+  virtualizationThreshold: 100,
+  dateFormat: 'relative',
+  showLineNumbers: true,
+  autoRefresh: true,
+  commitLimit: 100,
+  isLoaded: false,
 
-      toggleSidebar: () => {
-        set((state) => ({ sidebarOpen: !state.sidebarOpen }));
-      },
+  loadPreferences: async () => {
+    try {
+      const prefs = await GetUIPreferences();
+      if (prefs) {
+        set({
+          sidebarOpen: prefs.sidebarOpen,
+          currentView: prefs.currentView as ViewType,
+          diffViewMode: prefs.diffViewMode as DiffViewMode,
+          theme: prefs.theme as Theme,
+          virtualizationThreshold: prefs.virtualizationThreshold,
+          dateFormat: prefs.dateFormat as DateFormat,
+          showLineNumbers: prefs.showLineNumbers,
+          autoRefresh: prefs.autoRefresh,
+          commitLimit: prefs.commitLimit,
+          isLoaded: true,
+        });
 
-      setSidebarOpen: (open) => {
-        set({ sidebarOpen: open });
-      },
-
-      setView: (view) => {
-        set({ currentView: view });
-      },
-
-      setDiffViewMode: (mode) => {
-        set({ diffViewMode: mode });
-      },
-
-      setTheme: (theme) => {
-        set({ theme });
         // Apply theme to document
+        const theme = prefs.theme as Theme;
         if (
           theme === 'dark' ||
           (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -74,30 +93,71 @@ export const useUIStore = create<UIState>()(
         } else {
           document.documentElement.classList.remove('dark');
         }
-      },
-
-      setVirtualizationThreshold: (threshold) => {
-        set({ virtualizationThreshold: threshold });
-      },
-
-      setDateFormat: (format) => {
-        set({ dateFormat: format });
-      },
-
-      setShowLineNumbers: (show) => {
-        set({ showLineNumbers: show });
-      },
-
-      setAutoRefresh: (enabled) => {
-        set({ autoRefresh: enabled });
-      },
-
-      setCommitLimit: (limit) => {
-        set({ commitLimit: limit });
-      },
-    }),
-    {
-      name: 'ui-preferences',
+      }
+    } catch (error) {
+      console.error('Failed to load UI preferences:', error);
+      set({ isLoaded: true });
     }
-  )
-);
+  },
+
+  toggleSidebar: () => {
+    const newValue = !get().sidebarOpen;
+    set({ sidebarOpen: newValue });
+    saveToBackend({ sidebarOpen: newValue });
+  },
+
+  setSidebarOpen: (open) => {
+    set({ sidebarOpen: open });
+    saveToBackend({ sidebarOpen: open });
+  },
+
+  setView: (view) => {
+    set({ currentView: view });
+    saveToBackend({ currentView: view });
+  },
+
+  setDiffViewMode: (mode) => {
+    set({ diffViewMode: mode });
+    saveToBackend({ diffViewMode: mode });
+  },
+
+  setTheme: (theme) => {
+    set({ theme });
+    saveToBackend({ theme });
+
+    // Apply theme to document
+    if (
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  },
+
+  setVirtualizationThreshold: (threshold) => {
+    set({ virtualizationThreshold: threshold });
+    saveToBackend({ virtualizationThreshold: threshold });
+  },
+
+  setDateFormat: (format) => {
+    set({ dateFormat: format });
+    saveToBackend({ dateFormat: format });
+  },
+
+  setShowLineNumbers: (show) => {
+    set({ showLineNumbers: show });
+    saveToBackend({ showLineNumbers: show });
+  },
+
+  setAutoRefresh: (enabled) => {
+    set({ autoRefresh: enabled });
+    saveToBackend({ autoRefresh: enabled });
+  },
+
+  setCommitLimit: (limit) => {
+    set({ commitLimit: limit });
+    saveToBackend({ commitLimit: limit });
+  },
+}));
