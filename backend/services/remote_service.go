@@ -219,40 +219,25 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 		return err
 	}
 
-	// If we have a token, we need to use a temporary remote with the token-injected URL
-	useTokenRemote := token != ""
-	tempRemoteName := ""
+	// Get the actual upstream remote to check if we're already up to date
+	upstreamResult, _ := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", fmt.Sprintf("%s@{upstream}", currentBranch))
+	upstreamBranch := strings.TrimSpace(upstreamResult.Stdout)
+	fmt.Printf("DEBUG: Current branch: %s, Upstream: %s, Target remote: %s\n", currentBranch, upstreamBranch, currentRemote)
 
-	if useTokenRemote {
-		// Get the current remote URL
-		result, err := s.executor.Execute(s.ctx, "remote", "get-url", currentRemote)
-		if err != nil {
-			return fmt.Errorf("failed to get remote URL: %w", err)
-		}
-		remoteURL := strings.TrimSpace(result.Stdout)
-
-		// Inject token into URL if it's a GitHub HTTPS URL
-		tokenURL := injectTokenIntoURL(remoteURL, token)
-
-		if tokenURL != remoteURL {
-			// Create a temporary remote with the token-injected URL
-			tempRemoteName = fmt.Sprintf("temp-push-%s", currentRemote)
-
-			// Add temporary remote
-			_, err = s.executor.Execute(s.ctx, "remote", "add", tempRemoteName, tokenURL)
-			if err != nil {
-				return fmt.Errorf("failed to add temporary remote: %w", err)
-			}
-
-			// Ensure we remove the temporary remote even if push fails
-			defer func() {
-				s.executor.Execute(s.ctx, "remote", "remove", tempRemoteName)
-			}()
-
-			// Use the temporary remote for pushing
-			currentRemote = tempRemoteName
-		}
+	// Check if there are actually commits to push
+	if upstreamBranch != "" {
+		countResult, _ := s.executor.Execute(s.ctx, "rev-list", "--count", fmt.Sprintf("%s..%s", upstreamBranch, currentBranch))
+		commitCount := strings.TrimSpace(countResult.Stdout)
+		fmt.Printf("DEBUG: Commits ahead of upstream: %s\n", commitCount)
 	}
+
+	// Get the current remote URL
+	result, err := s.executor.Execute(s.ctx, "remote", "get-url", currentRemote)
+	if err != nil {
+		return fmt.Errorf("failed to get remote URL: %w", err)
+	}
+	remoteURL := strings.TrimSpace(result.Stdout)
+	fmt.Printf("DEBUG: Original remote URL: %s\n", remoteURL)
 
 	args := []string{"push"}
 
@@ -260,15 +245,32 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 		args = append(args, "--force")
 	}
 
-	if setUpstream && tempRemoteName == "" {
-		// Only set upstream if not using a temporary remote
+	if setUpstream {
 		args = append(args, "--set-upstream")
 	}
 
-	// Always specify remote and branch for clarity
-	args = append(args, currentRemote, currentBranch)
+	// If we have a token, inject it directly into the URL and push to that URL
+	// This avoids issues with temporary remotes
+	if token != "" {
+		tokenURL := injectTokenIntoURL(remoteURL, token)
+		fmt.Printf("DEBUG: Token injected URL (masked): %s\n", strings.Replace(tokenURL, token, "***TOKEN***", 1))
 
-	result, err := s.executor.Execute(s.ctx, args...)
+		if tokenURL != remoteURL {
+			// Push directly to the URL with token
+			args = append(args, tokenURL, fmt.Sprintf("%s:%s", currentBranch, currentBranch))
+		} else {
+			// No token injection happened (not a GitHub HTTPS URL)
+			args = append(args, currentRemote, currentBranch)
+		}
+	} else {
+		// No token available, use normal push
+		args = append(args, currentRemote, currentBranch)
+	}
+
+	fmt.Printf("DEBUG: Executing push command: git %v\n", args)
+	result, err = s.executor.Execute(s.ctx, args...)
+	fmt.Printf("DEBUG: Push result - stdout: %q, stderr: %q, err: %v\n", result.Stdout, result.Stderr, err)
+
 	if err != nil {
 		// Check if it's an authentication error
 		isAuthError := false

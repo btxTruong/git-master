@@ -150,6 +150,9 @@ export const useStagingStore = create<StagingState>((set, get) => ({
 
       // Reload changes to get updated working directory status
       await get().loadChanges();
+
+      // Dispatch custom event to notify push button to update counter
+      window.dispatchEvent(new CustomEvent('commitCompleted'));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to commit';
       set({ error: errorMessage, isCommitting: false });
