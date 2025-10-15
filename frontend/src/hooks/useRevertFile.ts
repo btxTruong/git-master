@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { RevertFileChanges } from '../../wailsjs/go/services/StagingService';
@@ -13,12 +13,24 @@ export interface RevertFileOptions {
   onError?: (error: Error) => void;
 }
 
+interface RevertConfirmation {
+  filePath: string;
+  message: string;
+  revertStagedChanges: boolean;
+  revertUnstagedChanges: boolean;
+  deleteUntrackedFiles: boolean;
+  groupId?: string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
 /**
  * Custom hook for reverting file changes with proper handling of different file states
  */
 export function useRevertFile() {
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const { removeFilesFromGroup, reconcileWithGitStatus } = useChangelistStore();
+  const [confirmationState, setConfirmationState] = useState<RevertConfirmation | null>(null);
 
   const revertFile = useCallback(
     async ({ filePath, groupId, onSuccess, onError }: RevertFileOptions) => {
@@ -74,11 +86,43 @@ export function useRevertFile() {
           return;
         }
 
-        // Show confirmation dialog
-        if (!window.confirm(confirmMessage)) {
-          return;
-        }
+        // Store confirmation state and return - the UI will show the modal
+        setConfirmationState({
+          filePath,
+          message: confirmMessage,
+          revertStagedChanges,
+          revertUnstagedChanges,
+          deleteUntrackedFiles,
+          groupId,
+          onSuccess,
+          onError,
+        });
+      } catch (error) {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        toast.error(errorObj.message);
+        onError?.(errorObj);
+      }
+    },
+    [currentRepository]
+  );
 
+  const confirmRevert = useCallback(
+    async () => {
+      if (!confirmationState || !currentRepository) {
+        return;
+      }
+
+      const {
+        filePath,
+        revertStagedChanges,
+        revertUnstagedChanges,
+        deleteUntrackedFiles,
+        groupId,
+        onSuccess,
+        onError,
+      } = confirmationState;
+
+      try {
         // Create revert options
         const revertOptions = new services.RevertOptions({
           RevertStagedChanges: revertStagedChanges,
@@ -90,7 +134,8 @@ export function useRevertFile() {
         await RevertFileChanges(filePath, revertOptions);
 
         // Remove file from changelist group if specified
-        if (groupId) {
+        // Only remove from custom groups, not derived groups like __tracked__ or __untracked__
+        if (groupId && !groupId.startsWith('__')) {
           await removeFilesFromGroup(currentRepository.path, groupId, [filePath]);
         }
 
@@ -105,12 +150,15 @@ export function useRevertFile() {
         await reconcileWithGitStatus(currentRepository.path, statusSignature);
 
         // Show success message
+        const isUntracked = deleteUntrackedFiles;
         if (isUntracked) {
           toast.success(`Deleted untracked file "${filePath}"`);
         } else {
           toast.success(`Reverted changes in "${filePath}"`);
         }
 
+        // Clear confirmation state and call success callback
+        setConfirmationState(null);
         onSuccess?.();
       } catch (error) {
         const errorObj = error instanceof Error ? error : new Error(String(error));
@@ -131,11 +179,21 @@ export function useRevertFile() {
         const fullMessage = suggestion ? `${errorMessage}\n\n${suggestion}` : errorMessage;
 
         toast.error(fullMessage, { duration: 6000 });
+        setConfirmationState(null);
         onError?.(errorObj);
       }
     },
-    [currentRepository, removeFilesFromGroup, reconcileWithGitStatus]
+    [confirmationState, currentRepository, removeFilesFromGroup, reconcileWithGitStatus]
   );
 
-  return { revertFile };
+  const cancelRevert = useCallback(() => {
+    setConfirmationState(null);
+  }, []);
+
+  return {
+    revertFile,
+    confirmRevert,
+    cancelRevert,
+    confirmationState,
+  };
 }

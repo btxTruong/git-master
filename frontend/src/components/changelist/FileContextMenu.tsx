@@ -6,6 +6,7 @@ import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
 import { useRevertFile } from '@/hooks/useRevertFile';
+import { RevertConfirmDialog } from './RevertConfirmDialog';
 import { stageFile } from '@/api/staging';
 import toast from 'react-hot-toast';
 import { CHANGELIST_TYPE_CUSTOM } from '@/types/changelist';
@@ -38,7 +39,7 @@ export function FileContextMenu({
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const loadChanges = useStagingStore((state) => state.loadChanges);
   const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
-  const { revertFile } = useRevertFile();
+  const { revertFile, confirmRevert, cancelRevert, confirmationState } = useRevertFile();
 
   // Determine if this file is part of a multi-selection
   const isPartOfSelection = selectedFilePaths.includes(filePath);
@@ -431,6 +432,14 @@ export function FileContextMenu({
       </div>
 
       {menuContent && createPortal(menuContent, document.body)}
+
+      <RevertConfirmDialog
+        isOpen={!!confirmationState}
+        filePath={confirmationState?.filePath || null}
+        message={confirmationState?.message || ''}
+        onConfirm={confirmRevert}
+        onCancel={cancelRevert}
+      />
     </>
   );
 }
