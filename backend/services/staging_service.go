@@ -170,9 +170,19 @@ func (s *StagingService) StageFile(path string) error {
 	}
 	repoPath := repo.Path
 
-	// Use 'git add' with '--all' flag to properly handle deleted files
-	// This ensures deletions are staged correctly
-	cmd := exec.Command("git", "add", "--all", path)
+	// Check if the file exists in the working directory
+	fullPath := filepath.Join(repoPath, path)
+	_, statErr := os.Stat(fullPath)
+	fileExists := statErr == nil
+
+	var cmd *exec.Cmd
+	if fileExists {
+		// File exists: use 'git add' with '--all' flag to stage changes
+		cmd = exec.Command("git", "add", "--all", path)
+	} else {
+		// File doesn't exist: it's been deleted, use 'git rm' to stage the deletion
+		cmd = exec.Command("git", "rm", path)
+	}
 	cmd.Dir = repoPath
 
 	output, err := cmd.CombinedOutput()
@@ -356,15 +366,42 @@ func (s *StagingService) StageMultipleFilePaths(filePathsToStage []string) error
 	}
 	repoPath := repo.Path
 
-	// Build git add command with all paths
-	// Use --all flag to properly handle deleted files
-	args := append([]string{"add", "--all", "--"}, filePathsToStage...)
-	cmd := exec.Command("git", args...)
-	cmd.Dir = repoPath
+	// Separate files into existing and deleted
+	existingFiles := []string{}
+	deletedFiles := []string{}
 
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to stage multiple files: %w - %s", err, string(output))
+	for _, path := range filePathsToStage {
+		fullPath := filepath.Join(repoPath, path)
+		_, statErr := os.Stat(fullPath)
+		if statErr == nil {
+			existingFiles = append(existingFiles, path)
+		} else {
+			deletedFiles = append(deletedFiles, path)
+		}
+	}
+
+	// Stage existing files with git add
+	if len(existingFiles) > 0 {
+		args := append([]string{"add", "--all", "--"}, existingFiles...)
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to stage existing files: %w - %s", err, string(output))
+		}
+	}
+
+	// Stage deleted files with git rm
+	if len(deletedFiles) > 0 {
+		args := append([]string{"rm", "--"}, deletedFiles...)
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to stage deleted files: %w - %s", err, string(output))
+		}
 	}
 
 	return nil
