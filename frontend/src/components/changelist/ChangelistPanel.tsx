@@ -4,6 +4,7 @@ import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '
 import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
+import { DeleteGroupDialog } from './DeleteGroupDialog';
 import { Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useChangelistStore } from '@/stores/changelistStore';
@@ -85,6 +86,13 @@ export function ChangelistPanel({
     return expandedIds;
   });
 
+  // State for delete group confirmation dialog
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    groupId: string;
+    groupName: string;
+    fileCount: number;
+  } | null>(null);
+
   // Ref for virtualization
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -165,21 +173,15 @@ export function ChangelistPanel({
         }
 
         case 'delete': {
-          // Confirm deletion
+          // Show delete confirmation dialog
           const group = allGroups.find((g) => g.id === groupId);
           if (!group) return;
 
-          const confirmed = window.confirm(
-            `Are you sure you want to delete the group "${group.name}"?\n\nFiles will not be deleted from disk, only removed from the group.`
-          );
-
-          if (confirmed) {
-            try {
-              await deleteGroup(repositoryPath, groupId);
-            } catch {
-              // Error already handled by store
-            }
-          }
+          setDeleteConfirmation({
+            groupId: group.id,
+            groupName: group.name,
+            fileCount: group.items.length,
+          });
           break;
         }
 
@@ -202,6 +204,24 @@ export function ChangelistPanel({
       useChangelistStore.getState().createGroup(repositoryPath, groupName.trim());
     }
   }, [repositoryPath]);
+
+  // Handle delete group confirmation
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteConfirmation || !repositoryPath) return;
+
+    try {
+      await deleteGroup(repositoryPath, deleteConfirmation.groupId);
+      setDeleteConfirmation(null);
+    } catch {
+      // Error already handled by store
+      setDeleteConfirmation(null);
+    }
+  }, [deleteConfirmation, repositoryPath, deleteGroup]);
+
+  // Handle cancel delete
+  const handleCancelDelete = useCallback(() => {
+    setDeleteConfirmation(null);
+  }, []);
 
   // Handle drag end - move file(s) between groups
   const handleDragEnd = useCallback(
@@ -407,6 +427,15 @@ export function ChangelistPanel({
           )}
         </div>
       </div>
+
+      {/* Delete Group Confirmation Dialog */}
+      <DeleteGroupDialog
+        isOpen={!!deleteConfirmation}
+        groupName={deleteConfirmation?.groupName || null}
+        fileCount={deleteConfirmation?.fileCount || 0}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </DndContext>
   );
 }
