@@ -58,6 +58,7 @@ function ChangesView() {
 
   // Auto-refresh state
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Dialog state for keyboard shortcuts
   const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
@@ -154,8 +155,13 @@ function ChangesView() {
   }, []);
 
   // Handle manual refresh
-  const handleManualRefresh = useCallback(() => {
-    refreshGitStatus();
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshGitStatus();
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [refreshGitStatus]);
 
   // Handle closing blame viewer
@@ -482,10 +488,11 @@ function ChangesView() {
 
             <button
               onClick={handleManualRefresh}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2"
+              disabled={isRefreshing}
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Refresh (Cmd/Ctrl+R)"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
