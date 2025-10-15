@@ -218,7 +218,17 @@ func (service *ChangelistService) saveChangelistConfiguration(repositoryPath str
 // Helper functions for path construction
 
 func (service *ChangelistService) getChangelistDirectoryPath(repositoryPath string) string {
-	return filepath.Join(repositoryPath, changelistDirectoryName)
+	homeDirectory, homeDirectoryError := os.UserHomeDir()
+	if homeDirectoryError != nil {
+		return filepath.Join(repositoryPath, changelistDirectoryName)
+	}
+
+	repositoryName := filepath.Base(repositoryPath)
+	if repositoryName == "" || repositoryName == "." || repositoryName == "/" {
+		return filepath.Join(repositoryPath, changelistDirectoryName)
+	}
+
+	return filepath.Join(homeDirectory, changelistDirectoryName, repositoryName)
 }
 
 func (service *ChangelistService) getChangelistConfigurationFilePath(repositoryPath string) string {
