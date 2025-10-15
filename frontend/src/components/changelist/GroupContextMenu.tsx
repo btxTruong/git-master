@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Archive, GitCommit, Edit3, Trash2, FileText, FolderPlus } from 'lucide-react';
+import { Archive, Edit3, Trash2, FileText, FolderPlus } from 'lucide-react';
 import type { Changelist } from '@/types/changelist';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
-import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
-import { CommitDialog } from '@/components/staging/CommitDialog';
 import { ArchiveChangelistGroup } from '../../../wailsjs/go/services/ArchiveService';
 import { models } from '../../../wailsjs/go/models';
 import toast from 'react-hot-toast';
 
-export type GroupAction = 'rename' | 'archive' | 'commit' | 'delete' | 'patch';
+export type GroupAction = 'rename' | 'archive' | 'delete' | 'patch';
 
 interface GroupContextMenuProps {
   group: Changelist;
@@ -37,7 +35,6 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
 
   const { renameGroup, deleteGroup } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
-  const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
   // System-generated groups have limited actions
   const isSystemGroup = group.isSystemGenerated;
@@ -133,14 +130,6 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
     setArchiveBeforeDelete(false);
     setShowDeleteDialog(true);
     if (onAction) onAction('delete');
-  };
-
-  const handleCommit = async () => {
-    await commitFromGroup({
-      groupId: group.id,
-      groupName: group.name,
-    });
-    if (onAction) onAction('commit');
   };
 
   const handleCreatePatch = async () => {
@@ -242,15 +231,7 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
         zIndex: 9999,
       }}
     >
-      {/* Commit All Files */}
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-        onClick={() => handleMenuItemClick(handleCommit)}
-      >
-        <GitCommit className="w-4 h-4" />
-        Commit All Files...
-      </button>
-
+      {/* Create Patch */}
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
         onClick={() => handleMenuItemClick(handleCreatePatch)}
@@ -280,8 +261,6 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
             <Archive className="w-4 h-4" />
             Archive Group
           </button>
-
-          <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
           {/* Delete Group */}
           <button
@@ -442,9 +421,6 @@ export function GroupContextMenu({ group, children, onAction }: GroupContextMenu
           </div>
         </div>
       )}
-
-      {/* Commit Dialog */}
-      <CommitDialog isOpen={isCommitDialogOpen} onClose={closeCommitDialog} />
     </>
   );
 }

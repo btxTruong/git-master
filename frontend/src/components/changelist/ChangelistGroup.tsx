@@ -38,7 +38,7 @@ interface ChangelistGroupProps {
   isDisabled?: boolean;
 }
 
-export type GroupAction = 'edit' | 'delete' | 'archive' | 'commit';
+export type GroupAction = 'edit' | 'delete' | 'archive';
 
 interface GroupActionMenuProps {
   group: Changelist;
@@ -97,21 +97,6 @@ function GroupActionMenu({ group, onAction, isOpen, onToggle }: GroupActionMenuP
                   >
                     Archive Group
                   </button>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                </>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAction('commit');
-                  onToggle();
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Commit Files...
-              </button>
-              {!isSystemGroup && (
-                <>
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                   <button
                     onClick={(e) => {

@@ -204,12 +204,6 @@ export function ChangelistPanel({
           console.log('Archive action not yet implemented');
           break;
         }
-
-        case 'commit': {
-          // TODO: Implement commit from group in task 029
-          console.log('Commit action not yet implemented');
-          break;
-        }
       }
     },
     [repositoryPath, allGroups, deleteGroup, renameGroup]

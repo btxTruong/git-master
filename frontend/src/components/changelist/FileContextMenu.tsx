@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   FileText,
-  GitCommit,
   RotateCcw,
   FolderInput,
   History,
@@ -15,8 +14,6 @@ import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
 import { useRevertFile } from '@/hooks/useRevertFile';
-import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
-import { CommitDialog } from '@/components/staging/CommitDialog';
 import { stageFile, unstageFile } from '@/api/staging';
 import toast from 'react-hot-toast';
 import { CHANGELIST_TYPE_CUSTOM } from '@/types/changelist';
@@ -50,7 +47,6 @@ export function FileContextMenu({
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const loadChanges = useStagingStore((state) => state.loadChanges);
   const { revertFile } = useRevertFile();
-  const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
   // Get derived groups
   const trackedGroup = useTrackedGroup();
@@ -174,19 +170,6 @@ export function FileContextMenu({
     await revertFile({
       filePath,
       groupId: currentGroupId,
-    });
-  };
-
-  const handleCommitFile = async () => {
-    if (!currentGroup) {
-      toast.error('Group not found');
-      return;
-    }
-
-    await commitFromGroup({
-      groupId: currentGroupId,
-      groupName: currentGroup.name,
-      filePaths: [filePath],
     });
   };
 
@@ -338,14 +321,6 @@ export function FileContextMenu({
       )}
 
       <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-        onClick={() => handleMenuItemClick(handleCommitFile)}
-      >
-        <GitCommit className="w-4 h-4" />
-        Commit File...
-      </button>
-
-      <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
         onClick={() => handleMenuItemClick(handleRevertFile)}
       >
@@ -353,44 +328,46 @@ export function FileContextMenu({
         Revert Changes
       </button>
 
-      <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
-
-      {/* Group Actions */}
       {otherGroups.length > 0 && (
-        <div
-          className="relative"
-          onMouseEnter={() => setIsMoveMenuOpen(true)}
-          onMouseLeave={() => setIsMoveMenuOpen(false)}
-        >
-          <button className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
-            <div className="flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4" />
-              Move to Group
-            </div>
-            <span className="text-xs">▶</span>
-          </button>
+        <>
+          <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
-          {isMoveMenuOpen && (
-            <div
-              className="absolute left-full top-0 ml-1 min-w-[200px] max-h-[300px] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
-              style={{ zIndex: 10000 }}
-            >
-              {otherGroups.map((group) => (
-                <button
-                  key={group.id}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                  onClick={() => handleMenuItemClick(() => handleMoveToGroup(group.id))}
-                >
-                  <FolderInput className="w-4 h-4" />
-                  {group.name}
-                  <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-                    {group.items.length}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          {/* Group Actions */}
+          <div
+            className="relative"
+            onMouseEnter={() => setIsMoveMenuOpen(true)}
+            onMouseLeave={() => setIsMoveMenuOpen(false)}
+          >
+            <button className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="w-4 h-4" />
+                Move to Group
+              </div>
+              <span className="text-xs">▶</span>
+            </button>
+
+            {isMoveMenuOpen && (
+              <div
+                className="absolute left-full top-0 ml-1 min-w-[200px] max-h-[300px] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+                style={{ zIndex: 10000 }}
+              >
+                {otherGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                    onClick={() => handleMenuItemClick(() => handleMoveToGroup(group.id))}
+                  >
+                    <FolderInput className="w-4 h-4" />
+                    {group.name}
+                    <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                      {group.items.length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
@@ -424,9 +401,6 @@ export function FileContextMenu({
       </div>
 
       {menuContent && createPortal(menuContent, document.body)}
-
-      {/* Commit Dialog */}
-      <CommitDialog isOpen={isCommitDialogOpen} onClose={closeCommitDialog} />
     </>
   );
 }
