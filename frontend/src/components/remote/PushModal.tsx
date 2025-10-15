@@ -105,9 +105,7 @@ export function PushModal({ isOpen, onClose, onPush, branch }: PushModalProps) {
 
       // Fetch old and new content
       const oldContent =
-        parentHash && file.oldPath
-          ? await GetFileContentAtCommit(parentHash, file.oldPath)
-          : '';
+        parentHash && file.oldPath ? await GetFileContentAtCommit(parentHash, file.oldPath) : '';
       const newContent = file.newPath
         ? await GetFileContentAtCommit(selectedCommit.hash, file.newPath)
         : '';
@@ -294,9 +292,7 @@ export function PushModal({ isOpen, onClose, onPush, branch }: PushModalProps) {
                 onClick={handlePush}
                 disabled={isPushing}
                 className={`px-4 py-2 text-sm font-medium text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
-                  forceEnabled
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                  forceEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
                 {isPushing ? (

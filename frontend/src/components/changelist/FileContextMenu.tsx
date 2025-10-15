@@ -43,7 +43,8 @@ export function FileContextMenu({
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { groups, moveFilesBetweenGroups, addFilesToGroup, removeFilesFromGroup } = useChangelistStore();
+  const { groups, moveFilesBetweenGroups, addFilesToGroup, removeFilesFromGroup } =
+    useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const loadChanges = useStagingStore((state) => state.loadChanges);
   const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
@@ -51,7 +52,8 @@ export function FileContextMenu({
 
   // Determine if this file is part of a multi-selection
   const isPartOfSelection = selectedFilePaths.includes(filePath);
-  const targetFiles = isPartOfSelection && selectedFilePaths.length > 1 ? selectedFilePaths : [filePath];
+  const targetFiles =
+    isPartOfSelection && selectedFilePaths.length > 1 ? selectedFilePaths : [filePath];
   const isBulkOperation = targetFiles.length > 1;
 
   // Get derived groups
@@ -65,9 +67,7 @@ export function FileContextMenu({
 
   // Filter to show only other groups (not current one) for move action
   // Also exclude Untracked group as you cannot "move" files to untracked (they're already untracked)
-  const otherGroups = allGroups.filter(
-    (g) => g.id !== currentGroupId && g.id !== '__untracked__'
-  );
+  const otherGroups = allGroups.filter((g) => g.id !== currentGroupId && g.id !== '__untracked__');
   const currentGroup = allGroups.find((g) => g.id === currentGroupId);
 
   // Check group types
@@ -238,7 +238,12 @@ export function FileContextMenu({
         toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
       } else if (isCustomGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
         // Moving between custom groups
-        await moveFilesBetweenGroups(currentRepository.path, currentGroupId, targetGroupId, targetFiles);
+        await moveFilesBetweenGroups(
+          currentRepository.path,
+          currentGroupId,
+          targetGroupId,
+          targetFiles
+        );
         toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
       } else {
         toast.error('This move operation is not supported');
@@ -271,7 +276,7 @@ export function FileContextMenu({
 
       // Use the file name (without path) as the default name for single file
       // Use a generic name for multiple files
-      const fileName = isBulkOperation ? 'changes' : (filePath.split('/').pop() || 'file');
+      const fileName = isBulkOperation ? 'changes' : filePath.split('/').pop() || 'file';
       const result = await createPatchForFiles(targetFiles, fileName);
 
       toast.success(`Created patch file: ${result.path} (${formatFileSize(result.size)})`);
@@ -290,7 +295,9 @@ export function FileContextMenu({
     try {
       const textToCopy = isBulkOperation ? targetFiles.join('\n') : filePath;
       await navigator.clipboard.writeText(textToCopy);
-      toast.success(isBulkOperation ? `Copied ${targetFiles.length} file paths` : `Copied: ${filePath}`);
+      toast.success(
+        isBulkOperation ? `Copied ${targetFiles.length} file paths` : `Copied: ${filePath}`
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to copy file path';
       toast.error(message);
@@ -446,10 +453,7 @@ export function FileContextMenu({
 
   return (
     <>
-      <div
-        onContextMenu={handleContextMenu}
-        style={{ display: 'contents' }}
-      >
+      <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
         {children}
       </div>
 

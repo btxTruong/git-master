@@ -63,8 +63,27 @@ export function ChangelistPanel({
   const trackedGroup = useTrackedGroup();
   const untrackedGroup = useUntrackedGroup();
 
+  // Combine all groups in the correct order to determine initial expanded state
+  const initialGroups = useMemo(() => {
+    const groups: Changelist[] = [];
+    if (trackedGroup) groups.push(trackedGroup);
+    if (untrackedGroup) groups.push(untrackedGroup);
+    const sortedCustomGroups = [...customGroups].sort((a, b) => a.orderIndex - b.orderIndex);
+    groups.push(...sortedCustomGroups);
+    return groups;
+  }, [trackedGroup, untrackedGroup, customGroups]);
+
   // Manage expanded state for each group
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set());
+  // Default: expand groups that have files (non-empty), collapse empty groups
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => {
+    const expandedIds = new Set<string>();
+    initialGroups.forEach((group) => {
+      if (group.items.length > 0) {
+        expandedIds.add(group.id);
+      }
+    });
+    return expandedIds;
+  });
 
   // Ref for virtualization
   const parentRef = useRef<HTMLDivElement>(null);
@@ -79,26 +98,8 @@ export function ChangelistPanel({
     })
   );
 
-  // Combine all groups in the correct order
-  const allGroups = useMemo(() => {
-    const groups: Changelist[] = [];
-
-    // Add tracked group first
-    if (trackedGroup) {
-      groups.push(trackedGroup);
-    }
-
-    // Add untracked group second
-    if (untrackedGroup) {
-      groups.push(untrackedGroup);
-    }
-
-    // Add custom groups sorted by orderIndex
-    const sortedCustomGroups = [...customGroups].sort((a, b) => a.orderIndex - b.orderIndex);
-    groups.push(...sortedCustomGroups);
-
-    return groups;
-  }, [trackedGroup, untrackedGroup, customGroups]);
+  // Use the same groups for rendering
+  const allGroups = initialGroups;
 
   // Use virtualization for lists with more than 50 groups
   const shouldVirtualize = allGroups.length > 50;
@@ -140,23 +141,6 @@ export function ChangelistPanel({
       return next;
     });
   }, []);
-
-  // Expand all groups
-  const expandAll = useCallback(() => {
-    const allGroupIds = new Set(allGroups.map((g) => g.id));
-    setExpandedGroupIds(allGroupIds);
-  }, [allGroups]);
-
-  // Collapse all groups
-  const collapseAll = useCallback(() => {
-    setExpandedGroupIds(new Set());
-  }, []);
-
-  // Check if all groups are expanded
-  const allExpanded = useMemo(() => {
-    if (allGroups.length === 0) return false;
-    return allGroups.every((g) => expandedGroupIds.has(g.id));
-  }, [allGroups, expandedGroupIds]);
 
   // Handle group actions
   const handleGroupAction = useCallback(
@@ -258,10 +242,16 @@ export function ChangelistPanel({
 
       try {
         // Handle moves involving system groups (tracked/untracked)
-        if (sourceGroup.type === CHANGELIST_TYPE_TRACKED || targetGroup.type === CHANGELIST_TYPE_TRACKED) {
+        if (
+          sourceGroup.type === CHANGELIST_TYPE_TRACKED ||
+          targetGroup.type === CHANGELIST_TYPE_TRACKED
+        ) {
           // Moving from tracked to custom: keep file staged, just add to custom group
           // Don't unstage! If we unstage a file that was originally untracked, it becomes untracked again
-          if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+          if (
+            sourceGroup.type === CHANGELIST_TYPE_TRACKED &&
+            targetGroup.type === CHANGELIST_TYPE_CUSTOM
+          ) {
             await addFilesToGroup(repositoryPath, targetGroupId, filePaths);
             toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
           }
@@ -279,7 +269,10 @@ export function ChangelistPanel({
           }
         }
         // Handle moves from untracked to custom group
-        else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+        else if (
+          sourceGroup.type === CHANGELIST_TYPE_UNTRACKED &&
+          targetGroup.type === CHANGELIST_TYPE_CUSTOM
+        ) {
           // Moving from untracked to custom: stage the file(s) first, then add to group
           for (const filePath of filePaths) {
             await stageFile(filePath);
@@ -289,7 +282,10 @@ export function ChangelistPanel({
           toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
         }
         // Both are custom groups: use moveFilesBetweenGroups
-        else if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+        else if (
+          sourceGroup.type === CHANGELIST_TYPE_CUSTOM &&
+          targetGroup.type === CHANGELIST_TYPE_CUSTOM
+        ) {
           await moveFilesBetweenGroups(repositoryPath, sourceGroupId, targetGroupId, filePaths);
           toast.success(`Moved ${fileText} to "${targetGroup.name}"`);
         }
@@ -313,11 +309,7 @@ export function ChangelistPanel({
     return (
       <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
         {/* Toolbar */}
-        <GroupActionsToolbar
-          onExpandAll={expandAll}
-          onCollapseAll={collapseAll}
-          allExpanded={allExpanded}
-        />
+        <GroupActionsToolbar />
 
         {/* Empty state */}
         <div className="flex-1">
@@ -339,11 +331,7 @@ export function ChangelistPanel({
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
         {/* Toolbar */}
-        <GroupActionsToolbar
-          onExpandAll={expandAll}
-          onCollapseAll={collapseAll}
-          allExpanded={allExpanded}
-        />
+        <GroupActionsToolbar />
 
         {/* Reconciliation indicator */}
         {isReconciling && (
@@ -355,70 +343,70 @@ export function ChangelistPanel({
 
         {/* Groups List */}
         <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">
-        {/* Show loading spinner for initial load */}
-        {isLoading && allGroups.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <Spinner text="Loading changelists..." />
-          </div>
-        ) : shouldVirtualize ? (
-          // Virtualized list for large datasets
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualItem) => {
-              const group = allGroups[virtualItem.index];
-              return (
-                <div
+          {/* Show loading spinner for initial load */}
+          {isLoading && allGroups.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner text="Loading changelists..." />
+            </div>
+          ) : shouldVirtualize ? (
+            // Virtualized list for large datasets
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const group = allGroups[virtualItem.index];
+                return (
+                  <div
+                    key={group.id}
+                    data-index={virtualItem.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                    className="pb-2"
+                  >
+                    <ChangelistGroup
+                      group={group}
+                      isExpanded={expandedGroupIds.has(group.id)}
+                      onToggleExpanded={() => toggleGroupExpanded(group.id)}
+                      onFileSelect={onFileSelect}
+                      selectedFilePath={selectedFilePath}
+                      onGroupAction={handleGroupAction}
+                      onShowHistory={onShowHistory}
+                      isDisabled={!!operationInProgress}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Regular list for smaller datasets
+            <>
+              {allGroups.map((group) => (
+                <ChangelistGroup
                   key={group.id}
-                  data-index={virtualItem.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                  className="pb-2"
-                >
-                  <ChangelistGroup
-                    group={group}
-                    isExpanded={expandedGroupIds.has(group.id)}
-                    onToggleExpanded={() => toggleGroupExpanded(group.id)}
-                    onFileSelect={onFileSelect}
-                    selectedFilePath={selectedFilePath}
-                    onGroupAction={handleGroupAction}
-                    onShowHistory={onShowHistory}
-                    isDisabled={!!operationInProgress}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          // Regular list for smaller datasets
-          <>
-            {allGroups.map((group) => (
-              <ChangelistGroup
-                key={group.id}
-                group={group}
-                isExpanded={expandedGroupIds.has(group.id)}
-                onToggleExpanded={() => toggleGroupExpanded(group.id)}
-                onFileSelect={onFileSelect}
-                selectedFilePath={selectedFilePath}
-                onGroupAction={handleGroupAction}
-                onShowHistory={onShowHistory}
-                isDisabled={!!operationInProgress}
-              />
-            ))}
-          </>
-        )}
+                  group={group}
+                  isExpanded={expandedGroupIds.has(group.id)}
+                  onToggleExpanded={() => toggleGroupExpanded(group.id)}
+                  onFileSelect={onFileSelect}
+                  selectedFilePath={selectedFilePath}
+                  onGroupAction={handleGroupAction}
+                  onShowHistory={onShowHistory}
+                  isDisabled={!!operationInProgress}
+                />
+              ))}
+            </>
+          )}
+        </div>
       </div>
-    </div>
     </DndContext>
   );
 }

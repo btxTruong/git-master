@@ -69,14 +69,12 @@ export function TokenDropdown({
           "
         >
           <Select.Value placeholder={placeholder}>
-            {displayValue === EMPTY_VALUE ? (
-              placeholder
-            ) : (
-              (() => {
-                const selectedToken = safeTokens.find((t) => t && t.id === displayValue);
-                return selectedToken ? formatTokenDisplay(selectedToken) : placeholder;
-              })()
-            )}
+            {displayValue === EMPTY_VALUE
+              ? placeholder
+              : (() => {
+                  const selectedToken = safeTokens.find((t) => t && t.id === displayValue);
+                  return selectedToken ? formatTokenDisplay(selectedToken) : placeholder;
+                })()}
           </Select.Value>
           <Select.Icon>
             <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -155,11 +153,7 @@ export function TokenDropdown({
         </Select.Portal>
       </Select.Root>
 
-      {helperText && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          {helperText}
-        </p>
-      )}
+      {helperText && <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{helperText}</p>}
     </div>
   );
 }

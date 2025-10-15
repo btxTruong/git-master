@@ -118,10 +118,7 @@ function ChangesView() {
       setIsLoading(true);
       setError(null);
 
-      Promise.all([
-        loadAllChangelistGroups(currentRepository.path),
-        loadStagingChanges(),
-      ])
+      Promise.all([loadAllChangelistGroups(currentRepository.path), loadStagingChanges()])
         .catch((err: unknown) => {
           console.error('Failed to load changelists:', err);
           setError(err instanceof Error ? err.message : 'Failed to load changelists');

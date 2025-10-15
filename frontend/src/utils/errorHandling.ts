@@ -12,7 +12,10 @@ export interface ErrorDetails {
 /**
  * Common Git error patterns and their user-friendly messages
  */
-const GIT_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatchArray) => ErrorDetails }> = [
+const GIT_ERROR_PATTERNS: Array<{
+  pattern: RegExp;
+  handler: (match: RegExpMatchArray) => ErrorDetails;
+}> = [
   {
     pattern: /fatal: not a git repository/i,
     handler: () => ({
@@ -89,7 +92,8 @@ const GIT_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatchA
     pattern: /fatal: Unable to create .+\.lock': File exists/i,
     handler: () => ({
       message: 'Git operation is locked',
-      suggestion: 'Another Git operation may be in progress. Wait and try again, or remove the .git/*.lock file manually',
+      suggestion:
+        'Another Git operation may be in progress. Wait and try again, or remove the .git/*.lock file manually',
       canRetry: true,
     }),
   },
@@ -98,7 +102,10 @@ const GIT_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatchA
 /**
  * Common file system error patterns
  */
-const FILE_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatchArray) => ErrorDetails }> = [
+const FILE_ERROR_PATTERNS: Array<{
+  pattern: RegExp;
+  handler: (match: RegExpMatchArray) => ErrorDetails;
+}> = [
   {
     pattern: /ENOENT: no such file or directory/i,
     handler: () => ({
@@ -136,7 +143,10 @@ const FILE_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatch
 /**
  * Network error patterns
  */
-const NETWORK_ERROR_PATTERNS: Array<{ pattern: RegExp; handler: (match: RegExpMatchArray) => ErrorDetails }> = [
+const NETWORK_ERROR_PATTERNS: Array<{
+  pattern: RegExp;
+  handler: (match: RegExpMatchArray) => ErrorDetails;
+}> = [
   {
     pattern: /ENOTFOUND|getaddrinfo failed/i,
     handler: () => ({

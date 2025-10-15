@@ -1,5 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Settings, Shield, Key, Eye, EyeOff, ExternalLink, Plus, Trash2, Edit2, Check, X, GitBranch } from 'lucide-react';
+import {
+  Settings,
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  GitBranch,
+} from 'lucide-react';
 import * as CredentialsService from '../../wailsjs/go/services/CredentialsService';
 import * as RemoteService from '../../wailsjs/go/services/RemoteService';
 import * as RepositoryService from '../../wailsjs/go/services/RepositoryService';
@@ -36,7 +49,11 @@ function SettingsView() {
   const [showToken, setShowToken] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string>('');
   const [currentRepo, setCurrentRepo] = useState<string>('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; tokenId: string; tokenName: string }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    tokenId: string;
+    tokenName: string;
+  }>({
     show: false,
     tokenId: '',
     tokenName: '',
@@ -190,7 +207,9 @@ function SettingsView() {
   };
 
   const handleCreateToken = () => {
-    BrowserOpenURL('https://github.com/settings/tokens/new?scopes=repo&description=Git%20Master%20App');
+    BrowserOpenURL(
+      'https://github.com/settings/tokens/new?scopes=repo&description=Git%20Master%20App'
+    );
   };
 
   const handleSelectToken = async (tokenId: string) => {
@@ -387,12 +406,15 @@ function SettingsView() {
                               <input
                                 type="text"
                                 value={formData.repoPattern}
-                                onChange={(e) => setFormData({ ...formData, repoPattern: e.target.value })}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, repoPattern: e.target.value })
+                                }
                                 placeholder="github.com/username/* or github.com/username/repo"
                                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Use * to match all repos for a user/org. Leave empty for all repositories.
+                                Use * to match all repos for a user/org. Leave empty for all
+                                repositories.
                               </p>
                             </div>
 
@@ -405,8 +427,14 @@ function SettingsView() {
                                 <input
                                   type={showToken ? 'text' : 'password'}
                                   value={formData.token}
-                                  onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-                                  placeholder={editingId ? 'Leave empty to keep existing token' : 'ghp_xxxxxxxxxxxxxxxxxxxx'}
+                                  onChange={(e) =>
+                                    setFormData({ ...formData, token: e.target.value })
+                                  }
+                                  placeholder={
+                                    editingId
+                                      ? 'Leave empty to keep existing token'
+                                      : 'ghp_xxxxxxxxxxxxxxxxxxxx'
+                                  }
                                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                                 />
                                 <button
@@ -414,7 +442,11 @@ function SettingsView() {
                                   onClick={() => setShowToken(!showToken)}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                 >
-                                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  {showToken ? (
+                                    <EyeOff className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -474,7 +506,8 @@ function SettingsView() {
             </div>
             <div className="px-6 py-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Are you sure you want to delete the token <strong>"{deleteConfirm.tokenName}"</strong>?
+                Are you sure you want to delete the token{' '}
+                <strong>"{deleteConfirm.tokenName}"</strong>?
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 This action cannot be undone.

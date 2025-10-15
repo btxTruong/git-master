@@ -52,7 +52,13 @@ interface GroupActionMenuProps {
 /**
  * Context menu for group actions
  */
-function GroupActionMenu({ group, onAction, isOpen, onToggle, onMoveAllToTracked }: GroupActionMenuProps) {
+function GroupActionMenu({
+  group,
+  onAction,
+  isOpen,
+  onToggle,
+  onMoveAllToTracked,
+}: GroupActionMenuProps) {
   // System-generated groups (tracked/untracked) have limited actions
   const isSystemGroup = group.isSystemGenerated;
   const isUntrackedGroup = group.type === CHANGELIST_TYPE_UNTRACKED;
@@ -222,7 +228,9 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   // Check if some (but not all) files are selected
   const someFilesSelected = useMemo(() => {
     if (group.items.length === 0) return false;
-    const selectedCount = group.items.filter((item) => selectedFilePaths.includes(item.path)).length;
+    const selectedCount = group.items.filter((item) =>
+      selectedFilePaths.includes(item.path)
+    ).length;
     return selectedCount > 0 && selectedCount < group.items.length;
   }, [group.items, selectedFilePaths]);
 

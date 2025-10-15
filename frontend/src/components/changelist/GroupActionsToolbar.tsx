@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Plus, ChevronDown, ChevronRight, GitCommit, Archive } from 'lucide-react';
+import { Plus, GitCommit, Archive } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
@@ -9,12 +9,6 @@ import { stageFile } from '@/api/staging';
 import { archiveChangelistGroup } from '@/api/changelist';
 import type { Changelist } from '@/types/changelist';
 import toast from 'react-hot-toast';
-
-interface GroupActionsToolbarProps {
-  onExpandAll?: () => void;
-  onCollapseAll?: () => void;
-  allExpanded?: boolean;
-}
 
 interface CreateGroupDialogProps {
   isOpen: boolean;
@@ -160,11 +154,7 @@ function CreateGroupDialog({ isOpen, onClose, onCreateGroup, isLoading }: Create
  * Toolbar for global changelist actions
  * Provides buttons for creating groups and managing group display
  */
-export const GroupActionsToolbar = memo(function GroupActionsToolbar({
-  onExpandAll,
-  onCollapseAll,
-  allExpanded = false,
-}: GroupActionsToolbarProps) {
+export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
   const [isStaging, setIsStaging] = useState(false);
@@ -182,14 +172,6 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
       throw new Error('No repository selected');
     }
     await createGroup(repositoryPath, groupName);
-  };
-
-  const handleToggleExpandAll = () => {
-    if (allExpanded && onCollapseAll) {
-      onCollapseAll();
-    } else if (!allExpanded && onExpandAll) {
-      onExpandAll();
-    }
   };
 
   const handleCommit = async () => {
@@ -268,7 +250,9 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
         []
       );
 
-      toast.success(`Archived ${selectedFilePaths.length} file${selectedFilePaths.length === 1 ? '' : 's'} to "${archiveName.trim()}"`);
+      toast.success(
+        `Archived ${selectedFilePaths.length} file${selectedFilePaths.length === 1 ? '' : 's'} to "${archiveName.trim()}"`
+      );
 
       // Clear selection after successful archive
       clearSelectedFiles();
@@ -283,7 +267,7 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
   return (
     <>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
-        {/* Left side - Create Group and Expand/Collapse */}
+        {/* Left side - Create Group */}
         <div className="flex items-center gap-2">
           {/* Create Group Button */}
           <Button
@@ -295,26 +279,6 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
           >
             Create Group
           </Button>
-
-          {/* Expand/Collapse All Button */}
-          {(onExpandAll || onCollapseAll) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={
-                allExpanded ? (
-                  <ChevronRight className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )
-              }
-              onClick={handleToggleExpandAll}
-              disabled={isLoading}
-              title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
-            >
-              {allExpanded ? 'Collapse All' : 'Expand All'}
-            </Button>
-          )}
         </div>
 
         {/* Right side - Commit and Archive buttons */}
