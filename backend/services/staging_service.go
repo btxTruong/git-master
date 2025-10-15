@@ -170,6 +170,22 @@ func (s *StagingService) StageFile(path string) error {
 	}
 	repoPath := repo.Path
 
+	// Check current git status of the file
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+	statusCmd.Dir = repoPath
+	statusOutput, statusErr := statusCmd.Output()
+
+	if statusErr == nil && len(statusOutput) > 0 {
+		statusLine := strings.TrimSpace(string(statusOutput))
+		if len(statusLine) >= 2 {
+			indexStatus := statusLine[0]
+			// If file is already staged as deleted (D ), don't try to stage it again
+			if indexStatus == 'D' {
+				return nil
+			}
+		}
+	}
+
 	// Check if the file exists in the working directory
 	fullPath := filepath.Join(repoPath, path)
 	_, statErr := os.Stat(fullPath)
@@ -366,11 +382,35 @@ func (s *StagingService) StageMultipleFilePaths(filePathsToStage []string) error
 	}
 	repoPath := repo.Path
 
-	// Separate files into existing and deleted
+	// Check git status for all files to identify already-staged deletions
+	alreadyStagedDeleted := make(map[string]bool)
+	for _, path := range filePathsToStage {
+		statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+		statusCmd.Dir = repoPath
+		statusOutput, statusErr := statusCmd.Output()
+
+		if statusErr == nil && len(statusOutput) > 0 {
+			statusLine := strings.TrimSpace(string(statusOutput))
+			if len(statusLine) >= 2 {
+				indexStatus := statusLine[0]
+				// Mark files already staged as deleted
+				if indexStatus == 'D' {
+					alreadyStagedDeleted[path] = true
+				}
+			}
+		}
+	}
+
+	// Separate files into existing, deleted (not yet staged), and already staged
 	existingFiles := []string{}
 	deletedFiles := []string{}
 
 	for _, path := range filePathsToStage {
+		// Skip files already staged as deleted
+		if alreadyStagedDeleted[path] {
+			continue
+		}
+
 		fullPath := filepath.Join(repoPath, path)
 		_, statErr := os.Stat(fullPath)
 		if statErr == nil {
