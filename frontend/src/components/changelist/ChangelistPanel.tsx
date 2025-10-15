@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
@@ -68,6 +68,16 @@ export function ChangelistPanel({
 
   // Ref for virtualization
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Configure drag sensor with activation constraints
+  // This prevents drag from starting immediately, allowing normal clicks and right-clicks
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    })
+  );
 
   // Combine all groups in the correct order
   const allGroups = useMemo(() => {
@@ -242,9 +252,9 @@ export function ChangelistPanel({
       if (!sourceGroup || !targetGroup) return;
 
       // VALIDATION: Prevent invalid moves
-      // 1. Cannot move tracked files to untracked group (they need to be unstaged first)
-      if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_UNTRACKED) {
-        toast.error('Cannot move tracked files to untracked. Unstage the file first.');
+      // 1. Cannot move any files to untracked group (untracked is for files not tracked by Git)
+      if (targetGroup.type === CHANGELIST_TYPE_UNTRACKED) {
+        toast.error('Cannot move files to untracked group.');
         return;
       }
 
@@ -268,18 +278,11 @@ export function ChangelistPanel({
             toast.success(`Staged "${filePath}"`);
           }
         }
-        // Handle moves involving untracked group
-        else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED || targetGroup.type === CHANGELIST_TYPE_UNTRACKED) {
+        // Handle moves from untracked to custom group
+        else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
           // Moving from untracked to custom: just add to group
-          if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-            await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
-            toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
-          }
-          // Moving from custom to untracked: just remove from group
-          else if (targetGroup.type === CHANGELIST_TYPE_UNTRACKED && sourceGroup.type === CHANGELIST_TYPE_CUSTOM) {
-            await removeFilesFromGroup(repositoryPath, sourceGroupId, [filePath]);
-            toast.success(`Removed "${filePath}" from "${sourceGroup.name}"`);
-          }
+          await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
+          toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
         }
         // Both are custom groups: use moveFilesBetweenGroups
         else if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
@@ -328,7 +331,7 @@ export function ChangelistPanel({
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
         {/* Toolbar */}
         <GroupActionsToolbar

@@ -2,6 +2,7 @@ import type { Changelist, ChangelistItem } from '@/types/changelist';
 import { CHANGELIST_TYPE_TRACKED, CHANGELIST_TYPE_UNTRACKED } from '@/types/changelist';
 import type { StagingFileChange } from '@/types/git';
 import { useStagingStore } from '@/stores/stagingStore';
+import { useChangelistStore } from '@/stores/changelistStore';
 
 /**
  * Converts a StagingFileChange to a ChangelistItem.
@@ -38,8 +39,27 @@ export function selectTrackedGroup(): Changelist | null {
   const stagedFiles = useStagingStore.getState().stagedFiles;
   const unstagedFiles = useStagingStore.getState().unstagedFiles;
 
-  // Combine staged and unstaged files (tracked files)
-  const trackedFiles = [...stagedFiles, ...unstagedFiles];
+  // Deduplicate files by path (files can be in both staged and unstaged)
+  // When a file is staged but also has unstaged changes, Git shows it in both categories
+  // We only want to show each unique file once in the Tracked Changes group
+  const seenPaths = new Set<string>();
+  const trackedFiles: StagingFileChange[] = [];
+
+  // Add staged files first (priority)
+  for (const file of stagedFiles) {
+    if (!seenPaths.has(file.path)) {
+      trackedFiles.push(file);
+      seenPaths.add(file.path);
+    }
+  }
+
+  // Add unstaged files if not already seen
+  for (const file of unstagedFiles) {
+    if (!seenPaths.has(file.path)) {
+      trackedFiles.push(file);
+      seenPaths.add(file.path);
+    }
+  }
 
   if (trackedFiles.length === 0) {
     return null;
@@ -144,8 +164,39 @@ export function selectAllGroups(customGroups: Changelist[]): Changelist[] {
 export function useTrackedGroup(): Changelist | null {
   const stagedFiles = useStagingStore((state) => state.stagedFiles);
   const unstagedFiles = useStagingStore((state) => state.unstagedFiles);
+  const customGroups = useChangelistStore((state) => state.groups);
 
-  const trackedFiles = [...stagedFiles, ...unstagedFiles];
+  // Build a set of files that are in custom changelist groups
+  // These should be excluded from the Tracked group
+  const filesInCustomGroups = new Set<string>();
+  for (const group of customGroups) {
+    for (const item of group.items) {
+      filesInCustomGroups.add(item.path);
+    }
+  }
+
+  // Deduplicate files by path (files can be in both staged and unstaged)
+  // When a file is staged but also has unstaged changes, Git shows it in both categories
+  // We only want to show each unique file once in the Tracked Changes group
+  // Also exclude files that are in custom changelist groups
+  const seenPaths = new Set<string>();
+  const trackedFiles: StagingFileChange[] = [];
+
+  // Add staged files first (priority)
+  for (const file of stagedFiles) {
+    if (!seenPaths.has(file.path) && !filesInCustomGroups.has(file.path)) {
+      trackedFiles.push(file);
+      seenPaths.add(file.path);
+    }
+  }
+
+  // Add unstaged files if not already seen
+  for (const file of unstagedFiles) {
+    if (!seenPaths.has(file.path) && !filesInCustomGroups.has(file.path)) {
+      trackedFiles.push(file);
+      seenPaths.add(file.path);
+    }
+  }
 
   if (trackedFiles.length === 0) {
     return null;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   FileText,
@@ -13,11 +13,13 @@ import {
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';
+import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
 import { useRevertFile } from '@/hooks/useRevertFile';
 import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
 import { CommitDialog } from '@/components/staging/CommitDialog';
-import { stageFile } from '@/api/staging';
+import { stageFile, unstageFile } from '@/api/staging';
 import toast from 'react-hot-toast';
+import { CHANGELIST_TYPE_CUSTOM } from '@/types/changelist';
 
 interface FileContextMenuProps {
   filePath: string;
@@ -44,21 +46,36 @@ export function FileContextMenu({
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { groups, moveFilesBetweenGroups } = useChangelistStore();
+  const { groups, moveFilesBetweenGroups, addFilesToGroup, removeFilesFromGroup } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const loadChanges = useStagingStore((state) => state.loadChanges);
   const { revertFile } = useRevertFile();
   const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
-  // Filter groups to show only other groups (not current one) for move action
-  const otherGroups = groups.filter((g) => g.id !== currentGroupId);
-  const currentGroup = groups.find((g) => g.id === currentGroupId);
+  // Get derived groups
+  const trackedGroup = useTrackedGroup();
+  const untrackedGroup = useUntrackedGroup();
 
-  // Check if current group is untracked group
+  // Build list of all groups (custom + derived) excluding current group
+  const allGroups = [...groups];
+  if (trackedGroup) allGroups.unshift(trackedGroup);
+  if (untrackedGroup) allGroups.push(untrackedGroup);
+
+  // Filter to show only other groups (not current one) for move action
+  // Also exclude Untracked group as you cannot "move" files to untracked (they're already untracked)
+  const otherGroups = allGroups.filter(
+    (g) => g.id !== currentGroupId && g.id !== '__untracked__'
+  );
+  const currentGroup = allGroups.find((g) => g.id === currentGroupId);
+
+  // Check group types
   const isUntrackedGroup = currentGroupId === '__untracked__';
+  const isTrackedGroup = currentGroupId === '__tracked__';
+  const isCustomGroup = currentGroup?.type === CHANGELIST_TYPE_CUSTOM;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if the click is inside the menu
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setIsMoveMenuOpen(false);
@@ -78,14 +95,27 @@ export function FileContextMenu({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('contextmenu', handleClickOutside);
+      // Use setTimeout to delay the event listener attachment
+      // This prevents the opening right-click from immediately closing the menu
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside, true);
+        document.addEventListener('contextmenu', handleClickOutside);
+      }, 100);
+
       document.addEventListener('scroll', handleScroll, true);
       document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside, true);
+        document.removeEventListener('contextmenu', handleClickOutside);
+        document.removeEventListener('scroll', handleScroll, true);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
       document.removeEventListener('contextmenu', handleClickOutside);
       document.removeEventListener('scroll', handleScroll, true);
       document.removeEventListener('keydown', handleKeyDown);
@@ -129,11 +159,16 @@ export function FileContextMenu({
     setIsOpen(true);
   };
 
-  const handleMenuItemClick = (action: () => void | Promise<void>) => {
+  const handleMenuItemClick = useCallback((action: () => void | Promise<void>) => {
+    // First close the menu
     setIsOpen(false);
     setIsMoveMenuOpen(false);
-    action();
-  };
+
+    // Then execute the action after a small delay to ensure menu closes first
+    setTimeout(() => {
+      action();
+    }, 10);
+  }, []);
 
   const handleRevertFile = async () => {
     await revertFile({
@@ -161,17 +196,33 @@ export function FileContextMenu({
       return;
     }
 
-    const targetGroup = groups.find((g) => g.id === targetGroupId);
+    const targetGroup = allGroups.find((g) => g.id === targetGroupId);
     if (!targetGroup) {
       toast.error('Target group not found');
       return;
     }
 
     try {
-      await moveFilesBetweenGroups(currentRepository.path, currentGroupId, targetGroupId, [
-        filePath,
-      ]);
-      toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+      // Handle moves involving tracked group
+      if (isTrackedGroup) {
+        // Moving from tracked to custom: unstage and add to custom group
+        await unstageFile(filePath);
+        await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
+        await loadChanges();
+        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+      } else if (isUntrackedGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+        // Moving from untracked to custom: just add to group
+        await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
+        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+      } else if (isCustomGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+        // Moving between custom groups
+        await moveFilesBetweenGroups(currentRepository.path, currentGroupId, targetGroupId, [
+          filePath,
+        ]);
+        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+      } else {
+        toast.error('This move operation is not supported');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to move file';
       toast.error(message);
@@ -225,7 +276,18 @@ export function FileContextMenu({
   };
 
   const handleMoveToTracked = async () => {
+    if (!currentRepository) {
+      toast.error('No repository selected');
+      return;
+    }
+
     try {
+      // If moving from custom group, remove from group first
+      if (isCustomGroup) {
+        await removeFilesFromGroup(currentRepository.path, currentGroupId, [filePath]);
+      }
+
+      // Stage the file (this moves it to Tracked group)
       await stageFile(filePath);
       await loadChanges();
       toast.success(`Staged "${filePath}"`);
@@ -265,7 +327,7 @@ export function FileContextMenu({
       <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
       {/* Modification Actions */}
-      {isUntrackedGroup && (
+      {(isUntrackedGroup || isCustomGroup) && (
         <button
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-left"
           onClick={() => handleMenuItemClick(handleMoveToTracked)}
@@ -356,12 +418,6 @@ export function FileContextMenu({
     <>
       <div
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => {
-          if (isOpen) {
-            setIsOpen(false);
-            setIsMoveMenuOpen(false);
-          }
-        }}
         style={{ display: 'contents' }}
       >
         {children}
