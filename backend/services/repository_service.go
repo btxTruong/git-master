@@ -313,8 +313,27 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 		commit.Message = msgResult.Stdout
 	}
 
-	// Get diff with file stats
-	diffResult, err := s.executor.Execute(
+	// Get file changes with proper status detection using diff-tree
+	statusResult, err := s.executor.Execute(
+		s.ctx,
+		"diff-tree",
+		"--no-commit-id",
+		"--name-status",
+		"-r",
+		commitHash,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get changed files: %w", err)
+	}
+
+	// Parse file status first to get correct A/M/D/R/C status
+	fileChanges, err := git.ParseFileChanges(statusResult.Stdout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse file changes: %w", err)
+	}
+
+	// Get numstat for insertions/deletions counts
+	numstatResult, err := s.executor.Execute(
 		s.ctx,
 		"show",
 		"--pretty=format:",
@@ -322,9 +341,10 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 		commitHash,
 	)
 
-	files := []models.FileChange{}
-	if err == nil && diffResult.Stdout != "" {
-		lines := strings.Split(strings.TrimSpace(diffResult.Stdout), "\n")
+	// Build a map of file paths to insertion/deletion counts
+	statsMap := make(map[string]struct{ insertions, deletions int })
+	if err == nil && numstatResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(numstatResult.Stdout), "\n")
 		for _, line := range lines {
 			if line == "" {
 				continue
@@ -344,23 +364,26 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 			}
 
 			filePath := strings.Join(parts[2:], " ")
-			status := models.ChangeModified
-
-			// Check if it's a new file
-			if parts[1] == "0" && insertions > 0 {
-				status = models.ChangeAdded
-			} else if parts[0] == "0" && deletions > 0 {
-				status = models.ChangeDeleted
-			}
-
-			files = append(files, models.FileChange{
-				NewPath:    filePath,
-				OldPath:    filePath,
-				Status:     status,
-				Insertions: insertions,
-				Deletions:  deletions,
-			})
+			statsMap[filePath] = struct{ insertions, deletions int }{insertions, deletions}
 		}
+	}
+
+	// Combine status and stats
+	files := []models.FileChange{}
+	for _, fc := range fileChanges {
+		// Use newPath for lookups, fallback to oldPath for deleted files
+		lookupPath := fc.NewPath
+		if lookupPath == "" {
+			lookupPath = fc.OldPath
+		}
+
+		stats, ok := statsMap[lookupPath]
+		if ok {
+			fc.Insertions = stats.insertions
+			fc.Deletions = stats.deletions
+		}
+
+		files = append(files, fc)
 	}
 
 	// Get full diff
