@@ -121,17 +121,21 @@ export function PullPushButtons() {
       {/* Push button with badge */}
       <button
         onClick={handlePushClick}
-        disabled={isPulling || isPushing}
+        disabled={isPulling || isPushing || unpushedCount === 0}
         className={`
           relative flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded
           transition-colors
           ${
-            isPulling || isPushing
+            isPulling || isPushing || unpushedCount === 0
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'text-gray-700 hover:bg-gray-100'
           }
         `}
-        title={`Push commits to remote${unpushedCount > 0 ? ` (${unpushedCount} unpushed)` : ''}`}
+        title={
+          unpushedCount === 0
+            ? 'No commits to push'
+            : `Push commits to remote${unpushedCount > 0 ? ` (${unpushedCount} unpushed)` : ''}`
+        }
       >
         {isPushing ? (
           <>
