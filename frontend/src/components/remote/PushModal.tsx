@@ -74,7 +74,6 @@ export function PushModal({ isOpen, onClose, onPush, branch }: PushModalProps) {
           try {
             return await GetCommitDetail(hash);
           } catch (err) {
-            console.error(`Failed to fetch commit ${hash}:`, err);
             return null;
           }
         })
@@ -85,7 +84,6 @@ export function PushModal({ isOpen, onClose, onPush, branch }: PushModalProps) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load commits';
       setError(message);
-      console.error('Failed to load unpushed commits:', err);
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +115,6 @@ export function PushModal({ isOpen, onClose, onPush, branch }: PushModalProps) {
       setFileContent({ oldContent, newContent });
       setIsDiffModalOpen(true);
     } catch (err) {
-      console.error('Failed to load file content:', err);
       setError('Failed to load file diff');
     } finally {
       setIsLoadingDiff(false);

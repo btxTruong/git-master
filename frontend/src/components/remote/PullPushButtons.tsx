@@ -36,20 +36,15 @@ export function PullPushButtons() {
     // Refresh count every 10 seconds
     const interval = setInterval(loadUnpushedCount, 10000);
 
-    // Listen for commit and push completed events to immediately update counter
+    // Listen for commit completed event to immediately update counter
     const handleCommitCompleted = () => {
       loadUnpushedCount();
     };
-    const handlePushCompleted = () => {
-      loadUnpushedCount();
-    };
     window.addEventListener('commitCompleted', handleCommitCompleted);
-    window.addEventListener('pushCompleted', handlePushCompleted);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('commitCompleted', handleCommitCompleted);
-      window.removeEventListener('pushCompleted', handlePushCompleted);
     };
   }, [currentRepository?.currentBranch]);
 
@@ -63,7 +58,6 @@ export function PullPushButtons() {
       setUnpushedCount(count);
     } catch (error) {
       // Error is already handled in the store and displayed via toast
-      console.error('Pull failed:', error);
     }
   };
 
@@ -77,12 +71,10 @@ export function PullPushButtons() {
 
     try {
       await push({ force });
-      // Refresh unpushed count after push
-      const count = await getUnpushedCommitsCount(currentRepository.currentBranch);
-      setUnpushedCount(count);
+      // Immediately set counter to 0 after successful push
+      setUnpushedCount(0);
     } catch (error) {
       // Error is already handled in the store and displayed via toast
-      console.error('Push failed:', error);
       throw error;
     }
   };

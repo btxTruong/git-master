@@ -53,7 +53,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load remotes';
       set({ error: message });
-      console.error('Failed to load remotes:', error);
       // Don't show toast for this as it's a background operation
     }
   },
@@ -99,9 +98,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       });
 
       toast.success('Pushed changes successfully');
-
-      // Dispatch custom event to notify push button to update counter
-      window.dispatchEvent(new CustomEvent('pushCompleted'));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to push changes';
       set({
