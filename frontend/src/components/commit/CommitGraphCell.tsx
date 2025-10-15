@@ -42,7 +42,7 @@ export const CommitGraphCell = memo(function CommitGraphCell({
   const height = cellHeight || DEFAULT_HEIGHT;
   const nodeY = height / 2;
 
-  const mainColor = getLaneColor(laneInfo.laneIndex, isDark);
+  const mainColor = getLaneColor(laneInfo.laneIndex, isDark, laneInfo.branchName);
   const isMerge = laneInfo.isMergeCommit;
   const isOctopusMerge = laneInfo.parentCount >= 3;
   const nodeRadius = isMerge ? MERGE_NODE_RADIUS : NODE_RADIUS;
@@ -62,7 +62,8 @@ export const CommitGraphCell = memo(function CommitGraphCell({
       {/* Draw active lane lines */}
       {Array.from(laneInfo.activeLanes).map((lane) => {
         const x = lane * LANE_WIDTH + LANE_WIDTH / 2;
-        const color = getLaneColor(lane, isDark);
+        const laneBranchName = laneInfo.activeLaneBranches.get(lane);
+        const color = getLaneColor(lane, isDark, laneBranchName);
         const isCurrentLane = lane === laneInfo.laneIndex;
 
         return (
@@ -115,9 +116,10 @@ export const CommitGraphCell = memo(function CommitGraphCell({
       )}
 
       {/* Draw merge lines from source lanes (INCOMING - bringing code IN) */}
-      {laneInfo.mergeSourceLanes.map((sourceLane) => {
+      {laneInfo.mergeSourceLanes.map((sourceLane, index) => {
         const sourceX = sourceLane * LANE_WIDTH + LANE_WIDTH / 2;
-        const sourceColor = getLaneColor(sourceLane, isDark);
+        const sourceBranchName = laneInfo.mergeSourceBranches[index];
+        const sourceColor = getLaneColor(sourceLane, isDark, sourceBranchName);
 
         return (
           <g key={`merge-${sourceLane}`}>
