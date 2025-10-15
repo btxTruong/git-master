@@ -1,6 +1,7 @@
-import { memo, useState, useMemo, useRef } from 'react';
+import { memo, useState, useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDroppable, useDndMonitor } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
 import {
   ChevronRight,
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   FolderTree,
   CheckSquare,
   Square,
+  FolderInput,
 } from 'lucide-react';
 import type { Changelist, ChangelistItem } from '@/types/changelist';
 import {
@@ -45,18 +47,114 @@ interface GroupActionMenuProps {
   onAction: (action: GroupAction) => void;
   isOpen: boolean;
   onToggle: () => void;
+  onMoveAllToTracked?: () => void;
 }
 
 /**
  * Context menu for group actions
  */
-function GroupActionMenu({ group, onAction, isOpen, onToggle }: GroupActionMenuProps) {
+function GroupActionMenu({ group, onAction, isOpen, onToggle, onMoveAllToTracked }: GroupActionMenuProps) {
   // System-generated groups (tracked/untracked) have limited actions
   const isSystemGroup = group.isSystemGenerated;
+  const isUntrackedGroup = group.type === CHANGELIST_TYPE_UNTRACKED;
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 200;
+      const menuHeight = 200;
+
+      // Calculate position
+      let left = rect.right + 8; // 8px offset from button
+      let top = rect.top;
+
+      // Check if menu would overflow right edge
+      if (left + menuWidth > window.innerWidth) {
+        left = rect.left - menuWidth - 8; // Position to the left
+      }
+
+      // Check if menu would overflow bottom edge
+      if (top + menuHeight > window.innerHeight) {
+        top = window.innerHeight - menuHeight - 10;
+      }
+
+      setMenuPosition({ top, left });
+    }
+  }, [isOpen]);
+
+  const menuContent = isOpen ? (
+    <>
+      {/* Backdrop to close menu */}
+      <div className="fixed inset-0 z-[9998]" onClick={onToggle} />
+
+      {/* Menu dropdown */}
+      <div
+        className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999]"
+        style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+      >
+        <div className="py-1">
+          {isUntrackedGroup && onMoveAllToTracked && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoveAllToTracked();
+                  onToggle();
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+              >
+                <FolderInput className="w-4 h-4" />
+                Move All to Tracked
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+            </>
+          )}
+          {!isSystemGroup && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction('edit');
+                  onToggle();
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Rename Group
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction('archive');
+                  onToggle();
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Archive Group
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction('delete');
+                  onToggle();
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                Delete Group
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  ) : null;
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
@@ -67,53 +165,7 @@ function GroupActionMenu({ group, onAction, isOpen, onToggle }: GroupActionMenuP
         <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop to close menu */}
-          <div className="fixed inset-0 z-10" onClick={onToggle} />
-
-          {/* Menu dropdown */}
-          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
-            <div className="py-1">
-              {!isSystemGroup && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction('edit');
-                      onToggle();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Rename Group
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction('archive');
-                      onToggle();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Archive Group
-                  </button>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction('delete');
-                      onToggle();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    Delete Group
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+      {menuContent && createPortal(menuContent, document.body)}
     </div>
   );
 }
@@ -273,6 +325,30 @@ export const ChangelistGroup = memo(function ChangelistGroup({
     }
   };
 
+  const handleMoveAllToTracked = async () => {
+    if (!isUntrackedGroup || stagingFiles.length === 0) return;
+
+    try {
+      // Import the stageFile function
+      const { stageFile } = await import('@/api/staging');
+      const { useStagingStore } = await import('@/stores/stagingStore');
+      const toast = (await import('react-hot-toast')).default;
+
+      // Stage all files in the untracked group
+      for (const file of stagingFiles) {
+        await stageFile(file.path);
+      }
+
+      // Reload changes to refresh the UI
+      await useStagingStore.getState().loadChanges();
+      toast.success(`Moved ${stagingFiles.length} file(s) to Tracked`);
+    } catch (error) {
+      const toast = (await import('react-hot-toast')).default;
+      const message = error instanceof Error ? error.message : 'Failed to move files';
+      toast.error(message);
+    }
+  };
+
   // Helper to render a single file item
   const renderFileItem = (file: StagingFileChange) => {
     const isSelected = file.path === selectedFilePath;
@@ -412,6 +488,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
                 onAction={handleAction}
                 isOpen={isMenuOpen}
                 onToggle={() => setIsMenuOpen(!isMenuOpen)}
+                onMoveAllToTracked={isUntrackedGroup ? handleMoveAllToTracked : undefined}
               />
             </div>
           )}
@@ -427,14 +504,8 @@ export const ChangelistGroup = memo(function ChangelistGroup({
       {isExpanded && (
         <div className="border-t border-gray-200 dark:border-gray-700">
           {fileCount === 0 ? (
-            // Empty State
-            <div className="py-4">
-              <EmptyState
-                icon={<FolderOpen className="w-12 h-12" />}
-                title="No Files in Group"
-                description="Add files by dragging them here or using the context menu"
-              />
-            </div>
+            // Empty State - Just show empty space
+            <div className="h-12" />
           ) : shouldVirtualizeFiles ? (
             // Virtualized File List for large datasets (>100 files)
             <div ref={fileListRef} className="bg-white dark:bg-gray-900 max-h-96 overflow-auto">

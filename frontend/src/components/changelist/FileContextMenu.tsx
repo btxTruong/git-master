@@ -46,7 +46,13 @@ export function FileContextMenu({
   const { groups, moveFilesBetweenGroups, addFilesToGroup, removeFilesFromGroup } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
   const loadChanges = useStagingStore((state) => state.loadChanges);
+  const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
   const { revertFile } = useRevertFile();
+
+  // Determine if this file is part of a multi-selection
+  const isPartOfSelection = selectedFilePaths.includes(filePath);
+  const targetFiles = isPartOfSelection && selectedFilePaths.length > 1 ? selectedFilePaths : [filePath];
+  const isBulkOperation = targetFiles.length > 1;
 
   // Get derived groups
   const trackedGroup = useTrackedGroup();
@@ -167,10 +173,36 @@ export function FileContextMenu({
   }, []);
 
   const handleRevertFile = async () => {
-    await revertFile({
-      filePath,
-      groupId: currentGroupId,
-    });
+    if (isBulkOperation) {
+      // Revert all selected files
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const path of targetFiles) {
+        try {
+          await revertFile({
+            filePath: path,
+            groupId: currentGroupId,
+          });
+          successCount++;
+        } catch (error) {
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Reverted ${successCount} file(s)`);
+      }
+      if (errorCount > 0) {
+        toast.error(`Failed to revert ${errorCount} file(s)`);
+      }
+    } else {
+      // Single file revert
+      await revertFile({
+        filePath,
+        groupId: currentGroupId,
+      });
+    }
   };
 
   const handleMoveToGroup = async (targetGroupId: string) => {
@@ -190,25 +222,29 @@ export function FileContextMenu({
       if (isTrackedGroup) {
         // Moving from tracked to custom: keep file staged, just add to custom group
         // Don't unstage! If we unstage a file that was originally untracked, it becomes untracked again
-        await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
-        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+        await addFilesToGroup(currentRepository.path, targetGroupId, targetFiles);
+        toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
       } else if (isUntrackedGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
         // Moving from untracked to custom: stage the file first, then add to group
-        await stageFile(filePath);
+        for (const path of targetFiles) {
+          await stageFile(path);
+        }
         await loadChanges(); // Refresh Git status first
-        await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
-        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+        await addFilesToGroup(currentRepository.path, targetGroupId, targetFiles);
+        toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
+      } else if (isCustomGroup && targetGroupId === '__tracked__') {
+        // Moving from custom group to tracked: remove from custom group (files stay staged)
+        await removeFilesFromGroup(currentRepository.path, currentGroupId, targetFiles);
+        toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
       } else if (isCustomGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
         // Moving between custom groups
-        await moveFilesBetweenGroups(currentRepository.path, currentGroupId, targetGroupId, [
-          filePath,
-        ]);
-        toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+        await moveFilesBetweenGroups(currentRepository.path, currentGroupId, targetGroupId, targetFiles);
+        toast.success(`Moved ${targetFiles.length} file(s) to "${targetGroup.name}"`);
       } else {
         toast.error('This move operation is not supported');
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to move file';
+      const message = error instanceof Error ? error.message : 'Failed to move file(s)';
       toast.error(message);
     }
   };
@@ -233,9 +269,10 @@ export function FileContextMenu({
     try {
       const { createPatchForFiles, formatFileSize } = await import('@/api/patch');
 
-      // Use the file name (without path) as the default name
-      const fileName = filePath.split('/').pop() || 'file';
-      const result = await createPatchForFiles([filePath], fileName);
+      // Use the file name (without path) as the default name for single file
+      // Use a generic name for multiple files
+      const fileName = isBulkOperation ? 'changes' : (filePath.split('/').pop() || 'file');
+      const result = await createPatchForFiles(targetFiles, fileName);
 
       toast.success(`Created patch file: ${result.path} (${formatFileSize(result.size)})`);
     } catch (error) {
@@ -251,8 +288,9 @@ export function FileContextMenu({
 
   const handleCopyFilePath = async () => {
     try {
-      await navigator.clipboard.writeText(filePath);
-      toast.success(`Copied: ${filePath}`);
+      const textToCopy = isBulkOperation ? targetFiles.join('\n') : filePath;
+      await navigator.clipboard.writeText(textToCopy);
+      toast.success(isBulkOperation ? `Copied ${targetFiles.length} file paths` : `Copied: ${filePath}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to copy file path';
       toast.error(message);
@@ -268,15 +306,17 @@ export function FileContextMenu({
     try {
       // If moving from custom group, remove from group first
       if (isCustomGroup) {
-        await removeFilesFromGroup(currentRepository.path, currentGroupId, [filePath]);
+        await removeFilesFromGroup(currentRepository.path, currentGroupId, targetFiles);
       }
 
-      // Stage the file (this moves it to Tracked group)
-      await stageFile(filePath);
+      // Stage the files (this moves them to Tracked group)
+      for (const path of targetFiles) {
+        await stageFile(path);
+      }
       await loadChanges();
-      toast.success(`Staged "${filePath}"`);
+      toast.success(`Staged ${targetFiles.length} file(s)`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to stage file';
+      const message = error instanceof Error ? error.message : 'Failed to stage file(s)';
       toast.error(message);
     }
   };
@@ -291,18 +331,30 @@ export function FileContextMenu({
         zIndex: 9999,
       }}
     >
-      {/* View Actions */}
+      {/* Header: Show selection count if bulk operation */}
+      {isBulkOperation && (
+        <>
+          <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">
+            {targetFiles.length} files selected
+          </div>
+          <div className="h-px bg-gray-200 dark:bg-gray-700" />
+        </>
+      )}
+
+      {/* View Actions - Disabled for bulk operations */}
       <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => handleMenuItemClick(handleShowBlame)}
+        disabled={isBulkOperation}
       >
         <FileCode className="w-4 h-4" />
         Show Blame
       </button>
 
       <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => handleMenuItemClick(handleShowHistory)}
+        disabled={isBulkOperation}
       >
         <History className="w-4 h-4" />
         Show History
@@ -317,7 +369,7 @@ export function FileContextMenu({
           onClick={() => handleMenuItemClick(handleMoveToTracked)}
         >
           <FolderInput className="w-4 h-4" />
-          Move to Tracked
+          {isBulkOperation ? `Move ${targetFiles.length} to Tracked` : 'Move to Tracked'}
         </button>
       )}
 
@@ -326,7 +378,7 @@ export function FileContextMenu({
         onClick={() => handleMenuItemClick(handleRevertFile)}
       >
         <RotateCcw className="w-4 h-4" />
-        Revert Changes
+        {isBulkOperation ? `Revert ${targetFiles.length} Changes` : 'Revert Changes'}
       </button>
 
       {otherGroups.length > 0 && (
@@ -379,7 +431,7 @@ export function FileContextMenu({
         onClick={() => handleMenuItemClick(handleCopyFilePath)}
       >
         <Copy className="w-4 h-4" />
-        Copy File Path
+        {isBulkOperation ? `Copy ${targetFiles.length} File Paths` : 'Copy File Path'}
       </button>
 
       <button
@@ -387,7 +439,7 @@ export function FileContextMenu({
         onClick={() => handleMenuItemClick(handleCreatePatch)}
       >
         <FileText className="w-4 h-4" />
-        Create Patch
+        {isBulkOperation ? `Create Patch (${targetFiles.length} files)` : 'Create Patch'}
       </button>
     </div>
   ) : null;

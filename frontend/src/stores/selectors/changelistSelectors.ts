@@ -198,10 +198,8 @@ export function useTrackedGroup(): Changelist | null {
     }
   }
 
-  if (trackedFiles.length === 0) {
-    return null;
-  }
-
+  // Always return the Tracked group, even when empty
+  // This ensures it's always visible in the UI
   const now = new Date().toISOString();
 
   return {

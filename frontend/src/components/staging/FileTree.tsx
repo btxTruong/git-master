@@ -235,7 +235,9 @@ export function FileTree({
         className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
-            : 'border-l-4 border-l-transparent'
+            : isChecked
+              ? 'bg-gray-100 dark:bg-gray-800 border-l-4 border-l-gray-400 dark:border-l-gray-600'
+              : 'border-l-4 border-l-transparent'
         }`}
         onClick={() => onFileSelect(file)}
       >
@@ -297,7 +299,9 @@ export function FileTree({
           className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
             isSelected
               ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
-              : 'border-l-4 border-l-transparent'
+              : isChecked
+                ? 'bg-gray-100 dark:bg-gray-800 border-l-4 border-l-gray-400 dark:border-l-gray-600'
+                : 'border-l-4 border-l-transparent'
           }`}
           style={{ paddingLeft: `${depth * 16 + 12}px` }}
           onClick={() => onFileSelect(node.file!)}
