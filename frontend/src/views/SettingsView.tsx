@@ -15,11 +15,11 @@ import {
 } from 'lucide-react';
 import * as CredentialsService from '../../wailsjs/go/services/CredentialsService';
 import * as RemoteService from '../../wailsjs/go/services/RemoteService';
-import * as RepositoryService from '../../wailsjs/go/services/RepositoryService';
 import { services } from '../../wailsjs/go/models';
 import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 import toast from 'react-hot-toast';
 import { TokenDropdown } from '../components/settings/TokenDropdown';
+import { useRepositoryStore } from '@/stores/repositoryStore';
 
 type TabType = 'security';
 
@@ -35,6 +35,7 @@ interface TokenFormData {
  * Application settings and configuration
  */
 function SettingsView() {
+  const { currentRepository } = useRepositoryStore();
   const [activeTab, setActiveTab] = useState<TabType>('security');
   const [tokens, setTokens] = useState<services.GitHubToken[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +49,6 @@ function SettingsView() {
   });
   const [showToken, setShowToken] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string>('');
-  const [currentRepo, setCurrentRepo] = useState<string>('');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     show: boolean;
     tokenId: string;
@@ -59,11 +59,19 @@ function SettingsView() {
     tokenName: '',
   });
 
+  // Load tokens on mount
   useEffect(() => {
     loadTokens();
-    loadCurrentRepo();
-    loadSelectedToken();
   }, []);
+
+  // Load selected token when repository changes
+  useEffect(() => {
+    if (currentRepository) {
+      loadSelectedToken();
+    } else {
+      setSelectedTokenId('');
+    }
+  }, [currentRepository]);
 
   const loadTokens = async () => {
     setIsLoading(true);
@@ -75,17 +83,6 @@ function SettingsView() {
       toast.error('Failed to load tokens');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadCurrentRepo = async () => {
-    try {
-      const repo = await RepositoryService.GetCurrentRepository();
-      if (repo && repo.path) {
-        setCurrentRepo(repo.path);
-      }
-    } catch (error) {
-      console.error('Failed to load current repository:', error);
     }
   };
 
@@ -262,7 +259,7 @@ function SettingsView() {
             {activeTab === 'security' && (
               <div className="space-y-6">
                 {/* Current Repository Token Selection */}
-                {currentRepo && tokens.length > 0 && (
+                {currentRepository && tokens.length > 0 && (
                   <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-start gap-3">
