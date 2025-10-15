@@ -58,6 +58,10 @@ export function GetCurrentRepository() {
   return window['go']['services']['RepositoryService']['GetCurrentRepository']();
 }
 
+export function GetFileCommitDiff(arg1, arg2) {
+  return window['go']['services']['RepositoryService']['GetFileCommitDiff'](arg1, arg2);
+}
+
 export function GetFileContentAtCommit(arg1, arg2) {
   return window['go']['services']['RepositoryService']['GetFileContentAtCommit'](arg1, arg2);
 }

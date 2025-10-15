@@ -32,6 +32,8 @@ export function GetCommits(arg1:number,arg2:number,arg3:models.CommitFilters):Pr
 
 export function GetCurrentRepository():Promise<models.Repository>;
 
+export function GetFileCommitDiff(arg1:string,arg2:string):Promise<string>;
+
 export function GetFileContentAtCommit(arg1:string,arg2:string):Promise<string>;
 
 export function GetFileHistory(arg1:string,arg2:number,arg3:number):Promise<Array<models.Commit>>;

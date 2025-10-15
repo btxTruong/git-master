@@ -823,3 +823,26 @@ func (s *RepositoryService) GetFileHistory(filePath string, limit, offset int) (
 
 	return commits, nil
 }
+
+// GetFileCommitDiff retrieves the diff for a specific file at a specific commit
+func (s *RepositoryService) GetFileCommitDiff(commitHash string, filePath string) (string, error) {
+	if s.executor == nil {
+		return "", fmt.Errorf("no repository opened")
+	}
+
+	// Use git show to get only the diff for the specific file at this commit
+	// Format: git show commit -- filepath
+	result, err := s.executor.Execute(
+		s.ctx,
+		"show",
+		"--pretty=format:",
+		commitHash,
+		"--",
+		filePath,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file commit diff: %w", err)
+	}
+
+	return result.Stdout, nil
+}

@@ -59,6 +59,29 @@ func (s *BlameService) GetBlame(filePath string) (*models.BlameResult, error) {
 	}, nil
 }
 
+// GetBlameForCommit retrieves blame information for a file at a specific commit
+func (s *BlameService) GetBlameForCommit(filePath string, commitHash string) (*models.BlameResult, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Execute git blame for the specific commit with porcelain format
+	result, err := s.executor.Execute(s.ctx, "blame", "--line-porcelain", commitHash, "--", filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get blame for commit: %w", err)
+	}
+
+	lines, err := parseBlameOutput(result.Stdout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse blame output: %w", err)
+	}
+
+	return &models.BlameResult{
+		FilePath: filePath,
+		Lines:    lines,
+	}, nil
+}
+
 // parseBlameOutput parses the porcelain format output from git blame
 func parseBlameOutput(output string) ([]models.BlameLine, error) {
 	if output == "" {

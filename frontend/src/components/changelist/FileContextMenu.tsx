@@ -5,7 +5,6 @@ import {
   RotateCcw,
   FolderInput,
   History,
-  FileCode,
   ArrowRightLeft,
   Copy,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ interface FileContextMenuProps {
   filePath: string;
   currentGroupId: string;
   children: React.ReactNode;
-  onBlameClick?: () => void;
   onHistoryClick?: () => void;
 }
 
@@ -35,7 +33,6 @@ export function FileContextMenu({
   filePath,
   currentGroupId,
   children,
-  onBlameClick,
   onHistoryClick,
 }: FileContextMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -254,14 +251,6 @@ export function FileContextMenu({
     }
   };
 
-  const handleShowBlame = () => {
-    if (onBlameClick) {
-      onBlameClick();
-    } else {
-      toast('Blame view not yet implemented');
-    }
-  };
-
   const handleShowHistory = () => {
     if (onHistoryClick) {
       onHistoryClick();
@@ -349,15 +338,6 @@ export function FileContextMenu({
       )}
 
       {/* View Actions - Disabled for bulk operations */}
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={() => handleMenuItemClick(handleShowBlame)}
-        disabled={isBulkOperation}
-      >
-        <FileCode className="w-4 h-4" />
-        Show Blame
-      </button>
-
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => handleMenuItemClick(handleShowHistory)}

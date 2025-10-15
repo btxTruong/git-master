@@ -6,6 +6,8 @@ import {context} from '../models';
 
 export function GetBlame(arg1:string):Promise<models.BlameResult>;
 
+export function GetBlameForCommit(arg1:string,arg2:string):Promise<models.BlameResult>;
+
 export function SetExecutor(arg1:git.Executor):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;

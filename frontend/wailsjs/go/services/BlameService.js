@@ -6,6 +6,10 @@ export function GetBlame(arg1) {
   return window['go']['services']['BlameService']['GetBlame'](arg1);
 }
 
+export function GetBlameForCommit(arg1, arg2) {
+  return window['go']['services']['BlameService']['GetBlameForCommit'](arg1, arg2);
+}
+
 export function SetExecutor(arg1) {
   return window['go']['services']['BlameService']['SetExecutor'](arg1);
 }
