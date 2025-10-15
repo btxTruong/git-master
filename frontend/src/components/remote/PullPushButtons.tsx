@@ -62,8 +62,10 @@ export function PullPushButtons() {
   };
 
   const handlePushClick = () => {
-    // Open modal to show commits and allow force push
-    setIsPushModalOpen(true);
+    // Only open modal if there are commits to push
+    if (unpushedCount > 0) {
+      setIsPushModalOpen(true);
+    }
   };
 
   const handlePush = async (force: boolean) => {
@@ -71,8 +73,10 @@ export function PullPushButtons() {
 
     try {
       await push({ force });
-      // Immediately set counter to 0 after successful push
-      setUnpushedCount(0);
+      // Push includes fetch, so Git refs are updated
+      // Reload the actual count to reflect the push
+      const count = await getUnpushedCommitsCount(currentRepository.currentBranch);
+      setUnpushedCount(count);
     } catch (error) {
       // Error is already handled in the store and displayed via toast
       throw error;
