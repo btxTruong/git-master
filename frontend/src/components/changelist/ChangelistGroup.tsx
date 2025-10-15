@@ -1,6 +1,6 @@
 import { memo, useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDndMonitor } from '@dnd-kit/core';
 import {
   ChevronRight,
   ChevronDown,
@@ -135,15 +135,26 @@ export const ChangelistGroup = memo(function ChangelistGroup({
 }: ChangelistGroupProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [groupByFolder, setGroupByFolder] = useState(false); // Toggle state for grouping
+  const [isDragging, setIsDragging] = useState(false); // Track if any file is being dragged
   const fileListRef = useRef<HTMLDivElement>(null);
 
+  // Monitor drag events to show visual feedback
+  useDndMonitor({
+    onDragStart: () => setIsDragging(true),
+    onDragEnd: () => setIsDragging(false),
+    onDragCancel: () => setIsDragging(false),
+  });
+
   // Setup droppable for this group
+  // Disable drop for untracked group (files cannot be moved to untracked)
+  const isUntrackedGroup = group.type === CHANGELIST_TYPE_UNTRACKED;
   const { setNodeRef, isOver } = useDroppable({
     id: `group-${group.id}`,
     data: {
       type: 'group',
       groupId: group.id,
     },
+    disabled: isUntrackedGroup,
   });
 
   // Get selection state and methods from store
@@ -311,14 +322,20 @@ export const ChangelistGroup = memo(function ChangelistGroup({
     );
   };
 
+  // Determine if we should show "disabled" visual feedback
+  const showDisabledFeedback = isUntrackedGroup && isDragging;
+
   return (
     <div
       ref={setNodeRef}
-      className={`changelist-group border rounded-lg overflow-hidden mb-2 transition-colors ${
+      className={`changelist-group border rounded-lg overflow-hidden mb-2 transition-all ${
         isOver
           ? 'border-blue-500 dark:border-blue-400 border-2 bg-blue-50 dark:bg-blue-900/20'
-          : 'border-gray-200 dark:border-gray-700'
+          : showDisabledFeedback
+            ? 'border-red-300 dark:border-red-700 border-2 bg-red-50/30 dark:bg-red-900/10 opacity-60'
+            : 'border-gray-200 dark:border-gray-700'
       }`}
+      style={showDisabledFeedback ? { cursor: 'not-allowed' } : undefined}
     >
       {/* Group Header */}
       <div
