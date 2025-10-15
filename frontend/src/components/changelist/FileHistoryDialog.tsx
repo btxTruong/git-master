@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, History, GitCommit } from 'lucide-react';
 import { GetFileHistory, GetFileCommitDiff } from '../../../wailsjs/go/services/RepositoryService';
-import { GetBlameForCommit } from '../../../wailsjs/go/services/BlameService';
 import type { Commit } from '@/stores/commitStore';
-import type { BlameResult } from '@/types/git';
 import { Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import toast from 'react-hot-toast';
@@ -19,7 +17,6 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
   const [commits, setCommits] = useState<Commit[]>([]);
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null);
   const [diff, setDiff] = useState<string>('');
-  const [blameData, setBlameData] = useState<BlameResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDiffLoading, setIsDiffLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -54,17 +51,13 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
     [filePath]
   );
 
-  // Load commit diff and blame
+  // Load commit diff
   const loadCommitDiff = useCallback(
     async (commit: Commit) => {
       setIsDiffLoading(true);
       try {
-        const [diff, blame] = await Promise.all([
-          GetFileCommitDiff(commit.hash, filePath),
-          GetBlameForCommit(filePath, commit.hash).catch(() => null), // Blame might fail for deleted files
-        ]);
+        const diff = await GetFileCommitDiff(commit.hash, filePath);
         setDiff(diff || '');
-        setBlameData(blame);
         setSelectedCommit(commit);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load commit diff';
@@ -82,7 +75,6 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
       setCommits([]);
       setSelectedCommit(null);
       setDiff('');
-      setBlameData(null);
       setPage(0);
       setHasMore(true);
       setIsLoading(false); // Reset loading state
@@ -271,17 +263,13 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
                     let textColor = '';
                     let bgColor = '';
                     let displayLine = line;
-                    let isAddition = false;
-                    let isDeletion = false;
 
                     // Determine line type and strip prefix for display
                     if (line.startsWith('+')) {
-                      isAddition = true;
                       textColor = 'text-green-700 dark:text-green-300';
                       bgColor = 'bg-green-50 dark:bg-green-900/20';
                       displayLine = line.substring(1); // Remove + prefix
                     } else if (line.startsWith('-')) {
-                      isDeletion = true;
                       textColor = 'text-red-700 dark:text-red-300';
                       bgColor = 'bg-red-50 dark:bg-red-900/20';
                       displayLine = line.substring(1); // Remove - prefix
@@ -290,49 +278,10 @@ export function FileHistoryDialog({ isOpen, onClose, filePath }: FileHistoryDial
                       displayLine = line.startsWith(' ') ? line.substring(1) : line; // Remove space prefix if present
                     }
 
-                    // Show blame info for all lines (not just added ones)
-                    // Blame shows who originally wrote each line
-                    let blameInfo = null;
-                    if (blameData) {
-                      if (isAddition) {
-                        // For added lines, use the line without + prefix
-                        const blameLine = blameData.lines.find(b => b.content === displayLine);
-                        if (blameLine) {
-                          blameInfo = blameLine;
-                        }
-                      } else if (!isDeletion) {
-                        // For context lines, match directly
-                        const blameLine = blameData.lines.find(b => b.content === displayLine);
-                        if (blameLine) {
-                          blameInfo = blameLine;
-                        }
-                      }
-                    }
-
                     return (
-                      <div key={index} className={`${bgColor} flex border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800/70 group`}>
-                        {/* Blame column - always show to maintain alignment */}
-                        <div className="flex-shrink-0 w-72 px-3 py-2 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                          {blameInfo ? (
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                  {blameInfo.shortHash}
-                                </span>
-                                <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                                  {blameInfo.author}
-                                </span>
-                              </div>
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                {blameInfo.summary}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="h-full" />
-                          )}
-                        </div>
+                      <div key={index} className={`${bgColor} border-b border-gray-100 dark:border-gray-800`}>
                         {/* Code content - display without +/- prefix */}
-                        <div className={`${textColor} px-4 py-2 whitespace-pre flex-1 font-mono text-sm leading-relaxed`}>
+                        <div className={`${textColor} px-4 py-2 whitespace-pre font-mono text-sm leading-relaxed`}>
                           {displayLine || ' '}
                         </div>
                       </div>
