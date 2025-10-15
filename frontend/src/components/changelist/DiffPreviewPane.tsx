@@ -64,6 +64,7 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
           line.startsWith('diff ') ||
           line.startsWith('index ') ||
           line.startsWith('new file mode') ||
+          line.startsWith('deleted file mode') ||
           line.startsWith('---') ||
           line.startsWith('+++')
         ) {

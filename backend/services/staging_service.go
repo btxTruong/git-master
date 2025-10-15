@@ -170,7 +170,9 @@ func (s *StagingService) StageFile(path string) error {
 	}
 	repoPath := repo.Path
 
-	cmd := exec.Command("git", "add", path)
+	// Use 'git add' with '--all' flag to properly handle deleted files
+	// This ensures deletions are staged correctly
+	cmd := exec.Command("git", "add", "--all", path)
 	cmd.Dir = repoPath
 
 	output, err := cmd.CombinedOutput()
@@ -278,20 +280,33 @@ func (s *StagingService) GetFileDiff(path string, staged bool) (string, error) {
 		return pseudoDiff.String(), nil
 	}
 
-	// For tracked files, use git diff
+	// For tracked files (including deleted), use git diff
 	var cmd *exec.Cmd
 	if staged {
 		// Get diff for staged changes
-		cmd = exec.Command("git", "diff", "--cached", path)
+		// Use HEAD as comparison point to show what was deleted
+		cmd = exec.Command("git", "diff", "--cached", "HEAD", "--", path)
 	} else {
 		// Get diff for unstaged changes
-		cmd = exec.Command("git", "diff", path)
+		// Compare working tree with index
+		cmd = exec.Command("git", "diff", "HEAD", "--", path)
 	}
 	cmd.Dir = repoPath
 
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get file diff for %s: %w", path, err)
+	}
+
+	// If output is empty, the file might be deleted - try getting diff from HEAD
+	if len(output) == 0 || strings.TrimSpace(string(output)) == "" {
+		// Try getting the full diff including deletions
+		cmd = exec.Command("git", "diff", "HEAD", "--", path)
+		cmd.Dir = repoPath
+		output, err = cmd.Output()
+		if err != nil {
+			return "", fmt.Errorf("failed to get file diff for deleted file %s: %w", path, err)
+		}
 	}
 
 	return string(output), nil
@@ -342,7 +357,8 @@ func (s *StagingService) StageMultipleFilePaths(filePathsToStage []string) error
 	repoPath := repo.Path
 
 	// Build git add command with all paths
-	args := append([]string{"add", "--"}, filePathsToStage...)
+	// Use --all flag to properly handle deleted files
+	args := append([]string{"add", "--all", "--"}, filePathsToStage...)
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repoPath
 
