@@ -80,7 +80,7 @@ func (s *ArchiveService) ArchiveChangelistGroup(changelist *models.Changelist, a
 	}
 
 	// Generate unified diff for all files in changelist
-	unifiedDiff, err := s.diffService.GetChangelistGroupDiff(changelist, s.stagingService)
+	unifiedDiff, err := s.diffService.GetChangelistGroupDiff(changelist)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate diff: %w", err)
 	}

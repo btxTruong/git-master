@@ -13,13 +13,16 @@ import (
 
 // DiffService handles generating Git diffs for changelist groups
 type DiffService struct {
-	ctx      context.Context
-	executor *git.Executor
+	ctx            context.Context
+	executor       *git.Executor
+	stagingService *StagingService
 }
 
 // NewDiffService creates a new DiffService instance
-func NewDiffService() *DiffService {
-	return &DiffService{}
+func NewDiffService(stagingService *StagingService) *DiffService {
+	return &DiffService{
+		stagingService: stagingService,
+	}
 }
 
 // Startup initializes the service with a context
@@ -33,9 +36,13 @@ func (s *DiffService) SetExecutor(executor *git.Executor) {
 }
 
 // GetChangelistGroupDiff generates a complete diff for all files in a changelist group
-func (s *DiffService) GetChangelistGroupDiff(changelist *models.Changelist, stagingService *StagingService) (string, error) {
+func (s *DiffService) GetChangelistGroupDiff(changelist *models.Changelist) (string, error) {
 	if s.executor == nil {
 		return "", fmt.Errorf("executor not initialized")
+	}
+
+	if s.stagingService == nil {
+		return "", fmt.Errorf("staging service not initialized")
 	}
 
 	if changelist == nil {
@@ -52,7 +59,7 @@ func (s *DiffService) GetChangelistGroupDiff(changelist *models.Changelist, stag
 		filePaths[i] = item.FilePath
 	}
 
-	fileStatuses, err := stagingService.GetStatusForSpecificFilePaths(filePaths)
+	fileStatuses, err := s.stagingService.GetStatusForSpecificFilePaths(filePaths)
 	if err != nil {
 		return "", fmt.Errorf("failed to get file statuses: %w", err)
 	}
@@ -93,13 +100,17 @@ func (s *DiffService) GetChangelistGroupDiff(changelist *models.Changelist, stag
 }
 
 // GetSingleFileDiff generates a diff for a single file
-func (s *DiffService) GetSingleFileDiff(filePath string, stagingService *StagingService) (string, error) {
+func (s *DiffService) GetSingleFileDiff(filePath string) (string, error) {
 	if s.executor == nil {
 		return "", fmt.Errorf("executor not initialized")
 	}
 
+	if s.stagingService == nil {
+		return "", fmt.Errorf("staging service not initialized")
+	}
+
 	// Get the file status
-	fileStatuses, err := stagingService.GetStatusForSpecificFilePaths([]string{filePath})
+	fileStatuses, err := s.stagingService.GetStatusForSpecificFilePaths([]string{filePath})
 	if err != nil {
 		return "", fmt.Errorf("failed to get file status: %w", err)
 	}
@@ -204,9 +215,9 @@ func (s *DiffService) generateUntrackedFileDiff(filePath string) (string, error)
 }
 
 // CreatePatchFile creates a patch file for a changelist group
-func (s *DiffService) CreatePatchFile(changelist *models.Changelist, outputPath string, stagingService *StagingService) (int64, error) {
+func (s *DiffService) CreatePatchFile(changelist *models.Changelist, outputPath string) (int64, error) {
 	// Generate the diff/patch content
-	patchContent, err := s.GetChangelistGroupDiff(changelist, stagingService)
+	patchContent, err := s.GetChangelistGroupDiff(changelist)
 	if err != nil {
 		return 0, fmt.Errorf("failed to generate patch: %w", err)
 	}
@@ -233,13 +244,17 @@ func (s *DiffService) CreatePatchFile(changelist *models.Changelist, outputPath 
 }
 
 // CreatePatchFileForFiles creates a patch file for specific files
-func (s *DiffService) CreatePatchFileForFiles(filePaths []string, outputPath string, stagingService *StagingService) (int64, error) {
+func (s *DiffService) CreatePatchFileForFiles(filePaths []string, outputPath string) (int64, error) {
 	if len(filePaths) == 0 {
 		return 0, fmt.Errorf("no files provided")
 	}
 
+	if s.stagingService == nil {
+		return 0, fmt.Errorf("staging service not initialized")
+	}
+
 	// Get file statuses
-	fileStatuses, err := stagingService.GetStatusForSpecificFilePaths(filePaths)
+	fileStatuses, err := s.stagingService.GetStatusForSpecificFilePaths(filePaths)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get file statuses: %w", err)
 	}

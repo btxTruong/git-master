@@ -28,7 +28,7 @@ func NewApp() *App {
 	stagingService := services.NewStagingService(repoService)
 	remoteService := services.NewRemoteService(repoService)
 	changelistService := services.NewChangelistService()
-	diffService := services.NewDiffService()
+	diffService := services.NewDiffService(stagingService)
 	archiveService := services.NewArchiveService(diffService, stagingService)
 	blameService := services.NewBlameService()
 
