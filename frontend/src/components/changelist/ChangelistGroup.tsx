@@ -429,7 +429,9 @@ export const ChangelistGroup = memo(function ChangelistGroup({
       >
         <div className="flex items-center gap-3">
           {/* Expand/Collapse Icon */}
-          <ChevronIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0 transition-transform" />
+          <div className="flex items-center justify-center w-4 h-4 flex-shrink-0">
+            <ChevronIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform" />
+          </div>
 
           {/* Group Icon */}
           <FolderOpen className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
