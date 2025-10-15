@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState, memo, useRef, useEffect } from 'react';
 import { Plus, GitCommit, Archive } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useChangelistStore } from '@/stores/changelistStore';
@@ -158,6 +158,8 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
   const [isStaging, setIsStaging] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   const createGroup = useChangelistStore((state) => state.createGroup);
   const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
@@ -166,6 +168,23 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
   const repositoryPath = useRepositoryStore((state) => state.currentRepository?.path);
 
   const loadChanges = useStagingStore((state) => state.loadChanges);
+
+  // Use ResizeObserver to detect when toolbar width is small
+  useEffect(() => {
+    if (!toolbarRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        // If toolbar width is less than 500px, use compact mode (icon only)
+        const width = entry.contentRect.width;
+        setIsCompact(width < 500);
+      }
+    });
+
+    observer.observe(toolbarRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleCreateGroup = async (groupName: string) => {
     if (!repositoryPath) {
@@ -266,7 +285,10 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
 
   return (
     <>
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
+      <div
+        ref={toolbarRef}
+        className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20"
+      >
         {/* Left side - Create Group */}
         <div className="flex items-center gap-2">
           {/* Create Group Button */}
@@ -296,7 +318,7 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
                 : `Commit ${selectedCount} selected file${selectedCount === 1 ? '' : 's'}`
             }
           >
-            {isStaging ? 'Staging...' : 'Commit'}
+            {!isCompact && <span>{isStaging ? 'Staging...' : 'Commit'}</span>}
             {selectedCount > 0 && !isStaging && (
               <span className="ml-1.5 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                 {selectedCount}
@@ -317,7 +339,7 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar() {
                 : `Archive ${selectedCount} selected file${selectedCount === 1 ? '' : 's'}`
             }
           >
-            Archive
+            {!isCompact && <span>Archive</span>}
             {selectedCount > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                 {selectedCount}
