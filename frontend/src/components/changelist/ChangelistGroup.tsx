@@ -8,6 +8,8 @@ import {
   Loader2,
   File,
   FolderTree,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import type { Changelist, ChangelistItem } from '@/types/changelist';
 import {
@@ -21,6 +23,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
 import { useStagingStore } from '@/stores/stagingStore';
+import { useChangelistStore } from '@/stores/changelistStore';
 
 interface ChangelistGroupProps {
   group: Changelist;
@@ -148,6 +151,24 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   const [groupByFolder, setGroupByFolder] = useState(false); // Toggle state for grouping
   const fileListRef = useRef<HTMLDivElement>(null);
 
+  // Get selection state and methods from store
+  const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
+  const selectAllFilesInGroup = useChangelistStore((state) => state.selectAllFilesInGroup);
+  const deselectAllFilesInGroup = useChangelistStore((state) => state.deselectAllFilesInGroup);
+
+  // Check if all files in this group are selected
+  const allFilesSelected = useMemo(() => {
+    if (group.items.length === 0) return false;
+    return group.items.every((item) => selectedFilePaths.includes(item.path));
+  }, [group.items, selectedFilePaths]);
+
+  // Check if some (but not all) files are selected
+  const someFilesSelected = useMemo(() => {
+    if (group.items.length === 0) return false;
+    const selectedCount = group.items.filter((item) => selectedFilePaths.includes(item.path)).length;
+    return selectedCount > 0 && selectedCount < group.items.length;
+  }, [group.items, selectedFilePaths]);
+
   // Visual styling based on group type
   const groupTypeStyles = useMemo(() => {
     switch (group.type) {
@@ -234,6 +255,15 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   const handleAction = (action: GroupAction) => {
     if (onGroupAction) {
       onGroupAction(action, group.id);
+    }
+  };
+
+  const handleToggleSelectAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (allFilesSelected) {
+      deselectAllFilesInGroup(group.id, group.items);
+    } else {
+      selectAllFilesInGroup(group.id, group.items);
     }
   };
 
@@ -331,6 +361,23 @@ export const ChangelistGroup = memo(function ChangelistGroup({
             title={groupByFolder ? 'Disable folder grouping' : 'Enable folder grouping'}
           >
             <FolderTree className="w-4 h-4" />
+          </button>
+
+          {/* Select All/Deselect All Button */}
+          <button
+            onClick={handleToggleSelectAll}
+            className={`p-1.5 rounded transition-colors ${
+              allFilesSelected || someFilesSelected
+                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+            }`}
+            title={allFilesSelected ? 'Deselect all files in group' : 'Select all files in group'}
+          >
+            {allFilesSelected ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
           </button>
 
           {/* Loading Spinner */}

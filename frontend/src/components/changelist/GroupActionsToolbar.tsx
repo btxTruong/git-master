@@ -3,6 +3,12 @@ import { Plus, ChevronDown, ChevronRight, GitCommit, Archive } from 'lucide-reac
 import { Button } from '@/components/common/Button';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useStagingStore } from '@/stores/stagingStore';
+import { CommitDialog } from '@/components/staging/CommitDialog';
+import { stageFile } from '@/api/staging';
+import { archiveChangelistGroup } from '@/api/changelist';
+import type { Changelist } from '@/types/changelist';
+import toast from 'react-hot-toast';
 
 interface GroupActionsToolbarProps {
   onExpandAll?: () => void;
@@ -160,11 +166,16 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
   allExpanded = false,
 }: GroupActionsToolbarProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
+  const [isStaging, setIsStaging] = useState(false);
+
   const createGroup = useChangelistStore((state) => state.createGroup);
   const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
-  // const clearSelectedFiles = useChangelistStore((state) => state.clearSelectedFiles); // TODO: Use after implementing commit/archive
+  const clearSelectedFiles = useChangelistStore((state) => state.clearSelectedFiles);
   const isLoading = useChangelistStore((state) => state.isLoading);
   const repositoryPath = useRepositoryStore((state) => state.currentRepository?.path);
+
+  const loadChanges = useStagingStore((state) => state.loadChanges);
 
   const handleCreateGroup = async (groupName: string) => {
     if (!repositoryPath) {
@@ -181,14 +192,90 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
     }
   };
 
-  const handleCommit = () => {
-    // TODO: Implement commit dialog with selected files
-    console.log('Commit selected files:', selectedFilePaths);
+  const handleCommit = async () => {
+    if (selectedFilePaths.length === 0) {
+      toast.error('No files selected');
+      return;
+    }
+
+    setIsStaging(true);
+
+    try {
+      // Stage all selected files
+      for (const filePath of selectedFilePaths) {
+        await stageFile(filePath);
+      }
+
+      // Refresh staging status to show staged files
+      await loadChanges();
+
+      // Open commit dialog
+      setIsCommitDialogOpen(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to stage files';
+      toast.error(message);
+    } finally {
+      setIsStaging(false);
+    }
   };
 
-  const handleArchive = () => {
-    // TODO: Implement archive functionality with selected files
-    console.log('Archive selected files:', selectedFilePaths);
+  const handleCommitDialogClose = () => {
+    setIsCommitDialogOpen(false);
+    // Clear selection after commit
+    clearSelectedFiles();
+  };
+
+  const handleArchive = async () => {
+    if (selectedFilePaths.length === 0) {
+      toast.error('No files selected');
+      return;
+    }
+
+    // Prompt for archive name
+    const archiveName = window.prompt(
+      `Archive ${selectedFilePaths.length} selected file${selectedFilePaths.length === 1 ? '' : 's'}?\n\nEnter archive name:`,
+      `selected-files-${new Date().toISOString().split('T')[0]}`
+    );
+
+    if (!archiveName || !archiveName.trim()) {
+      return; // User cancelled
+    }
+
+    const description = window.prompt('Enter archive description (optional):', '');
+
+    try {
+      // Create a temporary changelist object with selected files
+      const tempChangelist: Changelist = {
+        id: 'temp-archive',
+        name: archiveName.trim(),
+        type: 'custom',
+        items: selectedFilePaths.map((path) => ({
+          path,
+          addedAt: new Date().toISOString(),
+          lastModifiedAt: new Date().toISOString(),
+        })),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isSystemGenerated: false,
+        orderIndex: 0,
+      };
+
+      // Archive the changelist
+      await archiveChangelistGroup(
+        tempChangelist,
+        archiveName.trim(),
+        description?.trim() || '',
+        []
+      );
+
+      toast.success(`Archived ${selectedFilePaths.length} file${selectedFilePaths.length === 1 ? '' : 's'} to "${archiveName.trim()}"`);
+
+      // Clear selection after successful archive
+      clearSelectedFiles();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to archive files';
+      toast.error(message);
+    }
   };
 
   const selectedCount = selectedFilePaths.length;
@@ -238,15 +325,15 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
             size="sm"
             leftIcon={<GitCommit className="w-4 h-4" />}
             onClick={handleCommit}
-            disabled={selectedCount === 0}
+            disabled={selectedCount === 0 || isStaging}
             title={
               selectedCount === 0
                 ? 'Select files to commit'
                 : `Commit ${selectedCount} selected file${selectedCount === 1 ? '' : 's'}`
             }
           >
-            Commit
-            {selectedCount > 0 && (
+            {isStaging ? 'Staging...' : 'Commit'}
+            {selectedCount > 0 && !isStaging && (
               <span className="ml-1.5 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                 {selectedCount}
               </span>
@@ -283,6 +370,9 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
         onCreateGroup={handleCreateGroup}
         isLoading={isLoading}
       />
+
+      {/* Commit Dialog */}
+      <CommitDialog isOpen={isCommitDialogOpen} onClose={handleCommitDialogClose} />
     </>
   );
 });

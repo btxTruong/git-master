@@ -57,6 +57,8 @@ interface ChangelistState {
   setSelectedGroup: (groupId: string | null) => void;
   setSelectedFiles: (filePaths: string[]) => void;
   toggleFileSelection: (filePath: string) => void;
+  selectAllFilesInGroup: (groupId: string, groupItems?: ChangelistItem[]) => void;
+  deselectAllFilesInGroup: (groupId: string, groupItems?: ChangelistItem[]) => void;
   clearSelectedFiles: () => void;
   toggleGroupExpanded: (groupId: string) => void;
   reset: () => void;
@@ -399,6 +401,48 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
         ? selectedFilePaths.filter((path) => path !== filePath)
         : [...selectedFilePaths, filePath],
     });
+  },
+
+  selectAllFilesInGroup: (groupId: string, groupItems?: ChangelistItem[]) => {
+    const { groups, selectedFilePaths } = get();
+
+    // If groupItems are provided directly (for derived groups), use them
+    // Otherwise find the group in the store (for custom groups)
+    let filePaths: string[];
+
+    if (groupItems) {
+      filePaths = groupItems.map((item) => item.path);
+    } else {
+      const group = groups.find((g) => g.id === groupId);
+      if (!group) return;
+      filePaths = group.items.map((item) => item.path);
+    }
+
+    // Add group files to selection (avoid duplicates)
+    const newSelection = Array.from(new Set([...selectedFilePaths, ...filePaths]));
+
+    set({ selectedFilePaths: newSelection });
+  },
+
+  deselectAllFilesInGroup: (groupId: string, groupItems?: ChangelistItem[]) => {
+    const { groups, selectedFilePaths } = get();
+
+    // If groupItems are provided directly (for derived groups), use them
+    // Otherwise find the group in the store (for custom groups)
+    let filePaths: Set<string>;
+
+    if (groupItems) {
+      filePaths = new Set(groupItems.map((item) => item.path));
+    } else {
+      const group = groups.find((g) => g.id === groupId);
+      if (!group) return;
+      filePaths = new Set(group.items.map((item) => item.path));
+    }
+
+    // Remove group files from selection
+    const newSelection = selectedFilePaths.filter((path) => !filePaths.has(path));
+
+    set({ selectedFilePaths: newSelection });
   },
 
   clearSelectedFiles: () => set({ selectedFilePaths: [] }),
