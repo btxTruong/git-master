@@ -196,3 +196,95 @@ func (s *RemoteService) RemoveRemote(name string) error {
 
 	return nil
 }
+
+// GetUnpushedCommitsCount returns the number of commits ahead of the remote branch
+func (s *RemoteService) GetUnpushedCommitsCount(branch string) (int, error) {
+	if s.executor == nil {
+		return 0, fmt.Errorf("no repository opened")
+	}
+
+	// Trim whitespace and newlines from branch name
+	branch = strings.TrimSpace(branch)
+
+	// If no branch specified, use current branch
+	if branch == "" {
+		result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return 0, fmt.Errorf("failed to get current branch: %w", err)
+		}
+		branch = strings.TrimSpace(result.Stdout)
+	}
+
+	// Get the upstream branch
+	result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", fmt.Sprintf("%s@{upstream}", branch))
+	if err != nil {
+		// No upstream configured
+		return 0, nil
+	}
+	upstream := strings.TrimSpace(result.Stdout)
+
+	// Count commits ahead
+	result, err = s.executor.Execute(s.ctx, "rev-list", "--count", fmt.Sprintf("%s..%s", upstream, branch))
+	if err != nil {
+		return 0, fmt.Errorf("failed to count commits: %w", err)
+	}
+
+	var count int
+	_, err = fmt.Sscanf(strings.TrimSpace(result.Stdout), "%d", &count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse count: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetUnpushedCommits returns the list of commits that haven't been pushed to the remote
+func (s *RemoteService) GetUnpushedCommits(branch string) ([]string, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Trim whitespace and newlines from branch name
+	branch = strings.TrimSpace(branch)
+
+	// If no branch specified, use current branch
+	if branch == "" {
+		result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return nil, fmt.Errorf("failed to get current branch: %w", err)
+		}
+		branch = strings.TrimSpace(result.Stdout)
+	}
+
+	// Get the upstream branch
+	result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", fmt.Sprintf("%s@{upstream}", branch))
+	if err != nil {
+		// No upstream configured
+		return []string{}, nil
+	}
+	upstream := strings.TrimSpace(result.Stdout)
+
+	// Get commit hashes that are ahead
+	// Format: %H = full commit hash
+	result, err = s.executor.Execute(s.ctx, "rev-list", "--pretty=format:%H", fmt.Sprintf("%s..%s", upstream, branch))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit list: %w", err)
+	}
+
+	if result.Stdout == "" {
+		return []string{}, nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(result.Stdout), "\n")
+	hashes := []string{}
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Skip "commit" lines from --pretty output
+		if line != "" && !strings.HasPrefix(line, "commit ") {
+			hashes = append(hashes, line)
+		}
+	}
+
+	return hashes, nil
+}

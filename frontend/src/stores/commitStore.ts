@@ -105,16 +105,6 @@ export const useCommitStore = create<CommitState>((set, get) => ({
 
       const hasMoreCommits = newCommits.length === pageSize;
 
-      console.log('[CommitStore] Loaded commits:', {
-        page,
-        offset,
-        requestedPageSize: pageSize,
-        receivedCommits: newCommits.length,
-        totalCommits: updatedCommits.length,
-        hasMore: hasMoreCommits,
-        filters: backendFilters,
-      });
-
       set({
         commits: updatedCommits,
         currentPage: page,

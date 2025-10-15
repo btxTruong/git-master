@@ -14,6 +14,14 @@ export function GetRemotes() {
   return window['go']['services']['RemoteService']['GetRemotes']();
 }
 
+export function GetUnpushedCommits(arg1) {
+  return window['go']['services']['RemoteService']['GetUnpushedCommits'](arg1);
+}
+
+export function GetUnpushedCommitsCount(arg1) {
+  return window['go']['services']['RemoteService']['GetUnpushedCommitsCount'](arg1);
+}
+
 export function Pull(arg1, arg2, arg3) {
   return window['go']['services']['RemoteService']['Pull'](arg1, arg2, arg3);
 }

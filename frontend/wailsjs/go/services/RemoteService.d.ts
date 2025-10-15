@@ -10,6 +10,10 @@ export function Fetch(arg1:string,arg2:boolean):Promise<void>;
 
 export function GetRemotes():Promise<Array<services.Remote>>;
 
+export function GetUnpushedCommits(arg1:string):Promise<Array<string>>;
+
+export function GetUnpushedCommitsCount(arg1:string):Promise<number>;
+
 export function Pull(arg1:string,arg2:string,arg3:boolean):Promise<void>;
 
 export function Push(arg1:string,arg2:string,arg3:boolean,arg4:boolean):Promise<void>;

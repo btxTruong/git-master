@@ -94,3 +94,17 @@ export async function addRemote(name: string, url: string): Promise<void> {
 export async function removeRemote(name: string): Promise<void> {
   await RemoteService.RemoveRemote(name);
 }
+
+/**
+ * Get the count of unpushed commits for the current or specified branch
+ */
+export async function getUnpushedCommitsCount(branch: string = ''): Promise<number> {
+  return await RemoteService.GetUnpushedCommitsCount(branch);
+}
+
+/**
+ * Get the list of commit hashes that haven't been pushed to the remote
+ */
+export async function getUnpushedCommits(branch: string = ''): Promise<string[]> {
+  return await RemoteService.GetUnpushedCommits(branch);
+}
