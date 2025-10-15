@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { FolderOpen } from 'lucide-react';
 import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
 import { GroupActionsToolbar } from './GroupActionsToolbar';
@@ -7,9 +8,17 @@ import { Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useStagingStore } from '@/stores/stagingStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
+import { stageFile, unstageFile } from '@/api/staging';
 import type { StagingFileChange } from '@/types/git';
 import type { Changelist } from '@/types/changelist';
+import {
+  CHANGELIST_TYPE_TRACKED,
+  CHANGELIST_TYPE_UNTRACKED,
+  CHANGELIST_TYPE_CUSTOM,
+} from '@/types/changelist';
+import toast from 'react-hot-toast';
 
 interface ChangelistPanelProps {
   onFileSelect: (file: StagingFileChange) => void;
@@ -37,12 +46,18 @@ export function ChangelistPanel({
   const customGroups = useChangelistStore((state) => state.groups);
   const deleteGroup = useChangelistStore((state) => state.deleteGroup);
   const renameGroup = useChangelistStore((state) => state.renameGroup);
+  const moveFilesBetweenGroups = useChangelistStore((state) => state.moveFilesBetweenGroups);
+  const addFilesToGroup = useChangelistStore((state) => state.addFilesToGroup);
+  const removeFilesFromGroup = useChangelistStore((state) => state.removeFilesFromGroup);
   const isLoading = useChangelistStore((state) => state.isLoading);
   const isReconciling = useChangelistStore((state) => state.isReconciling);
   const operationInProgress = useChangelistStore((state) => state.operationInProgress);
 
   // Get repository path
   const repositoryPath = useRepositoryStore((state) => state.currentRepository?.path);
+
+  // Get staging store methods
+  const loadChanges = useStagingStore((state) => state.loadChanges);
 
   // Get derived groups from selectors
   const trackedGroup = useTrackedGroup();
@@ -200,6 +215,91 @@ export function ChangelistPanel({
     }
   }, [repositoryPath]);
 
+  // Handle drag end - move file between groups
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (!over || !repositoryPath) return;
+
+      const activeData = active.data.current;
+      const overData = over.data.current;
+
+      // Ensure we're dragging a file onto a group
+      if (activeData?.type !== 'file' || overData?.type !== 'group') return;
+
+      const filePath = activeData.filePath;
+      const sourceGroupId = activeData.groupId;
+      const targetGroupId = overData.groupId;
+
+      // Don't do anything if dropped on the same group
+      if (sourceGroupId === targetGroupId) return;
+
+      // Find source and target groups
+      const sourceGroup = allGroups.find((g) => g.id === sourceGroupId);
+      const targetGroup = allGroups.find((g) => g.id === targetGroupId);
+
+      if (!sourceGroup || !targetGroup) return;
+
+      // VALIDATION: Prevent invalid moves
+      // 1. Cannot move tracked files to untracked group (they need to be unstaged first)
+      if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_UNTRACKED) {
+        toast.error('Cannot move tracked files to untracked. Unstage the file first.');
+        return;
+      }
+
+      try {
+        // Handle moves involving system groups (tracked/untracked)
+        if (sourceGroup.type === CHANGELIST_TYPE_TRACKED || targetGroup.type === CHANGELIST_TYPE_TRACKED) {
+          // Moving from tracked to custom group: unstage the file
+          if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+            await unstageFile(filePath);
+            await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
+            await loadChanges();
+            toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+          }
+          // Moving from custom/untracked to tracked: stage the file
+          else if (targetGroup.type === CHANGELIST_TYPE_TRACKED) {
+            if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM) {
+              await removeFilesFromGroup(repositoryPath, sourceGroupId, [filePath]);
+            }
+            await stageFile(filePath);
+            await loadChanges();
+            toast.success(`Staged "${filePath}"`);
+          }
+        }
+        // Handle moves involving untracked group
+        else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED || targetGroup.type === CHANGELIST_TYPE_UNTRACKED) {
+          // Moving from untracked to custom: just add to group
+          if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+            await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
+            toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
+          }
+          // Moving from custom to untracked: just remove from group
+          else if (targetGroup.type === CHANGELIST_TYPE_UNTRACKED && sourceGroup.type === CHANGELIST_TYPE_CUSTOM) {
+            await removeFilesFromGroup(repositoryPath, sourceGroupId, [filePath]);
+            toast.success(`Removed "${filePath}" from "${sourceGroup.name}"`);
+          }
+        }
+        // Both are custom groups: use moveFilesBetweenGroups
+        else if (sourceGroup.type === CHANGELIST_TYPE_CUSTOM && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
+          await moveFilesBetweenGroups(repositoryPath, sourceGroupId, targetGroupId, [filePath]);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to move file';
+        toast.error(message);
+      }
+    },
+    [
+      repositoryPath,
+      allGroups,
+      moveFilesBetweenGroups,
+      addFilesToGroup,
+      removeFilesFromGroup,
+      loadChanges,
+    ]
+  );
+
   // Empty state when no changes
   if (allGroups.length === 0) {
     return (
@@ -228,24 +328,25 @@ export function ChangelistPanel({
   }
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
-      {/* Toolbar */}
-      <GroupActionsToolbar
-        onExpandAll={expandAll}
-        onCollapseAll={collapseAll}
-        allExpanded={allExpanded}
-      />
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
+        {/* Toolbar */}
+        <GroupActionsToolbar
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          allExpanded={allExpanded}
+        />
 
-      {/* Reconciliation indicator */}
-      {isReconciling && (
-        <div className="bg-blue-50 dark:bg-blue-900 border-b border-blue-200 dark:border-blue-700 px-4 py-2 flex items-center gap-2">
-          <Spinner size="sm" />
-          <span className="text-sm text-blue-700 dark:text-blue-200">Reconciling changes...</span>
-        </div>
-      )}
+        {/* Reconciliation indicator */}
+        {isReconciling && (
+          <div className="bg-blue-50 dark:bg-blue-900 border-b border-blue-200 dark:border-blue-700 px-4 py-2 flex items-center gap-2">
+            <Spinner size="sm" />
+            <span className="text-sm text-blue-700 dark:text-blue-200">Reconciling changes...</span>
+          </div>
+        )}
 
-      {/* Groups List */}
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">
+        {/* Groups List */}
+        <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">
         {/* Show loading spinner for initial load */}
         {isLoading && allGroups.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -310,5 +411,6 @@ export function ChangelistPanel({
         )}
       </div>
     </div>
+    </DndContext>
   );
 }

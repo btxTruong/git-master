@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { FileContextMenu } from '@/components/changelist/FileContextMenu';
 import { getFileIcon, DEFAULT_ICON_SIZE } from '@/utils/fileIcons';
@@ -91,6 +93,42 @@ function sortNodes(nodes: StagingTreeNode[]): StagingTreeNode[] {
       }
       return node;
     });
+}
+
+// Draggable wrapper component for files
+interface DraggableFileProps {
+  filePath: string;
+  groupId?: string;
+  children: React.ReactNode;
+  isDraggingEnabled?: boolean;
+}
+
+function DraggableFile({ filePath, groupId, children, isDraggingEnabled = true }: DraggableFileProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `file-${filePath}-${groupId}`,
+    data: {
+      type: 'file',
+      filePath,
+      groupId,
+    },
+    disabled: !isDraggingEnabled || !groupId,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDraggingEnabled && groupId ? 'grab' : 'default',
+  };
+
+  if (!isDraggingEnabled || !groupId) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
+  );
 }
 
 export function FileTree({
@@ -220,17 +258,18 @@ export function FileTree({
       </div>
     );
 
-    // Wrap with context menu if groupId is provided
+    // Wrap with context menu and draggable if groupId is provided
     if (groupId) {
       return (
-        <FileContextMenu
-          key={`${file.path}-${index}`}
-          filePath={file.path}
-          currentGroupId={groupId}
-          onHistoryClick={onShowHistory ? () => onShowHistory(file.path) : undefined}
-        >
-          {fileNode}
-        </FileContextMenu>
+        <DraggableFile key={`${file.path}-${index}`} filePath={file.path} groupId={groupId}>
+          <FileContextMenu
+            filePath={file.path}
+            currentGroupId={groupId}
+            onHistoryClick={onShowHistory ? () => onShowHistory(file.path) : undefined}
+          >
+            {fileNode}
+          </FileContextMenu>
+        </DraggableFile>
       );
     }
 
@@ -288,17 +327,18 @@ export function FileTree({
         </div>
       );
 
-      // Wrap with context menu if groupId is provided
+      // Wrap with context menu and draggable if groupId is provided
       if (groupId) {
         return (
-          <FileContextMenu
-            key={node.path}
-            filePath={node.file!.path}
-            currentGroupId={groupId}
-            onHistoryClick={onShowHistory ? () => onShowHistory(node.file!.path) : undefined}
-          >
-            {fileNode}
-          </FileContextMenu>
+          <DraggableFile key={node.path} filePath={node.file!.path} groupId={groupId}>
+            <FileContextMenu
+              filePath={node.file!.path}
+              currentGroupId={groupId}
+              onHistoryClick={onShowHistory ? () => onShowHistory(node.file!.path) : undefined}
+            >
+              {fileNode}
+            </FileContextMenu>
+          </DraggableFile>
         );
       }
 

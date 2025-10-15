@@ -1,5 +1,6 @@
 import { memo, useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useDroppable } from '@dnd-kit/core';
 import {
   ChevronRight,
   ChevronDown,
@@ -150,6 +151,15 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [groupByFolder, setGroupByFolder] = useState(false); // Toggle state for grouping
   const fileListRef = useRef<HTMLDivElement>(null);
+
+  // Setup droppable for this group
+  const { setNodeRef, isOver } = useDroppable({
+    id: `group-${group.id}`,
+    data: {
+      type: 'group',
+      groupId: group.id,
+    },
+  });
 
   // Get selection state and methods from store
   const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
@@ -317,7 +327,14 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   };
 
   return (
-    <div className="changelist-group border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-2">
+    <div
+      ref={setNodeRef}
+      className={`changelist-group border rounded-lg overflow-hidden mb-2 transition-colors ${
+        isOver
+          ? 'border-blue-500 dark:border-blue-400 border-2 bg-blue-50 dark:bg-blue-900/20'
+          : 'border-gray-200 dark:border-gray-700'
+      }`}
+    >
       {/* Group Header */}
       <div
         className={`${groupTypeStyles.headerClass} px-4 py-3 cursor-pointer select-none transition-colors hover:brightness-95 dark:hover:brightness-110 ${
