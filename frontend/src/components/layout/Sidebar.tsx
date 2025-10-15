@@ -23,7 +23,9 @@ export function Sidebar() {
       }`}
     >
       {/* Toggle button */}
-      <div className="h-14 flex items-center justify-end px-2 border-b border-gray-200 dark:border-gray-700">
+      <div className={`h-14 flex items-center border-b border-gray-200 dark:border-gray-700 ${
+        sidebarOpen ? 'justify-end px-2' : 'justify-center'
+      }`}>
         <button
           onClick={toggleSidebar}
           className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300"
