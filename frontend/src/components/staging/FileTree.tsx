@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { FileContextMenu } from '@/components/changelist/FileContextMenu';
 import { getFileIcon, DEFAULT_ICON_SIZE } from '@/utils/fileIcons';
 import type { StagingFileChange } from '@/types/git';
+import { useChangelistStore } from '@/stores/changelistStore';
 
 interface FileTreeProps {
   files: StagingFileChange[];
@@ -11,6 +12,7 @@ interface FileTreeProps {
   groupId?: string;
   onShowHistory?: (filePath: string) => void;
   groupByFolder?: boolean; // New prop to control tree/flat display
+  showCheckboxes?: boolean; // New prop to show checkboxes for selection
 }
 
 // Simple tree node for staging area
@@ -98,9 +100,14 @@ export function FileTree({
   groupId,
   onShowHistory,
   groupByFolder = false,
+  showCheckboxes = false,
 }: FileTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const tree = groupByFolder ? buildStagingFileTree(files) : [];
+
+  // Get selection state from store
+  const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
+  const toggleFileSelection = useChangelistStore((state) => state.toggleFileSelection);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
@@ -172,11 +179,17 @@ export function FileTree({
   // Render a flat file list (no folders)
   const renderFlatFile = (file: StagingFileChange, index: number) => {
     const isSelected = selectedFile?.path === file.path;
+    const isChecked = selectedFilePaths.includes(file.path);
     const fileName = file.path.split('/').pop() || file.path;
     const FileIcon = getFileIcon(fileName);
     const statusLetter = getStatusLetter(file.status);
     const statusColor = getStatusColor(file.status);
     const fileNameColor = getFileNameColor(file.status);
+
+    const handleCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleFileSelection(file.path);
+    };
 
     const fileNode = (
       <div
@@ -188,15 +201,22 @@ export function FileTree({
         }`}
         onClick={() => onFileSelect(file)}
       >
+        {showCheckboxes && (
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onClick={handleCheckboxClick}
+            onChange={() => {}}
+            className="flex-shrink-0 w-4 h-4 cursor-pointer rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+          />
+        )}
         <span
           className={`flex items-center justify-center w-5 h-5 rounded text-xs font-bold flex-shrink-0 ${statusColor}`}
         >
           {statusLetter}
         </span>
         <FileIcon width={DEFAULT_ICON_SIZE} height={DEFAULT_ICON_SIZE} className="flex-shrink-0" />
-        <span className={`flex-1 text-sm truncate ${fileNameColor}`}>
-          {file.path}
-        </span>
+        <span className={`flex-1 text-sm truncate ${fileNameColor}`}>{file.path}</span>
       </div>
     );
 
@@ -221,10 +241,16 @@ export function FileTree({
   const renderNode = (node: StagingTreeNode, depth: number = 0) => {
     if (node.type === 'file') {
       const isSelected = selectedFile?.path === node.file?.path;
+      const isChecked = selectedFilePaths.includes(node.file!.path);
       const FileIcon = getFileIcon(node.name);
       const statusLetter = getStatusLetter(node.file!.status);
       const statusColor = getStatusColor(node.file!.status);
       const fileNameColor = getFileNameColor(node.file!.status);
+
+      const handleCheckboxClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        toggleFileSelection(node.file!.path);
+      };
 
       const fileNode = (
         <div
@@ -237,7 +263,17 @@ export function FileTree({
           style={{ paddingLeft: `${depth * 16 + 12}px` }}
           onClick={() => onFileSelect(node.file!)}
         >
-          <div className="w-4 h-4" /> {/* Spacer for chevron alignment */}
+          {showCheckboxes ? (
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onClick={handleCheckboxClick}
+              onChange={() => {}}
+              className="flex-shrink-0 w-4 h-4 cursor-pointer rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <div className="w-4 h-4" /> /* Spacer for chevron alignment */
+          )}
           <span
             className={`flex items-center justify-center w-5 h-5 rounded text-xs font-bold flex-shrink-0 ${statusColor}`}
           >
@@ -248,9 +284,7 @@ export function FileTree({
             height={DEFAULT_ICON_SIZE}
             className="flex-shrink-0"
           />
-          <span className={`flex-1 text-sm truncate ${fileNameColor}`}>
-            {node.name}
-          </span>
+          <span className={`flex-1 text-sm truncate ${fileNameColor}`}>{node.name}</span>
         </div>
       );
 

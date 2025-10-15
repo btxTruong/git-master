@@ -410,6 +410,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
                 groupId={group.id}
                 onShowHistory={onShowHistory}
                 groupByFolder={groupByFolder}
+                showCheckboxes={true}
               />
             </div>
           )}

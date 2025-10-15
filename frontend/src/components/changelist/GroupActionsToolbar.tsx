@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, GitCommit, Archive } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
@@ -161,6 +161,8 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
 }: GroupActionsToolbarProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const createGroup = useChangelistStore((state) => state.createGroup);
+  const selectedFilePaths = useChangelistStore((state) => state.selectedFilePaths);
+  // const clearSelectedFiles = useChangelistStore((state) => state.clearSelectedFiles); // TODO: Use after implementing commit/archive
   const isLoading = useChangelistStore((state) => state.isLoading);
   const repositoryPath = useRepositoryStore((state) => state.currentRepository?.path);
 
@@ -179,39 +181,99 @@ export const GroupActionsToolbar = memo(function GroupActionsToolbar({
     }
   };
 
+  const handleCommit = () => {
+    // TODO: Implement commit dialog with selected files
+    console.log('Commit selected files:', selectedFilePaths);
+  };
+
+  const handleArchive = () => {
+    // TODO: Implement archive functionality with selected files
+    console.log('Archive selected files:', selectedFilePaths);
+  };
+
+  const selectedCount = selectedFilePaths.length;
+
   return (
     <>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
-        {/* Create Group Button */}
-        <Button
-          variant="primary"
-          size="sm"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsCreateDialogOpen(true)}
-          disabled={isLoading}
-        >
-          Create Group
-        </Button>
-
-        {/* Expand/Collapse All Button */}
-        {(onExpandAll || onCollapseAll) && (
+        {/* Left side - Create Group and Expand/Collapse */}
+        <div className="flex items-center gap-2">
+          {/* Create Group Button */}
           <Button
-            variant="ghost"
+            variant="primary"
             size="sm"
-            leftIcon={
-              allExpanded ? (
-                <ChevronRight className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )
-            }
-            onClick={handleToggleExpandAll}
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setIsCreateDialogOpen(true)}
             disabled={isLoading}
-            title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
           >
-            {allExpanded ? 'Collapse All' : 'Expand All'}
+            Create Group
           </Button>
-        )}
+
+          {/* Expand/Collapse All Button */}
+          {(onExpandAll || onCollapseAll) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={
+                allExpanded ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )
+              }
+              onClick={handleToggleExpandAll}
+              disabled={isLoading}
+              title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
+            >
+              {allExpanded ? 'Collapse All' : 'Expand All'}
+            </Button>
+          )}
+        </div>
+
+        {/* Right side - Commit and Archive buttons */}
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Commit Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<GitCommit className="w-4 h-4" />}
+            onClick={handleCommit}
+            disabled={selectedCount === 0}
+            title={
+              selectedCount === 0
+                ? 'Select files to commit'
+                : `Commit ${selectedCount} selected file${selectedCount === 1 ? '' : 's'}`
+            }
+          >
+            Commit
+            {selectedCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                {selectedCount}
+              </span>
+            )}
+          </Button>
+
+          {/* Archive Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Archive className="w-4 h-4" />}
+            onClick={handleArchive}
+            disabled={selectedCount === 0}
+            title={
+              selectedCount === 0
+                ? 'Select files to archive'
+                : `Archive ${selectedCount} selected file${selectedCount === 1 ? '' : 's'}`
+            }
+          >
+            Archive
+            {selectedCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                {selectedCount}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Create Group Dialog */}

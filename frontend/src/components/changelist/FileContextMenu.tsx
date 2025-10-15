@@ -8,20 +8,21 @@ import {
   History,
   FileCode,
   ArrowRightLeft,
-  Trash2,
+  Copy,
 } from 'lucide-react';
 import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
+import { useStagingStore } from '@/stores/stagingStore';
 import { useRevertFile } from '@/hooks/useRevertFile';
 import { useCommitFromGroup } from '@/hooks/useCommitFromGroup';
 import { CommitDialog } from '@/components/staging/CommitDialog';
+import { stageFile } from '@/api/staging';
 import toast from 'react-hot-toast';
 
 interface FileContextMenuProps {
   filePath: string;
   currentGroupId: string;
   children: React.ReactNode;
-  onDiffClick?: () => void;
   onBlameClick?: () => void;
   onHistoryClick?: () => void;
 }
@@ -35,7 +36,6 @@ export function FileContextMenu({
   filePath,
   currentGroupId,
   children,
-  onDiffClick,
   onBlameClick,
   onHistoryClick,
 }: FileContextMenuProps) {
@@ -44,14 +44,18 @@ export function FileContextMenu({
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { groups, removeFilesFromGroup, moveFilesBetweenGroups } = useChangelistStore();
+  const { groups, moveFilesBetweenGroups } = useChangelistStore();
   const currentRepository = useRepositoryStore((state) => state.currentRepository);
+  const loadChanges = useStagingStore((state) => state.loadChanges);
   const { revertFile } = useRevertFile();
   const { commitFromGroup, isCommitDialogOpen, closeCommitDialog } = useCommitFromGroup();
 
   // Filter groups to show only other groups (not current one) for move action
   const otherGroups = groups.filter((g) => g.id !== currentGroupId);
   const currentGroup = groups.find((g) => g.id === currentGroupId);
+
+  // Check if current group is untracked group
+  const isUntrackedGroup = currentGroupId === '__untracked__';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -151,21 +155,6 @@ export function FileContextMenu({
     });
   };
 
-  const handleRemoveFromGroup = async () => {
-    if (!currentRepository) {
-      toast.error('No repository selected');
-      return;
-    }
-
-    try {
-      await removeFilesFromGroup(currentRepository.path, currentGroupId, [filePath]);
-      toast.success(`Removed "${filePath}" from group`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to remove file from group';
-      toast.error(message);
-    }
-  };
-
   const handleMoveToGroup = async (targetGroupId: string) => {
     if (!currentRepository) {
       toast.error('No repository selected');
@@ -186,14 +175,6 @@ export function FileContextMenu({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to move file';
       toast.error(message);
-    }
-  };
-
-  const handleShowDiff = () => {
-    if (onDiffClick) {
-      onDiffClick();
-    } else {
-      toast('Diff view not yet implemented');
     }
   };
 
@@ -233,6 +214,27 @@ export function FileContextMenu({
     }
   };
 
+  const handleCopyFilePath = async () => {
+    try {
+      await navigator.clipboard.writeText(filePath);
+      toast.success(`Copied: ${filePath}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to copy file path';
+      toast.error(message);
+    }
+  };
+
+  const handleMoveToTracked = async () => {
+    try {
+      await stageFile(filePath);
+      await loadChanges();
+      toast.success(`Staged "${filePath}"`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to stage file';
+      toast.error(message);
+    }
+  };
+
   const menuContent = isOpen ? (
     <div
       ref={menuRef}
@@ -244,14 +246,6 @@ export function FileContextMenu({
       }}
     >
       {/* View Actions */}
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-        onClick={() => handleMenuItemClick(handleShowDiff)}
-      >
-        <FileText className="w-4 h-4" />
-        Show Diff
-      </button>
-
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
         onClick={() => handleMenuItemClick(handleShowBlame)}
@@ -271,6 +265,16 @@ export function FileContextMenu({
       <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
       {/* Modification Actions */}
+      {isUntrackedGroup && (
+        <button
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-left"
+          onClick={() => handleMenuItemClick(handleMoveToTracked)}
+        >
+          <FolderInput className="w-4 h-4" />
+          Move to Tracked
+        </button>
+      )}
+
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
         onClick={() => handleMenuItemClick(handleCommitFile)}
@@ -327,17 +331,17 @@ export function FileContextMenu({
         </div>
       )}
 
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-        onClick={() => handleMenuItemClick(handleRemoveFromGroup)}
-      >
-        <Trash2 className="w-4 h-4" />
-        Remove from Group
-      </button>
-
       <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
-      {/* Patch Actions */}
+      {/* File Actions */}
+      <button
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+        onClick={() => handleMenuItemClick(handleCopyFilePath)}
+      >
+        <Copy className="w-4 h-4" />
+        Copy File Path
+      </button>
+
       <button
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
         onClick={() => handleMenuItemClick(handleCreatePatch)}

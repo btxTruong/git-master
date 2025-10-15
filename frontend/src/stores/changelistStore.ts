@@ -56,6 +56,8 @@ interface ChangelistState {
   // UI state actions
   setSelectedGroup: (groupId: string | null) => void;
   setSelectedFiles: (filePaths: string[]) => void;
+  toggleFileSelection: (filePath: string) => void;
+  clearSelectedFiles: () => void;
   toggleGroupExpanded: (groupId: string) => void;
   reset: () => void;
 
@@ -387,6 +389,19 @@ export const useChangelistStore = create<ChangelistState>()((set, get) => ({
   setSelectedGroup: (groupId: string | null) => set({ selectedGroupId: groupId }),
 
   setSelectedFiles: (filePaths: string[]) => set({ selectedFilePaths: filePaths }),
+
+  toggleFileSelection: (filePath: string) => {
+    const selectedFilePaths = get().selectedFilePaths;
+    const isSelected = selectedFilePaths.includes(filePath);
+
+    set({
+      selectedFilePaths: isSelected
+        ? selectedFilePaths.filter((path) => path !== filePath)
+        : [...selectedFilePaths, filePath],
+    });
+  },
+
+  clearSelectedFiles: () => set({ selectedFilePaths: [] }),
 
   toggleGroupExpanded: (groupId: string) => {
     const expandedGroupIds = get().expandedGroupIds;
