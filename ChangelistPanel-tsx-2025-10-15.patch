@@ -1,0 +1,38 @@
+diff --git a/frontend/src/components/changelist/ChangelistPanel.tsx b/frontend/src/components/changelist/ChangelistPanel.tsx
+index dc51f05..ea2e49b 100644
+--- a/frontend/src/components/changelist/ChangelistPanel.tsx
++++ b/frontend/src/components/changelist/ChangelistPanel.tsx
+@@ -1,6 +1,6 @@
+ import { useState, useMemo, useCallback, useRef } from 'react';
+ import { useVirtualizer } from '@tanstack/react-virtual';
+-import { DndContext, DragEndEvent } from '@dnd-kit/core';
++import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+ import { FolderOpen } from 'lucide-react';
+ import { ChangelistGroup, type GroupAction } from './ChangelistGroup';
+ import { GroupActionsToolbar } from './GroupActionsToolbar';
+@@ -69,6 +69,16 @@ export function ChangelistPanel({
+   // Ref for virtualization
+   const parentRef = useRef<HTMLDivElement>(null);
+ 
++  // Configure drag sensor with activation constraints
++  // This prevents drag from starting immediately, allowing normal clicks and right-clicks
++  const sensors = useSensors(
++    useSensor(PointerSensor, {
++      activationConstraint: {
++        distance: 8, // 8px movement required before drag starts
++      },
++    })
++  );
++
+   // Combine all groups in the correct order
+   const allGroups = useMemo(() => {
+     const groups: Changelist[] = [];
+@@ -328,7 +338,7 @@ export function ChangelistPanel({
+   }
+ 
+   return (
+-    <DndContext onDragEnd={handleDragEnd}>
++    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+       <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
+         {/* Toolbar */}
+         <GroupActionsToolbar

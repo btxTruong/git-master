@@ -14,7 +14,7 @@ import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
 import { useRevertFile } from '@/hooks/useRevertFile';
-import { stageFile, unstageFile } from '@/api/staging';
+import { stageFile } from '@/api/staging';
 import toast from 'react-hot-toast';
 import { CHANGELIST_TYPE_CUSTOM } from '@/types/changelist';
 
@@ -188,13 +188,14 @@ export function FileContextMenu({
     try {
       // Handle moves involving tracked group
       if (isTrackedGroup) {
-        // Moving from tracked to custom: unstage and add to custom group
-        await unstageFile(filePath);
+        // Moving from tracked to custom: keep file staged, just add to custom group
+        // Don't unstage! If we unstage a file that was originally untracked, it becomes untracked again
         await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
-        await loadChanges();
         toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
       } else if (isUntrackedGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-        // Moving from untracked to custom: just add to group
+        // Moving from untracked to custom: stage the file first, then add to group
+        await stageFile(filePath);
+        await loadChanges(); // Refresh Git status first
         await addFilesToGroup(currentRepository.path, targetGroupId, [filePath]);
         toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
       } else if (isCustomGroup && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {

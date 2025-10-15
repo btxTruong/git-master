@@ -10,7 +10,7 @@ import { useChangelistStore } from '@/stores/changelistStore';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useStagingStore } from '@/stores/stagingStore';
 import { useTrackedGroup, useUntrackedGroup } from '@/stores/selectors/changelistSelectors';
-import { stageFile, unstageFile } from '@/api/staging';
+import { stageFile } from '@/api/staging';
 import type { StagingFileChange } from '@/types/git';
 import type { Changelist } from '@/types/changelist';
 import {
@@ -255,11 +255,10 @@ export function ChangelistPanel({
       try {
         // Handle moves involving system groups (tracked/untracked)
         if (sourceGroup.type === CHANGELIST_TYPE_TRACKED || targetGroup.type === CHANGELIST_TYPE_TRACKED) {
-          // Moving from tracked to custom group: unstage the file
+          // Moving from tracked to custom: keep file staged, just add to custom group
+          // Don't unstage! If we unstage a file that was originally untracked, it becomes untracked again
           if (sourceGroup.type === CHANGELIST_TYPE_TRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-            await unstageFile(filePath);
             await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
-            await loadChanges();
             toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
           }
           // Moving from custom/untracked to tracked: stage the file
@@ -274,7 +273,9 @@ export function ChangelistPanel({
         }
         // Handle moves from untracked to custom group
         else if (sourceGroup.type === CHANGELIST_TYPE_UNTRACKED && targetGroup.type === CHANGELIST_TYPE_CUSTOM) {
-          // Moving from untracked to custom: just add to group
+          // Moving from untracked to custom: stage the file first, then add to group
+          await stageFile(filePath);
+          await loadChanges(); // Refresh Git status first
           await addFilesToGroup(repositoryPath, targetGroupId, [filePath]);
           toast.success(`Moved "${filePath}" to "${targetGroup.name}"`);
         }
