@@ -11,6 +11,10 @@ export function GetChangelistService():Promise<services.ChangelistService>;
 
 export function GetCommitService():Promise<services.CommitService>;
 
+export function GetConfigService():Promise<services.ConfigService>;
+
+export function GetCredentialsService():Promise<services.CredentialsService>;
+
 export function GetDiffService():Promise<services.DiffService>;
 
 export function GetRepositoryService():Promise<services.RepositoryService>;

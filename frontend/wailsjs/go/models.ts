@@ -614,6 +614,30 @@ export namespace services {
 	
 	    }
 	}
+	export class ConfigService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new ConfigService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class CredentialsService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new CredentialsService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class DiffService {
 	
 	
@@ -642,6 +666,22 @@ export namespace services {
 	        this.status = source["status"];
 	        this.staged = source["staged"];
 	        this.modified = source["modified"];
+	    }
+	}
+	export class GitHubToken {
+	    id: string;
+	    name: string;
+	    repoPattern: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GitHubToken(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.repoPattern = source["repoPattern"];
 	    }
 	}
 	export class ImportPatchOptions {
@@ -754,6 +794,20 @@ export namespace services {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+	export class RepositoryConfig {
+	    repositoryPath: string;
+	    selectedToken: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RepositoryConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.repositoryPath = source["repositoryPath"];
+	        this.selectedToken = source["selectedToken"];
 	    }
 	}
 	export class RepositoryService {

@@ -18,6 +18,14 @@ export function GetCommitService() {
   return window['go']['main']['App']['GetCommitService']();
 }
 
+export function GetConfigService() {
+  return window['go']['main']['App']['GetConfigService']();
+}
+
+export function GetCredentialsService() {
+  return window['go']['main']['App']['GetCredentialsService']();
+}
+
 export function GetDiffService() {
   return window['go']['main']['App']['GetDiffService']();
 }

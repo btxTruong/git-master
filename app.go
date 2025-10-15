@@ -10,15 +10,17 @@ import (
 
 // App struct
 type App struct {
-	ctx               context.Context
-	repositoryService *services.RepositoryService
-	commitService     *services.CommitService
-	stagingService    *services.StagingService
-	remoteService     *services.RemoteService
-	changelistService *services.ChangelistService
-	diffService       *services.DiffService
-	archiveService    *services.ArchiveService
-	blameService      *services.BlameService
+	ctx                 context.Context
+	repositoryService   *services.RepositoryService
+	commitService       *services.CommitService
+	stagingService      *services.StagingService
+	remoteService       *services.RemoteService
+	changelistService   *services.ChangelistService
+	diffService         *services.DiffService
+	archiveService      *services.ArchiveService
+	blameService        *services.BlameService
+	credentialsService  *services.CredentialsService
+	configService       *services.ConfigService
 }
 
 // NewApp creates a new App application struct
@@ -26,7 +28,9 @@ func NewApp() *App {
 	repoService := services.NewRepositoryService()
 	commitService := services.NewCommitService(nil)
 	stagingService := services.NewStagingService(repoService)
-	remoteService := services.NewRemoteService(repoService)
+	credentialsService := services.NewCredentialsService()
+	configService := services.NewConfigService()
+	remoteService := services.NewRemoteService(repoService, credentialsService, configService)
 	changelistService := services.NewChangelistService()
 	diffService := services.NewDiffService(stagingService)
 	archiveService := services.NewArchiveService(diffService, stagingService)
@@ -39,16 +43,19 @@ func NewApp() *App {
 	repoService.SetDiffService(diffService)
 	repoService.SetArchiveService(archiveService)
 	repoService.SetBlameService(blameService)
+	credentialsService.SetConfigService(configService)
 
 	return &App{
-		repositoryService: repoService,
-		commitService:     commitService,
-		stagingService:    stagingService,
-		remoteService:     remoteService,
-		changelistService: changelistService,
-		diffService:       diffService,
-		archiveService:    archiveService,
-		blameService:      blameService,
+		repositoryService:  repoService,
+		commitService:      commitService,
+		stagingService:     stagingService,
+		remoteService:      remoteService,
+		changelistService:  changelistService,
+		diffService:        diffService,
+		archiveService:     archiveService,
+		blameService:       blameService,
+		credentialsService: credentialsService,
+		configService:      configService,
 	}
 }
 
@@ -74,6 +81,12 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if a.blameService != nil {
 		a.blameService.Startup(ctx)
+	}
+	if a.credentialsService != nil {
+		a.credentialsService.Startup(ctx)
+	}
+	if a.configService != nil {
+		a.configService.Startup(ctx)
 	}
 }
 
@@ -110,6 +123,16 @@ func (a *App) GetArchiveService() *services.ArchiveService {
 // GetBlameService returns the blame service for Wails binding
 func (a *App) GetBlameService() *services.BlameService {
 	return a.blameService
+}
+
+// GetCredentialsService returns the credentials service for Wails binding
+func (a *App) GetCredentialsService() *services.CredentialsService {
+	return a.credentialsService
+}
+
+// GetConfigService returns the config service for Wails binding
+func (a *App) GetConfigService() *services.ConfigService {
+	return a.configService
 }
 
 // OpenDirectoryDialog opens a directory selection dialog and opens the repository

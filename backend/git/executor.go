@@ -29,8 +29,18 @@ type GitResult struct {
 
 // Execute runs a Git command and returns the result
 func (e *Executor) Execute(ctx context.Context, args ...string) (*GitResult, error) {
+	return e.ExecuteWithEnv(ctx, nil, args...)
+}
+
+// ExecuteWithEnv runs a Git command with custom environment variables and returns the result
+func (e *Executor) ExecuteWithEnv(ctx context.Context, env []string, args ...string) (*GitResult, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = e.repoPath
+
+	// Set custom environment variables if provided
+	if env != nil && len(env) > 0 {
+		cmd.Env = append(cmd.Environ(), env...)
+	}
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

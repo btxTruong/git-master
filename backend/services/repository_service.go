@@ -83,6 +83,7 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 	// Update services with new executor
 	if s.remoteService != nil {
 		s.remoteService.SetExecutor(s.executor)
+		s.remoteService.SetRepositoryPath(rootPath)
 	}
 	if s.commitService != nil {
 		s.commitService.SetExecutor(s.executor)

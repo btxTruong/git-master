@@ -16,15 +16,25 @@ type Remote struct {
 
 // RemoteService handles remote operations
 type RemoteService struct {
-	ctx      context.Context
-	executor *git.Executor
+	ctx               context.Context
+	executor          *git.Executor
+	credentialsService *CredentialsService
+	configService     *ConfigService
+	repoPath          string // Current repository path
 }
 
 // NewRemoteService creates a new remote service
-func NewRemoteService(repoService *RepositoryService) *RemoteService {
+func NewRemoteService(repoService *RepositoryService, credentialsService *CredentialsService, configService *ConfigService) *RemoteService {
 	return &RemoteService{
-		executor: nil, // Will be set when repository is opened
+		executor:          nil, // Will be set when repository is opened
+		credentialsService: credentialsService,
+		configService:     configService,
 	}
+}
+
+// SetRepositoryPath sets the current repository path
+func (s *RemoteService) SetRepositoryPath(repoPath string) {
+	s.repoPath = repoPath
 }
 
 // Startup is called when the app starts
@@ -37,10 +47,116 @@ func (s *RemoteService) SetExecutor(executor *git.Executor) {
 	s.executor = executor
 }
 
+// getGitHubToken retrieves the GitHub token from the credentials service for a given remote
+// It will prioritize: 1) User-selected token for this repo, 2) Pattern-matched token, 3) Legacy token
+func (s *RemoteService) getGitHubToken(remoteName string) (string, error) {
+	if s.credentialsService == nil {
+		return "", nil // No credentials service available
+	}
+
+	// Get the remote URL
+	var remoteURL string
+	if remoteName != "" {
+		result, err := s.executor.Execute(s.ctx, "remote", "get-url", remoteName)
+		if err == nil {
+			remoteURL = strings.TrimSpace(result.Stdout)
+		}
+	}
+
+	// Get selected token ID from config if available
+	var selectedTokenID string
+	if s.configService != nil && s.repoPath != "" {
+		selectedTokenID, _ = s.configService.GetSelectedToken(s.repoPath)
+	}
+
+	// Try to get a token specific to this repository
+	if remoteURL != "" {
+		token, err := s.credentialsService.GetGitHubTokenForRepoWithSelection(remoteURL, selectedTokenID)
+		if err == nil && token != "" {
+			return token, nil
+		}
+	}
+
+	// Fall back to legacy single token
+	token, err := s.credentialsService.GetGitHubToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to get GitHub token: %w", err)
+	}
+
+	return token, nil
+}
+
+// GetSelectedTokenForCurrentRepo returns the selected token ID for the current repository
+func (s *RemoteService) GetSelectedTokenForCurrentRepo() (string, error) {
+	if s.configService == nil || s.repoPath == "" {
+		return "", nil
+	}
+	return s.configService.GetSelectedToken(s.repoPath)
+}
+
+// SetSelectedTokenForCurrentRepo sets the selected token ID for the current repository
+func (s *RemoteService) SetSelectedTokenForCurrentRepo(tokenID string) error {
+	if s.configService == nil || s.repoPath == "" {
+		return fmt.Errorf("config service or repository path not available")
+	}
+	return s.configService.SetSelectedToken(s.repoPath, tokenID)
+}
+
+// injectTokenIntoURL injects a GitHub token into an HTTPS URL
+// Converts https://github.com/user/repo.git to https://token@github.com/user/repo.git
+func injectTokenIntoURL(url, token string) string {
+	if token == "" || !strings.HasPrefix(url, "https://github.com") {
+		return url
+	}
+	// Replace https:// with https://token@
+	return strings.Replace(url, "https://", fmt.Sprintf("https://%s@", token), 1)
+}
+
 // Pull pulls changes from remote repository
 func (s *RemoteService) Pull(remote, branch string, rebase bool) error {
 	if s.executor == nil {
 		return fmt.Errorf("no repository opened")
+	}
+
+	// Get the GitHub token and inject it into the remote URL if available
+	token, err := s.getGitHubToken(remote)
+	if err != nil {
+		return err
+	}
+
+	// If we have a token and a remote is specified, use a temporary remote
+	useTokenRemote := token != "" && remote != ""
+	tempRemoteName := ""
+
+	if useTokenRemote {
+		// Get the current remote URL
+		result, err := s.executor.Execute(s.ctx, "remote", "get-url", remote)
+		if err != nil {
+			return fmt.Errorf("failed to get remote URL: %w", err)
+		}
+		remoteURL := strings.TrimSpace(result.Stdout)
+
+		// Inject token into URL if it's a GitHub HTTPS URL
+		tokenURL := injectTokenIntoURL(remoteURL, token)
+
+		if tokenURL != remoteURL {
+			// Create a temporary remote with the token-injected URL
+			tempRemoteName = fmt.Sprintf("temp-pull-%s", remote)
+
+			// Add temporary remote
+			_, err = s.executor.Execute(s.ctx, "remote", "add", tempRemoteName, tokenURL)
+			if err != nil {
+				return fmt.Errorf("failed to add temporary remote: %w", err)
+			}
+
+			// Ensure we remove the temporary remote even if pull fails
+			defer func() {
+				s.executor.Execute(s.ctx, "remote", "remove", tempRemoteName)
+			}()
+
+			// Use the temporary remote for pulling
+			remote = tempRemoteName
+		}
 	}
 
 	args := []string{"pull"}
@@ -56,7 +172,7 @@ func (s *RemoteService) Pull(remote, branch string, rebase bool) error {
 		}
 	}
 
-	_, err := s.executor.Execute(s.ctx, args...)
+	_, err = s.executor.Execute(s.ctx, args...)
 	if err != nil {
 		return fmt.Errorf("failed to pull: %w", err)
 	}
@@ -70,26 +186,118 @@ func (s *RemoteService) Push(remote, branch string, force, setUpstream bool) err
 		return fmt.Errorf("no repository opened")
 	}
 
+	// Trim whitespace from inputs
+	remote = strings.TrimSpace(remote)
+	branch = strings.TrimSpace(branch)
+
+	// If no branch specified, use current branch
+	currentBranch := branch
+	if currentBranch == "" {
+		result, err := s.executor.Execute(s.ctx, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return fmt.Errorf("failed to get current branch: %w", err)
+		}
+		currentBranch = strings.TrimSpace(result.Stdout)
+	}
+
+	// If no remote specified, try to get the upstream remote for the current branch
+	currentRemote := remote
+	if currentRemote == "" {
+		// Try to get the upstream remote
+		result, err := s.executor.Execute(s.ctx, "config", fmt.Sprintf("branch.%s.remote", currentBranch))
+		if err == nil && result.Stdout != "" {
+			currentRemote = strings.TrimSpace(result.Stdout)
+		} else {
+			// Default to "origin" if no upstream configured
+			currentRemote = "origin"
+		}
+	}
+
+	// Get the GitHub token and inject it into the remote URL if available
+	token, err := s.getGitHubToken(currentRemote)
+	if err != nil {
+		return err
+	}
+
+	// If we have a token, we need to use a temporary remote with the token-injected URL
+	useTokenRemote := token != ""
+	tempRemoteName := ""
+
+	if useTokenRemote {
+		// Get the current remote URL
+		result, err := s.executor.Execute(s.ctx, "remote", "get-url", currentRemote)
+		if err != nil {
+			return fmt.Errorf("failed to get remote URL: %w", err)
+		}
+		remoteURL := strings.TrimSpace(result.Stdout)
+
+		// Inject token into URL if it's a GitHub HTTPS URL
+		tokenURL := injectTokenIntoURL(remoteURL, token)
+
+		if tokenURL != remoteURL {
+			// Create a temporary remote with the token-injected URL
+			tempRemoteName = fmt.Sprintf("temp-push-%s", currentRemote)
+
+			// Add temporary remote
+			_, err = s.executor.Execute(s.ctx, "remote", "add", tempRemoteName, tokenURL)
+			if err != nil {
+				return fmt.Errorf("failed to add temporary remote: %w", err)
+			}
+
+			// Ensure we remove the temporary remote even if push fails
+			defer func() {
+				s.executor.Execute(s.ctx, "remote", "remove", tempRemoteName)
+			}()
+
+			// Use the temporary remote for pushing
+			currentRemote = tempRemoteName
+		}
+	}
+
 	args := []string{"push"}
 
 	if force {
 		args = append(args, "--force")
 	}
 
-	if setUpstream {
+	if setUpstream && tempRemoteName == "" {
+		// Only set upstream if not using a temporary remote
 		args = append(args, "--set-upstream")
 	}
 
-	if remote != "" {
-		args = append(args, remote)
-		if branch != "" {
-			args = append(args, branch)
-		}
-	}
+	// Always specify remote and branch for clarity
+	args = append(args, currentRemote, currentBranch)
 
-	_, err := s.executor.Execute(s.ctx, args...)
+	result, err := s.executor.Execute(s.ctx, args...)
 	if err != nil {
-		return fmt.Errorf("failed to push: %w", err)
+		// Check if it's an authentication error
+		isAuthError := false
+		if result != nil && result.Stderr != "" {
+			stderr := strings.ToLower(result.Stderr)
+			if strings.Contains(stderr, "permission denied") ||
+				strings.Contains(stderr, "authentication failed") ||
+				strings.Contains(stderr, "403") ||
+				strings.Contains(stderr, "401") ||
+				strings.Contains(stderr, "unauthorized") {
+				isAuthError = true
+			}
+		}
+
+		if isAuthError {
+			return fmt.Errorf("AUTHENTICATION_REQUIRED: Failed to push to %s/%s. Authentication failed. Please configure a GitHub token in Settings > Security", currentRemote, currentBranch)
+		}
+
+		// Include both stdout and stderr in error message for better debugging
+		errorMsg := fmt.Sprintf("failed to push to %s/%s", currentRemote, currentBranch)
+		if result != nil {
+			if result.Stderr != "" {
+				errorMsg += fmt.Sprintf(": %s", result.Stderr)
+			}
+			if result.Stdout != "" {
+				errorMsg += fmt.Sprintf(" (stdout: %s)", result.Stdout)
+			}
+		}
+		return fmt.Errorf("%s: %w", errorMsg, err)
 	}
 
 	return nil

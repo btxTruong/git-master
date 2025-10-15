@@ -10,6 +10,8 @@ export function Fetch(arg1:string,arg2:boolean):Promise<void>;
 
 export function GetRemotes():Promise<Array<services.Remote>>;
 
+export function GetSelectedTokenForCurrentRepo():Promise<string>;
+
 export function GetUnpushedCommits(arg1:string):Promise<Array<string>>;
 
 export function GetUnpushedCommitsCount(arg1:string):Promise<number>;
@@ -21,5 +23,9 @@ export function Push(arg1:string,arg2:string,arg3:boolean,arg4:boolean):Promise<
 export function RemoveRemote(arg1:string):Promise<void>;
 
 export function SetExecutor(arg1:git.Executor):Promise<void>;
+
+export function SetRepositoryPath(arg1:string):Promise<void>;
+
+export function SetSelectedTokenForCurrentRepo(arg1:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
