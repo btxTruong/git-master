@@ -7,6 +7,7 @@ import { FileHistoryDialog } from '@/components/changelist/FileHistoryDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { useChangelistStore } from '@/stores/changelistStore';
+import { useStagingStore } from '@/stores/stagingStore';
 import { getWorkingDirectoryStatus } from '@/api/staging';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import type { StagingFileChange, BlameResult } from '@/types/git';
@@ -37,6 +38,7 @@ function ChangesView() {
     setSelectedGroup,
     groups,
   } = useChangelistStore();
+  const { loadChanges: loadStagingChanges } = useStagingStore();
 
   const [selectedFile, setSelectedFile] = useState<StagingFileChange | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,32 +67,15 @@ function ChangesView() {
   const autoRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastStatusRef = useRef<string>('');
 
-  // Load changelists on mount
-  useEffect(() => {
-    if (currentRepository?.path) {
-      setIsLoading(true);
-      setError(null);
-
-      loadAllChangelistGroups(currentRepository.path)
-        .catch((err: unknown) => {
-          console.error('Failed to load changelists:', err);
-          setError(err instanceof Error ? err.message : 'Failed to load changelists');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-
-      // Reset selected file when repository changes
-      setSelectedFile(null);
-    }
-  }, [currentRepository, loadAllChangelistGroups]);
-
   // Auto-refresh: poll git status and reconcile changelists
   const refreshGitStatus = useCallback(async () => {
     if (!currentRepository?.path) return;
 
     try {
-      // Get current Git status
+      // Load git status into staging store (this updates the store which the selectors read from)
+      await loadStagingChanges();
+
+      // Get current Git status for reconciliation
       const status = await getWorkingDirectoryStatus();
 
       // Create a signature of current status to detect changes
@@ -124,15 +109,34 @@ function ChangesView() {
       console.error('Failed to refresh git status:', err);
       // Don't set error state for auto-refresh failures to avoid disrupting UX
     }
-  }, [currentRepository, reconcileWithGitStatus, selectedFile]);
+  }, [currentRepository, reconcileWithGitStatus, selectedFile, loadStagingChanges]);
+
+  // Load initial data on mount
+  useEffect(() => {
+    if (currentRepository?.path) {
+      setIsLoading(true);
+      setError(null);
+
+      Promise.all([
+        loadAllChangelistGroups(currentRepository.path),
+        loadStagingChanges(),
+      ])
+        .catch((err: unknown) => {
+          console.error('Failed to load changelists:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load changelists');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+
+      setSelectedFile(null);
+    }
+  }, [currentRepository?.path, loadAllChangelistGroups, loadStagingChanges]);
 
   // Set up auto-refresh timer
   useEffect(() => {
     if (currentRepository?.path && isAutoRefreshEnabled) {
-      // Initial refresh
-      refreshGitStatus();
-
-      // Set up interval
+      // Set up interval for periodic refresh
       autoRefreshTimerRef.current = setInterval(refreshGitStatus, AUTO_REFRESH_INTERVAL);
 
       return () => {
@@ -142,7 +146,7 @@ function ChangesView() {
         }
       };
     }
-  }, [currentRepository, refreshGitStatus, isAutoRefreshEnabled]);
+  }, [currentRepository?.path, refreshGitStatus, isAutoRefreshEnabled]);
 
   // Handle file selection
   const handleFileSelect = useCallback((file: StagingFileChange) => {

@@ -1,6 +1,14 @@
 import { memo, useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronRight, ChevronDown, FolderOpen, MoreVertical, Loader2, File } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronDown,
+  FolderOpen,
+  MoreVertical,
+  Loader2,
+  File,
+  FolderTree,
+} from 'lucide-react';
 import type { Changelist, ChangelistItem } from '@/types/changelist';
 import {
   CHANGELIST_TYPE_CUSTOM,
@@ -12,6 +20,7 @@ import { FileContextMenu } from '@/components/changelist/FileContextMenu';
 import { EmptyState } from '@/components/common/EmptyState';
 import type { StagingFileChange } from '@/types/git';
 import { FileStatus } from '@/types/git';
+import { useStagingStore } from '@/stores/stagingStore';
 
 interface ChangelistGroupProps {
   group: Changelist;
@@ -136,6 +145,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
   isDisabled = false,
 }: ChangelistGroupProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [groupByFolder, setGroupByFolder] = useState(false); // Toggle state for grouping
   const fileListRef = useRef<HTMLDivElement>(null);
 
   // Visual styling based on group type
@@ -168,10 +178,29 @@ export const ChangelistGroup = memo(function ChangelistGroup({
     }
   }, [group.type]);
 
-  // Convert ChangelistItem[] to StagingFileChange[] for FileTree
+  // Get original StagingFileChange objects from the staging store to preserve status
+  const stagedFiles = useStagingStore((state) => state.stagedFiles);
+  const unstagedFiles = useStagingStore((state) => state.unstagedFiles);
+  const untrackedFiles = useStagingStore((state) => state.untrackedFiles);
+
+  // Convert ChangelistItem[] to StagingFileChange[] by looking up original files
   const stagingFiles = useMemo(() => {
-    return group.items.map(
-      (item: ChangelistItem): StagingFileChange => ({
+    // Create a map of all files from staging store for fast lookup
+    const allStagingFiles = [...stagedFiles, ...unstagedFiles, ...untrackedFiles];
+    const fileMap = new Map<string, StagingFileChange>();
+    allStagingFiles.forEach((file) => {
+      fileMap.set(file.path, file);
+    });
+
+    // Map changelist items to their original StagingFileChange objects
+    return group.items.map((item: ChangelistItem): StagingFileChange => {
+      const originalFile = fileMap.get(item.path);
+      if (originalFile) {
+        // Use the original file to preserve status and other metadata
+        return originalFile;
+      }
+      // Fallback for missing files (shouldn't happen but handle gracefully)
+      return {
         path: item.path,
         oldPath: null,
         status: item.isMissingFromWorkingTree ? FileStatus.Deleted : FileStatus.Modified,
@@ -179,9 +208,9 @@ export const ChangelistGroup = memo(function ChangelistGroup({
         deletions: 0,
         isBinary: false,
         staged: false,
-      })
-    );
-  }, [group.items]);
+      };
+    });
+  }, [group.items, stagedFiles, unstagedFiles, untrackedFiles]);
 
   // Find selected file from FileTree
   const selectedFile = useMemo(() => {
@@ -288,6 +317,22 @@ export const ChangelistGroup = memo(function ChangelistGroup({
             {groupTypeStyles.badge}
           </span>
 
+          {/* Group by Folder Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setGroupByFolder(!groupByFolder);
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              groupByFolder
+                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+            }`}
+            title={groupByFolder ? 'Disable folder grouping' : 'Enable folder grouping'}
+          >
+            <FolderTree className="w-4 h-4" />
+          </button>
+
           {/* Loading Spinner */}
           {isLoading && (
             <Loader2 className="w-4 h-4 text-gray-600 dark:text-gray-400 animate-spin" />
@@ -364,6 +409,7 @@ export const ChangelistGroup = memo(function ChangelistGroup({
                 onFileSelect={onFileSelect}
                 groupId={group.id}
                 onShowHistory={onShowHistory}
+                groupByFolder={groupByFolder}
               />
             </div>
           )}

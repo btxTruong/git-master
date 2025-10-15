@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -53,7 +55,45 @@ func (s *StagingService) GetStatus() (*WorkingDirectoryStatus, error) {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
 
-	return s.parseStatus(string(output))
+	status, err := s.parseStatus(string(output))
+	if err != nil {
+		return nil, err
+	}
+
+	// For untracked directories, expand to show individual files
+	// git status --porcelain shows directories with trailing /, but we want individual files
+	expandedUntracked := []FileStatus{}
+	for _, file := range status.UntrackedFiles {
+		// Check if this is a directory (ends with /)
+		if strings.HasSuffix(file.Path, "/") {
+			// Get individual files in this directory
+			lsCmd := exec.Command("git", "ls-files", "--others", "--exclude-standard", file.Path)
+			lsCmd.Dir = repoPath
+			lsOutput, lsErr := lsCmd.Output()
+			if lsErr == nil && len(lsOutput) > 0 {
+				// Add each file individually
+				files := strings.Split(strings.TrimSpace(string(lsOutput)), "\n")
+				for _, f := range files {
+					if f != "" {
+						expandedUntracked = append(expandedUntracked, FileStatus{
+							Path:   f,
+							Status: "?",
+							Staged: false,
+						})
+					}
+				}
+			} else {
+				// If we can't expand, keep the directory entry
+				expandedUntracked = append(expandedUntracked, file)
+			}
+		} else {
+			// Regular file, keep it
+			expandedUntracked = append(expandedUntracked, file)
+		}
+	}
+	status.UntrackedFiles = expandedUntracked
+
+	return status, nil
 }
 
 // parseStatus parses the output of git status --porcelain
@@ -68,8 +108,9 @@ func (s *StagingService) parseStatus(output string) (*WorkingDirectoryStatus, er
 		return status, nil
 	}
 
-	lines := strings.Split(strings.TrimSpace(output), "\n")
+	lines := strings.Split(output, "\n")
 	for _, line := range lines {
+		// Skip empty lines or lines that are too short
 		if len(line) < 4 {
 			continue
 		}
@@ -205,6 +246,39 @@ func (s *StagingService) GetFileDiff(path string, staged bool) (string, error) {
 	}
 	repoPath := repo.Path
 
+	// First check if file is untracked
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+	statusCmd.Dir = repoPath
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to check file status: %w", err)
+	}
+
+	// If file is untracked (starts with ??)
+	statusStr := strings.TrimSpace(string(statusOutput))
+	if strings.HasPrefix(statusStr, "??") {
+		// For untracked files, read file content directly from filesystem
+		fullPath := filepath.Join(repoPath, path)
+		fileContent, readErr := os.ReadFile(fullPath)
+		if readErr != nil {
+			return "", fmt.Errorf("failed to read untracked file %s: %w", path, readErr)
+		}
+
+		// Return a pseudo-diff showing entire file as added
+		lines := strings.Split(string(fileContent), "\n")
+		var pseudoDiff strings.Builder
+		pseudoDiff.WriteString("diff --git a/" + path + " b/" + path + "\n")
+		pseudoDiff.WriteString("new file mode 100644\n")
+		pseudoDiff.WriteString("--- /dev/null\n")
+		pseudoDiff.WriteString("+++ b/" + path + "\n")
+		pseudoDiff.WriteString("@@ -0,0 +1," + fmt.Sprintf("%d", len(lines)) + " @@\n")
+		for _, line := range lines {
+			pseudoDiff.WriteString("+" + line + "\n")
+		}
+		return pseudoDiff.String(), nil
+	}
+
+	// For tracked files, use git diff
 	var cmd *exec.Cmd
 	if staged {
 		// Get diff for staged changes

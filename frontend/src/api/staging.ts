@@ -49,7 +49,11 @@ function convertFileStatus(fileStatus: FileStatusInfo, staged: boolean): Staging
   const status = fileStatus.status.trim();
   let changeType: FileStatus;
 
-  if (status === 'A' || status === '?') {
+  if (status === '?') {
+    // Untracked files
+    changeType = FileStatus.Untracked;
+  } else if (status === 'A') {
+    // Added (newly staged files)
     changeType = FileStatus.Added;
   } else if (status === 'D') {
     changeType = FileStatus.Deleted;
@@ -57,6 +61,8 @@ function convertFileStatus(fileStatus: FileStatusInfo, staged: boolean): Staging
     changeType = FileStatus.Modified;
   } else if (status === 'R') {
     changeType = FileStatus.Renamed;
+  } else if (status === 'C') {
+    changeType = FileStatus.Copied;
   } else {
     changeType = FileStatus.Modified;
   }

@@ -1,21 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FileSearch, AlertCircle, Loader2 } from 'lucide-react';
 import { GetFileDiff } from '../../../wailsjs/go/services/StagingService';
-import { VirtualizedUnifiedDiff } from '@/components/diff/VirtualizedUnifiedDiff';
-import { VirtualizedSplitDiff } from '@/components/diff/VirtualizedSplitDiff';
+import { FullFileSplitDiffViewer } from '@/components/diff/FullFileSplitDiffViewer';
 import { EmptyState } from '@/components/common/EmptyState';
-import { useUIStore } from '@/stores/uiStore';
 import type { StagingFileChange } from '@/types/git';
-import type { FileDiff } from '@/types/git';
 
 interface DiffPreviewPaneProps {
   selectedFile: StagingFileChange | null;
   className?: string;
 }
 
-interface DiffCache {
+interface FileContentCache {
   [key: string]: {
-    diff: FileDiff;
+    oldContent: string;
+    newContent: string;
     timestamp: number;
   };
 }
@@ -23,27 +21,28 @@ interface DiffCache {
 const CACHE_TTL = 30000; // 30 seconds
 
 /**
- * Displays diff preview for selected file from changelist.
+ * Displays diff preview for selected file from changelist using FullFileSplitDiffViewer.
  * Features:
  * - Lazy loads diff on file selection
- * - Caches diffs for performance
+ * - Caches file content for performance
  * - Shows loading, error, and empty states
  * - Handles binary files gracefully
- * - Reuses existing virtualized diff viewers
+ * - Uses the same split diff viewer as commit history
  */
 export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPaneProps) {
-  const [diff, setDiff] = useState<FileDiff | null>(null);
+  const [fileContent, setFileContent] = useState<{ oldContent: string; newContent: string } | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { diffViewMode } = useUIStore();
 
-  // Cache for storing fetched diffs
-  const cacheRef = useRef<DiffCache>({});
+  // Cache for storing fetched file contents
+  const cacheRef = useRef<FileContentCache>({});
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Generate cache key from file path and staged status
   const getCacheKey = useCallback((file: StagingFileChange): string => {
-    return `${file.path}:${file.status}`;
+    return `${file.path}:${file.status}:${file.staged}`;
   }, []);
 
   // Clear cache (called when git status changes)
@@ -51,129 +50,62 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
     cacheRef.current = {};
   }, []);
 
-  // Parse diff string into FileDiff object
-  const parseDiff = useCallback((diffStr: string, file: StagingFileChange): FileDiff => {
-    const lines = diffStr.split('\n');
-    const hunks: Array<{
-      oldStart: number;
-      oldLines: number;
-      newStart: number;
-      newLines: number;
-      header: string;
-      lines: Array<{
-        type: 'add' | 'delete' | 'context';
-        content: string;
-        oldLineNumber: number | null;
-        newLineNumber: number | null;
-      }>;
-      isCollapsed: boolean;
-    }> = [];
+  // Parse unified diff to extract old and new content
+  const parseUnifiedDiff = useCallback(
+    (diffStr: string): { oldContent: string; newContent: string } => {
+      const lines = diffStr.split('\n');
+      const oldLines: string[] = [];
+      const newLines: string[] = [];
+      let inHunk = false;
 
-    let currentHunk: (typeof hunks)[0] | null = null;
-    let oldLineNum = 0;
-    let newLineNum = 0;
-
-    for (const line of lines) {
-      // Hunk header: @@ -oldStart,oldCount +newStart,newCount @@
-      if (line.startsWith('@@')) {
-        if (currentHunk) {
-          hunks.push(currentHunk);
+      for (const line of lines) {
+        // Skip diff headers
+        if (
+          line.startsWith('diff ') ||
+          line.startsWith('index ') ||
+          line.startsWith('new file mode') ||
+          line.startsWith('---') ||
+          line.startsWith('+++')
+        ) {
+          continue;
         }
 
-        // Parse line numbers from hunk header
-        const match = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
-        let oldStart = 0;
-        let oldLines = 0;
-        let newStart = 0;
-        let newLines = 0;
-
-        if (match) {
-          oldStart = parseInt(match[1], 10);
-          oldLines = match[2] ? parseInt(match[2], 10) : 1;
-          newStart = parseInt(match[3], 10);
-          newLines = match[4] ? parseInt(match[4], 10) : 1;
-          oldLineNum = oldStart;
-          newLineNum = newStart;
+        // Start of hunk
+        if (line.startsWith('@@')) {
+          inHunk = true;
+          continue;
         }
 
-        currentHunk = {
-          oldStart,
-          oldLines,
-          newStart,
-          newLines,
-          header: line,
-          lines: [],
-          isCollapsed: false,
-        };
-        continue;
+        if (!inHunk) continue;
+
+        if (line.startsWith('+')) {
+          // Added line (only in new content)
+          newLines.push(line.substring(1));
+        } else if (line.startsWith('-')) {
+          // Deleted line (only in old content)
+          oldLines.push(line.substring(1));
+        } else if (line.startsWith(' ')) {
+          // Context line (in both old and new)
+          const content = line.substring(1);
+          oldLines.push(content);
+          newLines.push(content);
+        } else if (line.startsWith('\\')) {
+          // "\ No newline at end of file" - skip
+          continue;
+        } else if (line.trim() === '') {
+          // Empty line - treat as context
+          oldLines.push('');
+          newLines.push('');
+        }
       }
 
-      if (!currentHunk) continue;
-
-      // Parse diff lines
-      if (line.startsWith('+') && !line.startsWith('+++')) {
-        currentHunk.lines.push({
-          type: 'add',
-          content: line.substring(1),
-          oldLineNumber: null,
-          newLineNumber: newLineNum++,
-        });
-      } else if (line.startsWith('-') && !line.startsWith('---')) {
-        currentHunk.lines.push({
-          type: 'delete',
-          content: line.substring(1),
-          oldLineNumber: oldLineNum++,
-          newLineNumber: null,
-        });
-      } else if (line.startsWith(' ')) {
-        currentHunk.lines.push({
-          type: 'context',
-          content: line.substring(1),
-          oldLineNumber: oldLineNum++,
-          newLineNumber: newLineNum++,
-        });
-      }
-    }
-
-    if (currentHunk) {
-      hunks.push(currentHunk);
-    }
-
-    // Detect language from file extension
-    const ext = file.path.split('.').pop()?.toLowerCase() || '';
-    const languageMap: Record<string, string> = {
-      ts: 'typescript',
-      tsx: 'typescript',
-      js: 'javascript',
-      jsx: 'javascript',
-      go: 'go',
-      py: 'python',
-      rs: 'rust',
-      java: 'java',
-      cpp: 'cpp',
-      c: 'c',
-      cs: 'csharp',
-      rb: 'ruby',
-      php: 'php',
-      swift: 'swift',
-      kt: 'kotlin',
-      scala: 'scala',
-    };
-
-    return {
-      path: file.path,
-      oldPath: file.path,
-      status: file.status,
-      additions: hunks.reduce((sum, h) => sum + h.lines.filter((l) => l.type === 'add').length, 0),
-      deletions: hunks.reduce(
-        (sum, h) => sum + h.lines.filter((l) => l.type === 'delete').length,
-        0
-      ),
-      hunks,
-      isBinary: false,
-      language: languageMap[ext] || 'text',
-    };
-  }, []);
+      return {
+        oldContent: oldLines.join('\n'),
+        newContent: newLines.join('\n'),
+      };
+    },
+    []
+  );
 
   // Fetch diff for selected file
   const fetchDiff = useCallback(
@@ -188,7 +120,7 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
       // Check cache first
       const cached = cacheRef.current[cacheKey];
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        setDiff(cached.diff);
+        setFileContent({ oldContent: cached.oldContent, newContent: cached.newContent });
         setError(null);
         return;
       }
@@ -200,8 +132,8 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
       abortControllerRef.current = abortController;
 
       try {
-        // Determine if we need staged or unstaged diff based on the 'staged' property
-        const isStaged = file.staged;
+        // Determine if we need staged or unstaged diff
+        const isStaged = file.staged || false;
         const diffStr = await GetFileDiff(file.path, isStaged);
 
         // Check if request was aborted
@@ -209,35 +141,48 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
           return;
         }
 
-        // Check for binary file
-        if (diffStr.includes('Binary files') || diffStr.includes('GIT binary patch')) {
-          const binaryDiff: FileDiff = {
-            path: file.path,
-            oldPath: file.path,
-            status: file.status,
-            additions: 0,
-            deletions: 0,
-            hunks: [],
-            isBinary: true,
-            language: 'binary',
-          };
-          setDiff(binaryDiff);
-          cacheRef.current[cacheKey] = {
-            diff: binaryDiff,
-            timestamp: Date.now(),
-          };
-        } else {
-          const parsedDiff = parseDiff(diffStr, file);
-          setDiff(parsedDiff);
-          cacheRef.current[cacheKey] = {
-            diff: parsedDiff,
-            timestamp: Date.now(),
-          };
+        // Check for binary file - only match at start of line to avoid false positives
+        const lines = diffStr.split('\n');
+        const isBinary = lines.some(
+          (line) =>
+            line.startsWith('Binary files') ||
+            line.startsWith('GIT binary patch') ||
+            line.trim() === 'Binary files differ'
+        );
+        if (isBinary) {
+          setError('Binary file content cannot be displayed');
+          setFileContent(null);
+          return;
         }
+
+        // Check for empty diff (no changes)
+        if (!diffStr || diffStr.trim() === '') {
+          setFileContent({ oldContent: '', newContent: '' });
+          return;
+        }
+
+        // Parse diff to get old and new content
+        const content = parseUnifiedDiff(diffStr);
+
+        // If parsing resulted in empty content, it might be a parsing issue
+        // Log for debugging (can be removed later)
+        if (content.oldContent === '' && content.newContent === '') {
+          console.warn('Diff parsing resulted in empty content for:', file.path);
+          console.warn('Original diff:', diffStr);
+        }
+
+        setFileContent(content);
+
+        // Cache the content
+        cacheRef.current[cacheKey] = {
+          oldContent: content.oldContent,
+          newContent: content.newContent,
+          timestamp: Date.now(),
+        };
       } catch (err) {
         if (!abortController.signal.aborted) {
           setError(err instanceof Error ? err.message : 'Failed to load diff');
-          setDiff(null);
+          setFileContent(null);
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -245,7 +190,7 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
         }
       }
     },
-    [getCacheKey, parseDiff]
+    [getCacheKey, parseUnifiedDiff]
   );
 
   // Load diff when selected file changes
@@ -253,7 +198,7 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
     if (selectedFile) {
       fetchDiff(selectedFile);
     } else {
-      setDiff(null);
+      setFileContent(null);
       setError(null);
     }
 
@@ -265,9 +210,8 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
     };
   }, [selectedFile, fetchDiff]);
 
-  // Expose cache clearing function (can be called from parent)
+  // Expose cache clearing function
   useEffect(() => {
-    // Clear cache when component unmounts or repository changes
     return () => {
       clearCache();
     };
@@ -293,12 +237,12 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
       >
         <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Failed to Load Diff
+          {error.includes('Binary') ? 'Binary File' : 'Failed to Load Diff'}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mb-4">
           {error}
         </p>
-        {selectedFile && (
+        {selectedFile && !error.includes('Binary') && (
           <button
             onClick={() => fetchDiff(selectedFile)}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
@@ -323,26 +267,8 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
     );
   }
 
-  // Binary file state
-  if (diff?.isBinary) {
-    return (
-      <div
-        className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 ${className}`}
-      >
-        <FileSearch className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Binary File</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md">
-          {selectedFile.path}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-          Binary file content cannot be displayed
-        </p>
-      </div>
-    );
-  }
-
-  // Render diff viewer
-  if (!diff || diff.hunks.length === 0) {
+  // No content state
+  if (!fileContent || (fileContent.oldContent === '' && fileContent.newContent === '')) {
     return (
       <div
         className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 ${className}`}
@@ -356,27 +282,34 @@ export function DiffPreviewPane({ selectedFile, className = '' }: DiffPreviewPan
     );
   }
 
+  // Render full file split diff viewer (same as commit history)
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
       {/* File header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-          {diff.path}
+          {selectedFile.path}
         </h3>
         <div className="flex items-center gap-3 mt-1 text-xs">
-          <span className="text-green-600 dark:text-green-400">+{diff.additions}</span>
-          <span className="text-red-600 dark:text-red-400">-{diff.deletions}</span>
-          <span className="text-gray-500 dark:text-gray-400 capitalize">{diff.status}</span>
+          <span className="text-gray-500 dark:text-gray-400 capitalize">{selectedFile.status}</span>
+          {selectedFile.staged && (
+            <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded text-xs font-medium">
+              Staged
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Diff viewer */}
+      {/* Full file split diff viewer */}
       <div className="flex-1 overflow-hidden">
-        {diffViewMode === 'unified' ? (
-          <VirtualizedUnifiedDiff fileDiff={diff} />
-        ) : (
-          <VirtualizedSplitDiff fileDiff={diff} />
-        )}
+        <FullFileSplitDiffViewer
+          oldContent={fileContent.oldContent}
+          newContent={fileContent.newContent}
+          fileName={selectedFile.path}
+          isLoading={false}
+          oldCommitHash="Working Tree (Old)"
+          newCommitHash="Working Tree (Current)"
+        />
       </div>
     </div>
   );
