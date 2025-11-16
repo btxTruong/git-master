@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { FullFileSplitDiffViewer } from '@/components/diff/FullFileSplitDiffViewer';
 import type { models } from '../../../wailsjs/go/models';
@@ -21,6 +22,18 @@ export function DiffModal({
   oldCommitHash,
   newCommitHash,
 }: DiffModalProps) {
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !selectedFile) {
     return null;
   }

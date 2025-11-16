@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -53,7 +55,45 @@ func (s *StagingService) GetStatus() (*WorkingDirectoryStatus, error) {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
 
-	return s.parseStatus(string(output))
+	status, err := s.parseStatus(string(output))
+	if err != nil {
+		return nil, err
+	}
+
+	// For untracked directories, expand to show individual files
+	// git status --porcelain shows directories with trailing /, but we want individual files
+	expandedUntracked := []FileStatus{}
+	for _, file := range status.UntrackedFiles {
+		// Check if this is a directory (ends with /)
+		if strings.HasSuffix(file.Path, "/") {
+			// Get individual files in this directory
+			lsCmd := exec.Command("git", "ls-files", "--others", "--exclude-standard", file.Path)
+			lsCmd.Dir = repoPath
+			lsOutput, lsErr := lsCmd.Output()
+			if lsErr == nil && len(lsOutput) > 0 {
+				// Add each file individually
+				files := strings.Split(strings.TrimSpace(string(lsOutput)), "\n")
+				for _, f := range files {
+					if f != "" {
+						expandedUntracked = append(expandedUntracked, FileStatus{
+							Path:   f,
+							Status: "?",
+							Staged: false,
+						})
+					}
+				}
+			} else {
+				// If we can't expand, keep the directory entry
+				expandedUntracked = append(expandedUntracked, file)
+			}
+		} else {
+			// Regular file, keep it
+			expandedUntracked = append(expandedUntracked, file)
+		}
+	}
+	status.UntrackedFiles = expandedUntracked
+
+	return status, nil
 }
 
 // parseStatus parses the output of git status --porcelain
@@ -68,8 +108,9 @@ func (s *StagingService) parseStatus(output string) (*WorkingDirectoryStatus, er
 		return status, nil
 	}
 
-	lines := strings.Split(strings.TrimSpace(output), "\n")
+	lines := strings.Split(output, "\n")
 	for _, line := range lines {
+		// Skip empty lines or lines that are too short
 		if len(line) < 4 {
 			continue
 		}
@@ -129,7 +170,35 @@ func (s *StagingService) StageFile(path string) error {
 	}
 	repoPath := repo.Path
 
-	cmd := exec.Command("git", "add", path)
+	// Check current git status of the file
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+	statusCmd.Dir = repoPath
+	statusOutput, statusErr := statusCmd.Output()
+
+	if statusErr == nil && len(statusOutput) > 0 {
+		statusLine := strings.TrimSpace(string(statusOutput))
+		if len(statusLine) >= 2 {
+			indexStatus := statusLine[0]
+			// If file is already staged as deleted (D ), don't try to stage it again
+			if indexStatus == 'D' {
+				return nil
+			}
+		}
+	}
+
+	// Check if the file exists in the working directory
+	fullPath := filepath.Join(repoPath, path)
+	_, statErr := os.Stat(fullPath)
+	fileExists := statErr == nil
+
+	var cmd *exec.Cmd
+	if fileExists {
+		// File exists: use 'git add' with '--all' flag to stage changes
+		cmd = exec.Command("git", "add", "--all", path)
+	} else {
+		// File doesn't exist: it's been deleted, use 'git rm' to stage the deletion
+		cmd = exec.Command("git", "rm", path)
+	}
 	cmd.Dir = repoPath
 
 	output, err := cmd.CombinedOutput()
@@ -205,19 +274,65 @@ func (s *StagingService) GetFileDiff(path string, staged bool) (string, error) {
 	}
 	repoPath := repo.Path
 
+	// First check if file is untracked
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+	statusCmd.Dir = repoPath
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to check file status: %w", err)
+	}
+
+	// If file is untracked (starts with ??)
+	statusStr := strings.TrimSpace(string(statusOutput))
+	if strings.HasPrefix(statusStr, "??") {
+		// For untracked files, read file content directly from filesystem
+		fullPath := filepath.Join(repoPath, path)
+		fileContent, readErr := os.ReadFile(fullPath)
+		if readErr != nil {
+			return "", fmt.Errorf("failed to read untracked file %s: %w", path, readErr)
+		}
+
+		// Return a pseudo-diff showing entire file as added
+		lines := strings.Split(string(fileContent), "\n")
+		var pseudoDiff strings.Builder
+		pseudoDiff.WriteString("diff --git a/" + path + " b/" + path + "\n")
+		pseudoDiff.WriteString("new file mode 100644\n")
+		pseudoDiff.WriteString("--- /dev/null\n")
+		pseudoDiff.WriteString("+++ b/" + path + "\n")
+		pseudoDiff.WriteString("@@ -0,0 +1," + fmt.Sprintf("%d", len(lines)) + " @@\n")
+		for _, line := range lines {
+			pseudoDiff.WriteString("+" + line + "\n")
+		}
+		return pseudoDiff.String(), nil
+	}
+
+	// For tracked files (including deleted), use git diff
 	var cmd *exec.Cmd
 	if staged {
 		// Get diff for staged changes
-		cmd = exec.Command("git", "diff", "--cached", path)
+		// Use HEAD as comparison point to show what was deleted
+		cmd = exec.Command("git", "diff", "--cached", "HEAD", "--", path)
 	} else {
 		// Get diff for unstaged changes
-		cmd = exec.Command("git", "diff", path)
+		// Compare working tree with index
+		cmd = exec.Command("git", "diff", "HEAD", "--", path)
 	}
 	cmd.Dir = repoPath
 
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get file diff for %s: %w", path, err)
+	}
+
+	// If output is empty, the file might be deleted - try getting diff from HEAD
+	if len(output) == 0 || strings.TrimSpace(string(output)) == "" {
+		// Try getting the full diff including deletions
+		cmd = exec.Command("git", "diff", "HEAD", "--", path)
+		cmd.Dir = repoPath
+		output, err = cmd.Output()
+		if err != nil {
+			return "", fmt.Errorf("failed to get file diff for deleted file %s: %w", path, err)
+		}
 	}
 
 	return string(output), nil
@@ -247,6 +362,201 @@ func (s *StagingService) Commit(message string, amend bool) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to commit: %w - %s", err, string(output))
+	}
+
+	return nil
+}
+
+// Batch Operations
+
+// StageMultipleFilePaths stages multiple file paths in a single Git operation
+func (s *StagingService) StageMultipleFilePaths(filePathsToStage []string) error {
+	// Handle empty list
+	if len(filePathsToStage) == 0 {
+		return nil
+	}
+
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	// Check git status for all files to identify already-staged deletions
+	alreadyStagedDeleted := make(map[string]bool)
+	for _, path := range filePathsToStage {
+		statusCmd := exec.Command("git", "status", "--porcelain", "--", path)
+		statusCmd.Dir = repoPath
+		statusOutput, statusErr := statusCmd.Output()
+
+		if statusErr == nil && len(statusOutput) > 0 {
+			statusLine := strings.TrimSpace(string(statusOutput))
+			if len(statusLine) >= 2 {
+				indexStatus := statusLine[0]
+				// Mark files already staged as deleted
+				if indexStatus == 'D' {
+					alreadyStagedDeleted[path] = true
+				}
+			}
+		}
+	}
+
+	// Separate files into existing, deleted (not yet staged), and already staged
+	existingFiles := []string{}
+	deletedFiles := []string{}
+
+	for _, path := range filePathsToStage {
+		// Skip files already staged as deleted
+		if alreadyStagedDeleted[path] {
+			continue
+		}
+
+		fullPath := filepath.Join(repoPath, path)
+		_, statErr := os.Stat(fullPath)
+		if statErr == nil {
+			existingFiles = append(existingFiles, path)
+		} else {
+			deletedFiles = append(deletedFiles, path)
+		}
+	}
+
+	// Stage existing files with git add
+	if len(existingFiles) > 0 {
+		args := append([]string{"add", "--all", "--"}, existingFiles...)
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to stage existing files: %w - %s", err, string(output))
+		}
+	}
+
+	// Stage deleted files with git rm
+	if len(deletedFiles) > 0 {
+		args := append([]string{"rm", "--"}, deletedFiles...)
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to stage deleted files: %w - %s", err, string(output))
+		}
+	}
+
+	return nil
+}
+
+// UnstageMultipleFilePaths unstages multiple file paths in a single Git operation
+func (s *StagingService) UnstageMultipleFilePaths(filePathsToUnstage []string) error {
+	// Handle empty list
+	if len(filePathsToUnstage) == 0 {
+		return nil
+	}
+
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	// Build git reset command with all paths
+	args := append([]string{"reset", "HEAD", "--"}, filePathsToUnstage...)
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoPath
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to unstage multiple files: %w - %s", err, string(output))
+	}
+
+	return nil
+}
+
+// GetStatusForSpecificFilePaths returns Git status for a specific subset of files
+func (s *StagingService) GetStatusForSpecificFilePaths(filePathsToQuery []string) ([]FileStatus, error) {
+	// Handle empty list
+	if len(filePathsToQuery) == 0 {
+		return []FileStatus{}, nil
+	}
+
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return nil, fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	// Build git status command for specific paths
+	args := append([]string{"status", "--porcelain", "--"}, filePathsToQuery...)
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get status for specific files: %w", err)
+	}
+
+	// Reuse existing parseStatus logic
+	workingDirectoryStatus, parseError := s.parseStatus(string(output))
+	if parseError != nil {
+		return nil, parseError
+	}
+
+	// Combine all file statuses into a single list
+	allFileStatuses := make([]FileStatus, 0)
+	allFileStatuses = append(allFileStatuses, workingDirectoryStatus.StagedFiles...)
+	allFileStatuses = append(allFileStatuses, workingDirectoryStatus.UnstagedFiles...)
+	allFileStatuses = append(allFileStatuses, workingDirectoryStatus.UntrackedFiles...)
+
+	return allFileStatuses, nil
+}
+
+// RevertOptions specifies what changes to revert for a file
+type RevertOptions struct {
+	RevertStagedChanges   bool // Revert staged changes
+	RevertUnstagedChanges bool // Revert working tree changes
+	DeleteUntrackedFiles  bool // Delete if untracked
+}
+
+// RevertFileChanges reverts changes to a file based on the specified options
+func (s *StagingService) RevertFileChanges(filePath string, options RevertOptions) error {
+	repo := s.repo.GetCurrentRepository()
+	if repo == nil {
+		return fmt.Errorf("no repository is currently open")
+	}
+	repoPath := repo.Path
+
+	// Revert staged changes
+	if options.RevertStagedChanges {
+		cmd := exec.Command("git", "restore", "--staged", "--", filePath)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to revert staged changes for %s: %w - %s", filePath, err, string(output))
+		}
+	}
+
+	// Revert unstaged changes
+	if options.RevertUnstagedChanges {
+		cmd := exec.Command("git", "restore", "--source", "HEAD", "--", filePath)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to revert unstaged changes for %s: %w - %s", filePath, err, string(output))
+		}
+	}
+
+	// Delete untracked file
+	if options.DeleteUntrackedFiles {
+		cmd := exec.Command("git", "clean", "-f", "--", filePath)
+		cmd.Dir = repoPath
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to delete untracked file %s: %w - %s", filePath, err, string(output))
+		}
 	}
 
 	return nil

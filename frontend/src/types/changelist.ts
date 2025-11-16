@@ -34,6 +34,7 @@ export interface ChangelistItem {
   path: string;
   trackedSnapshotHash?: string; // git hash when added (optional)
   notes?: string; // user notes about this file
+  isMissingFromWorkingTree?: boolean; // true if file was deleted
   addedAt: string; // ISO 8601 timestamp
   lastModifiedAt: string; // ISO 8601 timestamp
 }

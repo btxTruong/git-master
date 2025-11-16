@@ -53,7 +53,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load remotes';
       set({ error: message });
-      console.error('Failed to load remotes:', error);
       // Don't show toast for this as it's a background operation
     }
   },
@@ -92,6 +91,14 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
 
       // Start push operation
       await pushAPI(options);
+
+      // Fetch to update remote tracking refs after successful push
+      // This ensures Git knows what's on the remote
+      try {
+        await fetchAPI({ prune: false });
+      } catch (fetchError) {
+        // Don't fail the push if fetch fails
+      }
 
       set({
         isPushing: false,

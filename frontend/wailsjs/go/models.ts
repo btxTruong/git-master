@@ -17,6 +17,107 @@ export namespace git {
 
 export namespace models {
 	
+	export class ArchiveListEntry {
+	    id: string;
+	    archiveName: string;
+	    originalGroupName: string;
+	    // Go type: time
+	    archivedAt: any;
+	    totalFilesCount: number;
+	    diffFileSize: number;
+	    tags?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ArchiveListEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.archiveName = source["archiveName"];
+	        this.originalGroupName = source["originalGroupName"];
+	        this.archivedAt = this.convertValues(source["archivedAt"], null);
+	        this.totalFilesCount = source["totalFilesCount"];
+	        this.diffFileSize = source["diffFileSize"];
+	        this.tags = source["tags"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ArchiveMetadata {
+	    id: string;
+	    originalGroupName: string;
+	    archiveName: string;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    archivedAt: any;
+	    filePaths: string[];
+	    originalBranch: string;
+	    originalCommitHash: string;
+	    description?: string;
+	    tags?: string[];
+	    diffFileSize: number;
+	    totalFilesCount: number;
+	    totalAdditions: number;
+	    totalDeletions: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ArchiveMetadata(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.originalGroupName = source["originalGroupName"];
+	        this.archiveName = source["archiveName"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.archivedAt = this.convertValues(source["archivedAt"], null);
+	        this.filePaths = source["filePaths"];
+	        this.originalBranch = source["originalBranch"];
+	        this.originalCommitHash = source["originalCommitHash"];
+	        this.description = source["description"];
+	        this.tags = source["tags"];
+	        this.diffFileSize = source["diffFileSize"];
+	        this.totalFilesCount = source["totalFilesCount"];
+	        this.totalAdditions = source["totalAdditions"];
+	        this.totalDeletions = source["totalDeletions"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Author {
 	    name: string;
 	    email: string;
@@ -30,6 +131,70 @@ export namespace models {
 	        this.name = source["name"];
 	        this.email = source["email"];
 	    }
+	}
+	export class BlameLine {
+	    lineNumber: number;
+	    content: string;
+	    commitHash: string;
+	    shortHash: string;
+	    author: string;
+	    authorEmail: string;
+	    authorTime: string;
+	    committerName: string;
+	    committerEmail: string;
+	    committerTime: string;
+	    summary: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BlameLine(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.lineNumber = source["lineNumber"];
+	        this.content = source["content"];
+	        this.commitHash = source["commitHash"];
+	        this.shortHash = source["shortHash"];
+	        this.author = source["author"];
+	        this.authorEmail = source["authorEmail"];
+	        this.authorTime = source["authorTime"];
+	        this.committerName = source["committerName"];
+	        this.committerEmail = source["committerEmail"];
+	        this.committerTime = source["committerTime"];
+	        this.summary = source["summary"];
+	    }
+	}
+	export class BlameResult {
+	    filePath: string;
+	    lines: BlameLine[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BlameResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.lines = this.convertValues(source["lines"], BlameLine);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class Branch {
 	    name: string;
@@ -87,6 +252,99 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class ChangelistItem {
+	    path: string;
+	    trackedSnapshotHash?: string;
+	    notes?: string;
+	    isMissingFromWorkingTree?: boolean;
+	    // Go type: time
+	    addedAt: any;
+	    // Go type: time
+	    lastModifiedAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ChangelistItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.trackedSnapshotHash = source["trackedSnapshotHash"];
+	        this.notes = source["notes"];
+	        this.isMissingFromWorkingTree = source["isMissingFromWorkingTree"];
+	        this.addedAt = this.convertValues(source["addedAt"], null);
+	        this.lastModifiedAt = this.convertValues(source["lastModifiedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Changelist {
+	    id: string;
+	    name: string;
+	    type: string;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	    items: ChangelistItem[];
+	    isSystemGenerated: boolean;
+	    orderIndex: number;
+	    colorHexCode?: string;
+	    description?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Changelist(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.type = source["type"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.items = this.convertValues(source["items"], ChangelistItem);
+	        this.isSystemGenerated = source["isSystemGenerated"];
+	        this.orderIndex = source["orderIndex"];
+	        this.colorHexCode = source["colorHexCode"];
+	        this.description = source["description"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Commit {
 	    hash: string;
 	    shortHash: string;
@@ -308,11 +566,83 @@ export namespace models {
 
 export namespace services {
 	
+	export class AppConfigService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new AppConfigService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class ArchiveService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new ArchiveService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class BlameService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new BlameService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class ChangelistService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new ChangelistService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
 	export class CommitService {
 	
 	
 	    static createFrom(source: any = {}) {
 	        return new CommitService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class CredentialsService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new CredentialsService(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class DiffService {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new DiffService(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -337,6 +667,106 @@ export namespace services {
 	        this.staged = source["staged"];
 	        this.modified = source["modified"];
 	    }
+	}
+	export class GitHubToken {
+	    id: string;
+	    name: string;
+	    repoPattern: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GitHubToken(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.repoPattern = source["repoPattern"];
+	    }
+	}
+	export class ImportPatchOptions {
+	    ApplyImmediately: boolean;
+	    CreateBackup: boolean;
+	    UseThreeWay: boolean;
+	    AllowReject: boolean;
+	    GroupName: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportPatchOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ApplyImmediately = source["ApplyImmediately"];
+	        this.CreateBackup = source["CreateBackup"];
+	        this.UseThreeWay = source["UseThreeWay"];
+	        this.AllowReject = source["AllowReject"];
+	        this.GroupName = source["GroupName"];
+	    }
+	}
+	export class RestoreResult {
+	    success: boolean;
+	    backupStashRef?: string;
+	    appliedCleanly: boolean;
+	    rejectFiles?: string[];
+	    errorMessage?: string;
+	    filesAffected?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RestoreResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.backupStashRef = source["backupStashRef"];
+	        this.appliedCleanly = source["appliedCleanly"];
+	        this.rejectFiles = source["rejectFiles"];
+	        this.errorMessage = source["errorMessage"];
+	        this.filesAffected = source["filesAffected"];
+	    }
+	}
+	export class ImportPatchResult {
+	    success: boolean;
+	    appliedPatch: boolean;
+	    createdGroup: boolean;
+	    restoreResult?: RestoreResult;
+	    createdChangelist?: models.Changelist;
+	    errorMessage?: string;
+	    filesAffected?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportPatchResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.appliedPatch = source["appliedPatch"];
+	        this.createdGroup = source["createdGroup"];
+	        this.restoreResult = this.convertValues(source["restoreResult"], RestoreResult);
+	        this.createdChangelist = this.convertValues(source["createdChangelist"], models.Changelist);
+	        this.errorMessage = source["errorMessage"];
+	        this.filesAffected = source["filesAffected"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class Remote {
 	    name: string;
@@ -366,6 +796,43 @@ export namespace services {
 	
 	    }
 	}
+	export class RepositoryConfig {
+	    path: string;
+	    name: string;
+	    selectedToken: string;
+	    // Go type: time
+	    lastOpened: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new RepositoryConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.name = source["name"];
+	        this.selectedToken = source["selectedToken"];
+	        this.lastOpened = this.convertValues(source["lastOpened"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RepositoryService {
 	
 	
@@ -378,6 +845,45 @@ export namespace services {
 	
 	    }
 	}
+	export class RestoreOptions {
+	    CreateBackup: boolean;
+	    TargetGroupID: string;
+	    NewGroupName: string;
+	    UseThreeWay: boolean;
+	    AllowReject: boolean;
+	    ModifyIndex: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RestoreOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.CreateBackup = source["CreateBackup"];
+	        this.TargetGroupID = source["TargetGroupID"];
+	        this.NewGroupName = source["NewGroupName"];
+	        this.UseThreeWay = source["UseThreeWay"];
+	        this.AllowReject = source["AllowReject"];
+	        this.ModifyIndex = source["ModifyIndex"];
+	    }
+	}
+	
+	export class RevertOptions {
+	    RevertStagedChanges: boolean;
+	    RevertUnstagedChanges: boolean;
+	    DeleteUntrackedFiles: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RevertOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.RevertStagedChanges = source["RevertStagedChanges"];
+	        this.RevertUnstagedChanges = source["RevertUnstagedChanges"];
+	        this.DeleteUntrackedFiles = source["DeleteUntrackedFiles"];
+	    }
+	}
 	export class StagingService {
 	
 	
@@ -388,6 +894,34 @@ export namespace services {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+	export class UIPreferences {
+	    sidebarOpen: boolean;
+	    currentView: string;
+	    diffViewMode: string;
+	    theme: string;
+	    virtualizationThreshold: number;
+	    dateFormat: string;
+	    showLineNumbers: boolean;
+	    autoRefresh: boolean;
+	    commitLimit: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new UIPreferences(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sidebarOpen = source["sidebarOpen"];
+	        this.currentView = source["currentView"];
+	        this.diffViewMode = source["diffViewMode"];
+	        this.theme = source["theme"];
+	        this.virtualizationThreshold = source["virtualizationThreshold"];
+	        this.dateFormat = source["dateFormat"];
+	        this.showLineNumbers = source["showLineNumbers"];
+	        this.autoRefresh = source["autoRefresh"];
+	        this.commitLimit = source["commitLimit"];
 	    }
 	}
 	export class WorkingDirectoryStatus {

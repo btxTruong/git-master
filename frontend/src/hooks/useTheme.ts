@@ -6,10 +6,17 @@ import { useUIStore, type Theme } from '@/stores/uiStore';
  * Handles theme application and system preference changes
  */
 export function useTheme() {
-  const { theme, setTheme } = useUIStore();
+  const { theme, setTheme, loadPreferences, isLoaded } = useUIStore();
 
   useEffect(() => {
-    // Apply initial theme
+    // Load preferences from backend on initial mount
+    if (!isLoaded) {
+      loadPreferences();
+    }
+  }, [loadPreferences, isLoaded]);
+
+  useEffect(() => {
+    // Apply theme when it changes
     applyTheme(theme);
 
     // Listen for system theme changes when using 'system' theme

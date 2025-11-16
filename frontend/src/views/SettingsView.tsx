@@ -1,39 +1,224 @@
-import { useState } from 'react';
-import { Settings, Palette, Sliders, Code, Sun, Moon, Monitor } from 'lucide-react';
-import { useUIStore, type Theme } from '@/stores/uiStore';
+import { useState, useEffect } from 'react';
+import {
+  Settings,
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  GitBranch,
+} from 'lucide-react';
+import * as CredentialsService from '../../wailsjs/go/services/CredentialsService';
+import * as RemoteService from '../../wailsjs/go/services/RemoteService';
+import { services } from '../../wailsjs/go/models';
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
+import toast from 'react-hot-toast';
+import { TokenDropdown } from '../components/settings/TokenDropdown';
+import { useRepositoryStore } from '@/stores/repositoryStore';
 
-type SettingsTab = 'appearance' | 'behavior' | 'advanced';
+type TabType = 'security';
 
-interface TabConfig {
-  id: SettingsTab;
-  label: string;
-  icon: React.ReactNode;
+interface TokenFormData {
+  id: string;
+  name: string;
+  repoPattern: string;
+  token: string;
 }
-
-const TABS: TabConfig[] = [
-  {
-    id: 'appearance',
-    label: 'Appearance',
-    icon: <Palette className="w-4 h-4" />,
-  },
-  {
-    id: 'behavior',
-    label: 'Behavior',
-    icon: <Sliders className="w-4 h-4" />,
-  },
-  {
-    id: 'advanced',
-    label: 'Advanced',
-    icon: <Code className="w-4 h-4" />,
-  },
-];
 
 /**
  * SettingsView component
- * Displays application settings organized in tabs
+ * Application settings and configuration
  */
 function SettingsView() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+  const { currentRepository } = useRepositoryStore();
+  const [activeTab, setActiveTab] = useState<TabType>('security');
+  const [tokens, setTokens] = useState<services.GitHubToken[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<TokenFormData>({
+    id: '',
+    name: '',
+    repoPattern: '',
+    token: '',
+  });
+  const [showToken, setShowToken] = useState(false);
+  const [selectedTokenId, setSelectedTokenId] = useState<string>('');
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    tokenId: string;
+    tokenName: string;
+  }>({
+    show: false,
+    tokenId: '',
+    tokenName: '',
+  });
+
+  // Load tokens on mount
+  useEffect(() => {
+    loadTokens();
+  }, []);
+
+  // Load selected token when repository changes
+  useEffect(() => {
+    if (currentRepository) {
+      loadSelectedToken();
+    } else {
+      setSelectedTokenId('');
+    }
+  }, [currentRepository]);
+
+  const loadTokens = async () => {
+    setIsLoading(true);
+    try {
+      const allTokens = await CredentialsService.GetAllGitHubTokens();
+      setTokens(allTokens || []);
+    } catch (error) {
+      console.error('Failed to load tokens:', error);
+      toast.error('Failed to load tokens');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadSelectedToken = async () => {
+    try {
+      const tokenId = await RemoteService.GetSelectedTokenForCurrentRepo();
+      setSelectedTokenId(tokenId || '');
+    } catch (error) {
+      console.error('Failed to load selected token:', error);
+    }
+  };
+
+  const handleAddNew = () => {
+    setFormData({
+      id: `token-${Date.now()}`,
+      name: '',
+      repoPattern: '',
+      token: '',
+    });
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const handleEdit = async (id: string) => {
+    try {
+      const tokenData = await CredentialsService.GetGitHubTokenByID(id);
+      setFormData({
+        id: tokenData.id,
+        name: tokenData.name,
+        repoPattern: tokenData.repoPattern,
+        token: '', // Don't pre-fill the token for security
+      });
+      setEditingId(id);
+      setShowForm(true);
+    } catch (error) {
+      toast.error('Failed to load token details');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Please enter a name');
+      return;
+    }
+
+    if (!formData.token.trim() && !editingId) {
+      toast.error('Please enter a token');
+      return;
+    }
+
+    try {
+      if (editingId) {
+        await CredentialsService.UpdateGitHubTokenWithRepo(
+          formData.id,
+          formData.name,
+          formData.repoPattern,
+          formData.token
+        );
+        toast.success('Token updated successfully');
+      } else {
+        await CredentialsService.AddGitHubTokenWithRepo(
+          formData.id,
+          formData.name,
+          formData.repoPattern,
+          formData.token
+        );
+        toast.success('Token added successfully');
+      }
+      setShowForm(false);
+      setFormData({ id: '', name: '', repoPattern: '', token: '' });
+      setEditingId(null);
+      loadTokens();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save token';
+      toast.error(message);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    const token = tokens.find((t) => t.id === id);
+    if (token) {
+      setDeleteConfirm({
+        show: true,
+        tokenId: id,
+        tokenName: token.name,
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    const id = deleteConfirm.tokenId;
+
+    // Close the confirmation dialog
+    setDeleteConfirm({ show: false, tokenId: '', tokenName: '' });
+
+    try {
+      await CredentialsService.DeleteGitHubTokenWithRepo(id);
+      toast.success('Token deleted successfully');
+
+      // Reload tokens and selected token (in case the deleted token was selected)
+      await loadTokens();
+      await loadSelectedToken();
+    } catch (error) {
+      console.error('Error deleting token:', error);
+      const message = error instanceof Error ? error.message : 'Failed to delete token';
+      toast.error(message);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ show: false, tokenId: '', tokenName: '' });
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setFormData({ id: '', name: '', repoPattern: '', token: '' });
+    setEditingId(null);
+    setShowToken(false);
+  };
+
+  const handleCreateToken = () => {
+    BrowserOpenURL(
+      'https://github.com/settings/tokens/new?scopes=repo&description=Git%20Master%20App'
+    );
+  };
+
+  const handleSelectToken = async (tokenId: string) => {
+    try {
+      await RemoteService.SetSelectedTokenForCurrentRepo(tokenId);
+      setSelectedTokenId(tokenId);
+      toast.success(tokenId ? 'Token selected for this repository' : 'Token selection cleared');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to select token';
+      toast.error(message);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -44,398 +229,306 @@ function SettingsView() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Customize your Git Master experience
+          Manage your application preferences and security
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <nav className="flex px-6 gap-4">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto p-6">
-          {activeTab === 'appearance' && <AppearanceSettings />}
-          {activeTab === 'behavior' && <BehaviorSettings />}
-          {activeTab === 'advanced' && <AdvancedSettings />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Appearance settings tab
- */
-function AppearanceSettings() {
-  const { theme, setTheme, diffViewMode, setDiffViewMode } = useUIStore();
-
-  const themes: { value: Theme; label: string; icon: React.ReactNode; description: string }[] = [
-    {
-      value: 'light',
-      label: 'Light',
-      icon: <Sun className="w-5 h-5" />,
-      description: 'Light color scheme',
-    },
-    {
-      value: 'dark',
-      label: 'Dark',
-      icon: <Moon className="w-5 h-5" />,
-      description: 'Dark color scheme',
-    },
-    {
-      value: 'system',
-      label: 'System',
-      icon: <Monitor className="w-5 h-5" />,
-      description: 'Follow system preference',
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Appearance</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Customize the look and feel of Git Master
-        </p>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Theme</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Choose your preferred color scheme
-        </p>
-
-        <div className="grid grid-cols-1 gap-3">
-          {themes.map((themeOption) => (
-            <button
-              key={themeOption.value}
-              onClick={() => setTheme(themeOption.value)}
-              className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
-                theme === themeOption.value
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              <div
-                className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                  theme === themeOption.value
-                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar with tabs */}
+        <div className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="p-4">
+            <nav className="space-y-1">
+              <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'security'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                {themeOption.icon}
-              </div>
-              <div className="flex-1 text-left">
-                <p
-                  className={`text-sm font-medium ${
-                    theme === themeOption.value
-                      ? 'text-blue-900 dark:text-blue-100'
-                      : 'text-gray-900 dark:text-gray-100'
-                  }`}
-                >
-                  {themeOption.label}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {themeOption.description}
-                </p>
-              </div>
-              {theme === themeOption.value && (
-                <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white" />
+                <Shield className="w-5 h-5" />
+                Security
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-4xl mx-auto p-6">
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                {/* Current Repository Token Selection */}
+                {currentRepository && tokens.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-start gap-3">
+                        <GitBranch className="w-5 h-5 text-gray-700 dark:text-gray-300 mt-0.5" />
+                        <div className="flex-1">
+                          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Default Token for Current Repository
+                          </h2>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Select which token to use for this repository
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-5">
+                      <TokenDropdown
+                        label="Selected Token"
+                        value={selectedTokenId}
+                        onChange={handleSelectToken}
+                        tokens={tokens}
+                        placeholder="Auto-select (Pattern matching)"
+                        helperText={
+                          selectedTokenId
+                            ? 'This token will be used for push/pull operations in this repository'
+                            : 'The system will automatically select the best matching token based on repository pattern'
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* GitHub Tokens Section */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  {/* Section Header */}
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start gap-3">
+                        <Key className="w-5 h-5 text-gray-700 dark:text-gray-300 mt-0.5" />
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            GitHub Access Tokens
+                          </h2>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Manage tokens for different repositories
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleAddNew}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors inline-flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Token
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Section Content */}
+                  <div className="px-6 py-5">
+                    {isLoading ? (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading tokens...</p>
+                    ) : tokens.length === 0 && !showForm ? (
+                      <div className="text-center py-8">
+                        <Key className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          No tokens configured yet
+                        </p>
+                        <button
+                          onClick={handleAddNew}
+                          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors inline-flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Your First Token
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Token List */}
+                        {tokens.map((token) => (
+                          <div
+                            key={token.id}
+                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {token.name}
+                                </h3>
+                              </div>
+                              {token.repoPattern && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                  {token.repoPattern}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEdit(token.id)}
+                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(token.id)}
+                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Add/Edit Form */}
+                        {showForm && (
+                          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-4">
+                            <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                              {editingId ? 'Edit Token' : 'Add New Token'}
+                            </h3>
+
+                            {/* Name */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Name <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="e.g., Personal Projects, Work Repos"
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+
+                            {/* Repository Pattern */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Repository Pattern (optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.repoPattern}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, repoPattern: e.target.value })
+                                }
+                                placeholder="github.com/username/* or github.com/username/repo"
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Use * to match all repos for a user/org. Leave empty for all
+                                repositories.
+                              </p>
+                            </div>
+
+                            {/* Token */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Access Token {!editingId && <span className="text-red-500">*</span>}
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showToken ? 'text' : 'password'}
+                                  value={formData.token}
+                                  onChange={(e) =>
+                                    setFormData({ ...formData, token: e.target.value })
+                                  }
+                                  placeholder={
+                                    editingId
+                                      ? 'Leave empty to keep existing token'
+                                      : 'ghp_xxxxxxxxxxxxxxxxxxxx'
+                                  }
+                                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowToken(!showToken)}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                >
+                                  {showToken ? (
+                                    <EyeOff className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-3 pt-2">
+                              <button
+                                onClick={handleSave}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors inline-flex items-center gap-2"
+                              >
+                                <Check className="w-4 h-4" />
+                                {editingId ? 'Update' : 'Add Token'}
+                              </button>
+
+                              <button
+                                onClick={handleCreateToken}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-md transition-colors inline-flex items-center gap-2"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                                Create on GitHub
+                              </button>
+
+                              <button
+                                onClick={handleCancel}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-md transition-colors inline-flex items-center gap-2"
+                              >
+                                <X className="w-4 h-4" />
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {tokens.length > 0 && !showForm && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                        Tokens are encrypted and stored securely in your system keychain
+                      </p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Diff View</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Default view mode for code differences
-        </p>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setDiffViewMode('unified')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              diffViewMode === 'unified'
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-100'
-            }`}
-          >
-            <p className="text-sm font-medium">Unified</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Single column view</p>
-          </button>
-
-          <button
-            onClick={() => setDiffViewMode('split')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              diffViewMode === 'split'
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-100'
-            }`}
-          >
-            <p className="text-sm font-medium">Split</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Side-by-side view</p>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Behavior settings tab
- */
-function BehaviorSettings() {
-  const {
-    autoRefresh,
-    setAutoRefresh,
-    dateFormat,
-    setDateFormat,
-    showLineNumbers,
-    setShowLineNumbers,
-  } = useUIStore();
-
-  const dateFormats: { value: typeof dateFormat; label: string; description: string }[] = [
-    {
-      value: 'relative',
-      label: 'Relative',
-      description: '2 hours ago, 3 days ago',
-    },
-    {
-      value: 'absolute',
-      label: 'Absolute',
-      description: 'Oct 12, 2025 3:30 PM',
-    },
-    {
-      value: 'both',
-      label: 'Both',
-      description: 'Oct 12, 2025 (2 hours ago)',
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Behavior</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Configure how Git Master behaves
-        </p>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Date Format</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          How dates and times are displayed
-        </p>
-
-        <div className="grid grid-cols-1 gap-3">
-          {dateFormats.map((format) => (
-            <button
-              key={format.value}
-              onClick={() => setDateFormat(format.value)}
-              className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all text-left ${
-                dateFormat === format.value
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              <div className="flex-1">
-                <p
-                  className={`text-sm font-medium ${
-                    dateFormat === format.value
-                      ? 'text-blue-900 dark:text-blue-100'
-                      : 'text-gray-900 dark:text-gray-100'
-                  }`}
-                >
-                  {format.label}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {format.description}
-                </p>
               </div>
-              {dateFormat === format.value && (
-                <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-              )}
-            </button>
-          ))}
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">
-          Display Options
-        </h3>
-        <div className="space-y-4">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showLineNumbers}
-              onChange={(e) => setShowLineNumbers(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Show line numbers in diffs
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Delete Token
+              </h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to delete the token{' '}
+                <strong>"{deleteConfirm.tokenName}"</strong>?
               </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Display line numbers in the diff viewer
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                This action cannot be undone.
               </p>
             </div>
-          </label>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Auto Refresh</h3>
-        <div className="space-y-4">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Auto-refresh on file changes
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Automatically refresh views when files change
-              </p>
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+              >
+                Delete
+              </button>
             </div>
-          </label>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/**
- * Advanced settings tab
- */
-function AdvancedSettings() {
-  const { commitLimit, setCommitLimit, virtualizationThreshold, setVirtualizationThreshold } =
-    useUIStore();
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Advanced</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Advanced options for power users
-        </p>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Performance</h3>
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="commit-limit"
-              className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2"
-            >
-              Commits per page
-            </label>
-            <input
-              id="commit-limit"
-              type="number"
-              value={commitLimit}
-              onChange={(e) => setCommitLimit(Number(e.target.value))}
-              min={10}
-              max={1000}
-              className="w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Number of commits to load at once (10-1000)
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="virtualization-threshold"
-              className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2"
-            >
-              Virtualization threshold
-            </label>
-            <input
-              id="virtualization-threshold"
-              type="number"
-              value={virtualizationThreshold}
-              onChange={(e) => setVirtualizationThreshold(Number(e.target.value))}
-              min={50}
-              max={500}
-              className="w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Enable virtual scrolling when list exceeds this many items (50-500)
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">
-          Git Configuration
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="diff-algorithm"
-              className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2"
-            >
-              Diff algorithm
-            </label>
-            <select
-              id="diff-algorithm"
-              className="w-full max-w-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              defaultValue="histogram"
-            >
-              <option value="myers">Myers</option>
-              <option value="minimal">Minimal</option>
-              <option value="patience">Patience</option>
-              <option value="histogram">Histogram</option>
-            </select>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Algorithm used for calculating diffs
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Danger Zone</h3>
-        <div className="space-y-4">
-          <button className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500">
-            Reset all settings to defaults
-          </button>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            This will reset all settings to their default values
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 export default SettingsView;

@@ -1,62 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FolderOpen, Loader2, ChevronDown, Clock } from 'lucide-react';
 import { useRepositoryStore } from '@/stores/repositoryStore';
 import { PullPushButtons } from '@/components/remote/PullPushButtons';
 import { BranchDropdown } from '@/components/branch/BranchDropdown';
 import { OpenDirectoryDialog } from '../../../wailsjs/go/main/App';
 import { OpenRepository } from '../../../wailsjs/go/services/RepositoryService';
+import {
+  GetRecentRepositories,
+  UpdateRepositoryAccess,
+} from '../../../wailsjs/go/services/AppConfigService';
+import { services } from '../../../wailsjs/go/models';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import toast from 'react-hot-toast';
 
-const RECENT_REPOS_KEY = 'git-master-recent-repos';
-const MAX_RECENT_REPOS = 10;
-
-interface RecentRepository {
-  path: string;
-  name: string;
-  lastOpened: string;
-}
-
 export function AppHeader() {
   const [isOpening, setIsOpening] = useState(false);
-  const [recentRepos, setRecentRepos] = useState<RecentRepository[]>([]);
+  const [recentRepos, setRecentRepos] = useState<services.RepositoryConfig[]>([]);
   const { currentRepository, setRepository, setLoading, setError } = useRepositoryStore();
 
-  useEffect(() => {
-    loadRecentRepos();
-  }, []);
-
-  useEffect(() => {
-    if (currentRepository) {
-      addToRecentRepos({
-        path: currentRepository.path,
-        name: currentRepository.name,
-        lastOpened: new Date().toISOString(),
-      });
-    }
-  }, [currentRepository]);
-
-  const loadRecentRepos = () => {
+  const loadRecentRepos = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(RECENT_REPOS_KEY);
-      if (stored) {
-        setRecentRepos(JSON.parse(stored));
-      }
+      const repos = await GetRecentRepositories();
+      setRecentRepos(repos || []);
     } catch (error) {
       console.error('Failed to load recent repos:', error);
     }
-  };
+  }, []);
 
-  const addToRecentRepos = (repo: RecentRepository) => {
-    try {
-      const existing = recentRepos.filter((r) => r.path !== repo.path);
-      const updated = [repo, ...existing].slice(0, MAX_RECENT_REPOS);
-      setRecentRepos(updated);
-      localStorage.setItem(RECENT_REPOS_KEY, JSON.stringify(updated));
-    } catch (error) {
-      console.error('Failed to save recent repos:', error);
+  const updateRepositoryAccess = useCallback(
+    async (path: string, name: string) => {
+      try {
+        await UpdateRepositoryAccess(path, name);
+        await loadRecentRepos();
+      } catch (error) {
+        console.error('Failed to update repository access:', error);
+      }
+    },
+    [loadRecentRepos]
+  );
+
+  useEffect(() => {
+    loadRecentRepos();
+  }, [loadRecentRepos]);
+
+  useEffect(() => {
+    if (currentRepository) {
+      updateRepositoryAccess(currentRepository.path, currentRepository.name);
     }
-  };
+  }, [currentRepository, updateRepositoryAccess]);
 
   const handleOpenRepository = async (path?: string) => {
     try {
@@ -92,8 +83,12 @@ export function AppHeader() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Never';
+
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Never';
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);

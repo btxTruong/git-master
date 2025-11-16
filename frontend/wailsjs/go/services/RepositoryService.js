@@ -58,8 +58,16 @@ export function GetCurrentRepository() {
   return window['go']['services']['RepositoryService']['GetCurrentRepository']();
 }
 
+export function GetFileCommitDiff(arg1, arg2) {
+  return window['go']['services']['RepositoryService']['GetFileCommitDiff'](arg1, arg2);
+}
+
 export function GetFileContentAtCommit(arg1, arg2) {
   return window['go']['services']['RepositoryService']['GetFileContentAtCommit'](arg1, arg2);
+}
+
+export function GetFileHistory(arg1, arg2, arg3) {
+  return window['go']['services']['RepositoryService']['GetFileHistory'](arg1, arg2, arg3);
 }
 
 export function GetStatus() {
@@ -78,8 +86,20 @@ export function RevertCommit(arg1) {
   return window['go']['services']['RepositoryService']['RevertCommit'](arg1);
 }
 
+export function SetArchiveService(arg1) {
+  return window['go']['services']['RepositoryService']['SetArchiveService'](arg1);
+}
+
+export function SetBlameService(arg1) {
+  return window['go']['services']['RepositoryService']['SetBlameService'](arg1);
+}
+
 export function SetCommitService(arg1) {
   return window['go']['services']['RepositoryService']['SetCommitService'](arg1);
+}
+
+export function SetDiffService(arg1) {
+  return window['go']['services']['RepositoryService']['SetDiffService'](arg1);
 }
 
 export function SetRemoteService(arg1) {

@@ -64,19 +64,8 @@ export function CommitList() {
 
     const shouldLoadMore = lastItem.index >= commits.length - 5 && hasMore && !isLoading;
 
-    console.log('[CommitList] Infinite scroll check:', {
-      lastItemIndex: lastItem.index,
-      commitsLength: commits.length,
-      threshold: commits.length - 5,
-      hasMore,
-      isLoading,
-      shouldLoadMore,
-      currentPage,
-    });
-
     // If scrolled to last 5 items and more data available
     if (shouldLoadMore) {
-      console.log('[CommitList] Loading next page:', currentPage + 1);
       loadCommits(currentPage + 1);
     }
   }, [virtualItems, commits.length, hasMore, isLoading, currentPage, loadCommits]);

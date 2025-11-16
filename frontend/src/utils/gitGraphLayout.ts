@@ -14,8 +14,11 @@ export interface CommitLaneInfo {
   branchTargetLane: number | null;
   primaryParentLane: number | null;
   activeLanes: Set<number>;
+  activeLaneBranches: Map<number, string | null>; // Map of lane index to branch name
   isMergeCommit: boolean;
   parentCount: number;
+  branchName: string | null; // Primary branch this commit belongs to
+  mergeSourceBranches: string[]; // Branch names for merge sources
 }
 
 interface LaneState {
@@ -24,6 +27,24 @@ interface LaneState {
 }
 
 const MAX_LANES = 10;
+
+/**
+ * Extract primary branch name from commit refs
+ * Filters out tags and HEAD, returns the first branch name
+ */
+function extractBranchName(refs: string[] | undefined): string | null {
+  if (!refs || refs.length === 0) return null;
+
+  for (const ref of refs) {
+    // Skip HEAD and tags
+    if (ref.includes('HEAD') || ref.includes('tag:')) continue;
+    // Remove common prefixes
+    const cleaned = ref.replace(/^(origin\/|remotes\/origin\/)/, '');
+    return cleaned;
+  }
+
+  return null;
+}
 
 /**
  * Computes lane layout for a list of commits
@@ -42,11 +63,14 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
   for (let i = 0; i < commits.length; i++) {
     const commit = commits[i];
     const activeLanes = new Set<number>();
+    const activeLaneBranches = new Map<number, string | null>();
+    const commitBranchName = extractBranchName(commit.refs);
 
     // Find active lanes (lanes that have commits)
     lanes.forEach((lane, index) => {
       if (lane.commitHash !== null) {
         activeLanes.add(index);
+        activeLaneBranches.set(index, lane.branchName);
       }
     });
 
@@ -61,11 +85,17 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
       }
     }
 
+    // Inherit branch name from lane if not explicitly on this commit
+    const laneBranchName = lanes[assignedLane]?.branchName;
+    const finalBranchName = commitBranchName || laneBranchName;
+
     activeLanes.add(assignedLane);
+    activeLaneBranches.set(assignedLane, finalBranchName);
 
     // Determine relationships
     const hasChildInSameLane = lanes[assignedLane]?.commitHash === commit.hash;
     const mergeSourceLanes: number[] = [];
+    const mergeSourceBranches: string[] = [];
     let primaryParentLane: number | null = null;
 
     // Clear current lane
@@ -83,8 +113,8 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
           // Parent already in a different lane - draw curve to it
           primaryParentLane = existingParentLane;
         } else {
-          // Parent continues in same lane
-          lanes[assignedLane] = { commitHash: parentHash, branchName: null };
+          // Parent continues in same lane, inherit branch name
+          lanes[assignedLane] = { commitHash: parentHash, branchName: finalBranchName };
           primaryParentLane = assignedLane;
         }
       } else {
@@ -92,13 +122,24 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
         const parentLane = lanes.findIndex((lane) => lane.commitHash === parentHash);
         if (parentLane !== -1) {
           mergeSourceLanes.push(parentLane);
+          // Track the branch name of the merge source
+          if (lanes[parentLane]?.branchName) {
+            mergeSourceBranches.push(lanes[parentLane].branchName!);
+          }
         } else {
           // Find available lane for merge parent
           const newLane = lanes.findIndex((lane) => lane.commitHash === null);
           if (newLane !== -1) {
-            lanes[newLane] = { commitHash: parentHash, branchName: null };
+            // Try to get branch name from parent commit
+            const parentCommit = commitMap.get(parentHash);
+            const parentBranch = parentCommit ? extractBranchName(parentCommit.refs) : null;
+            lanes[newLane] = { commitHash: parentHash, branchName: parentBranch };
             mergeSourceLanes.push(newLane);
+            if (parentBranch) {
+              mergeSourceBranches.push(parentBranch);
+            }
             activeLanes.add(newLane);
+            activeLaneBranches.set(newLane, parentBranch);
           }
         }
       }
@@ -114,18 +155,37 @@ export function computeGitGraphLayout(commits: Commit[]): Map<string, CommitLane
       branchTargetLane,
       primaryParentLane,
       activeLanes: new Set(activeLanes),
+      activeLaneBranches: new Map(activeLaneBranches),
       isMergeCommit: parentHashes.length >= 2,
       parentCount: parentHashes.length,
+      branchName: finalBranchName,
+      mergeSourceBranches,
     });
   }
 
   return laneInfo;
 }
 
+// Simple hash function for consistent branch coloring
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
 /**
- * Get color for a lane index
+ * Get color for a lane based on branch name
+ * Falls back to lane index if branch name is not available
  */
-export function getLaneColor(laneIndex: number, isDark: boolean): string {
+export function getLaneColor(
+  laneIndex: number,
+  isDark: boolean,
+  branchName?: string | null
+): string {
   const colors = isDark
     ? [
         '#60a5fa', // blue-400
@@ -148,5 +208,12 @@ export function getLaneColor(laneIndex: number, isDark: boolean): string {
         '#ec4899', // pink-500
       ];
 
+  // Use branch name for consistent coloring if available
+  if (branchName) {
+    const index = hashCode(branchName) % colors.length;
+    return colors[index];
+  }
+
+  // Fallback to lane index
   return colors[laneIndex % colors.length];
 }

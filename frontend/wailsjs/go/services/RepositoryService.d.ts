@@ -32,7 +32,11 @@ export function GetCommits(arg1:number,arg2:number,arg3:models.CommitFilters):Pr
 
 export function GetCurrentRepository():Promise<models.Repository>;
 
+export function GetFileCommitDiff(arg1:string,arg2:string):Promise<string>;
+
 export function GetFileContentAtCommit(arg1:string,arg2:string):Promise<string>;
+
+export function GetFileHistory(arg1:string,arg2:number,arg3:number):Promise<Array<models.Commit>>;
 
 export function GetStatus():Promise<models.RepositoryStatus>;
 
@@ -42,7 +46,13 @@ export function ResetBranch(arg1:string,arg2:string):Promise<void>;
 
 export function RevertCommit(arg1:string):Promise<void>;
 
+export function SetArchiveService(arg1:services.ArchiveService):Promise<void>;
+
+export function SetBlameService(arg1:services.BlameService):Promise<void>;
+
 export function SetCommitService(arg1:services.CommitService):Promise<void>;
+
+export function SetDiffService(arg1:services.DiffService):Promise<void>;
 
 export function SetRemoteService(arg1:services.RemoteService):Promise<void>;
 

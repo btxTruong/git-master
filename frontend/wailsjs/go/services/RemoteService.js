@@ -14,6 +14,18 @@ export function GetRemotes() {
   return window['go']['services']['RemoteService']['GetRemotes']();
 }
 
+export function GetSelectedTokenForCurrentRepo() {
+  return window['go']['services']['RemoteService']['GetSelectedTokenForCurrentRepo']();
+}
+
+export function GetUnpushedCommits(arg1) {
+  return window['go']['services']['RemoteService']['GetUnpushedCommits'](arg1);
+}
+
+export function GetUnpushedCommitsCount(arg1) {
+  return window['go']['services']['RemoteService']['GetUnpushedCommitsCount'](arg1);
+}
+
 export function Pull(arg1, arg2, arg3) {
   return window['go']['services']['RemoteService']['Pull'](arg1, arg2, arg3);
 }
@@ -28,6 +40,14 @@ export function RemoveRemote(arg1) {
 
 export function SetExecutor(arg1) {
   return window['go']['services']['RemoteService']['SetExecutor'](arg1);
+}
+
+export function SetRepositoryPath(arg1) {
+  return window['go']['services']['RemoteService']['SetRepositoryPath'](arg1);
+}
+
+export function SetSelectedTokenForCurrentRepo(arg1) {
+  return window['go']['services']['RemoteService']['SetSelectedTokenForCurrentRepo'](arg1);
 }
 
 export function Startup(arg1) {

@@ -19,6 +19,9 @@ type RepositoryService struct {
 	remoteService  *RemoteService
 	stagingService *StagingService
 	commitService  *CommitService
+	diffService    *DiffService
+	archiveService *ArchiveService
+	blameService   *BlameService
 }
 
 // NewRepositoryService creates a new repository service
@@ -39,6 +42,21 @@ func (s *RepositoryService) SetStagingService(stagingService *StagingService) {
 // SetCommitService sets the commit service reference
 func (s *RepositoryService) SetCommitService(commitService *CommitService) {
 	s.commitService = commitService
+}
+
+// SetDiffService sets the diff service reference
+func (s *RepositoryService) SetDiffService(diffService *DiffService) {
+	s.diffService = diffService
+}
+
+// SetArchiveService sets the archive service reference
+func (s *RepositoryService) SetArchiveService(archiveService *ArchiveService) {
+	s.archiveService = archiveService
+}
+
+// SetBlameService sets the blame service reference
+func (s *RepositoryService) SetBlameService(blameService *BlameService) {
+	s.blameService = blameService
 }
 
 // Startup is called when the app starts
@@ -65,9 +83,20 @@ func (s *RepositoryService) OpenRepository(path string) (*models.Repository, err
 	// Update services with new executor
 	if s.remoteService != nil {
 		s.remoteService.SetExecutor(s.executor)
+		s.remoteService.SetRepositoryPath(rootPath)
 	}
 	if s.commitService != nil {
 		s.commitService.SetExecutor(s.executor)
+	}
+	if s.diffService != nil {
+		s.diffService.SetExecutor(s.executor)
+	}
+	if s.archiveService != nil {
+		s.archiveService.SetExecutor(s.executor)
+		s.archiveService.SetRepositoryPath(rootPath)
+	}
+	if s.blameService != nil {
+		s.blameService.SetExecutor(s.executor)
 	}
 
 	// Get current branch
@@ -284,8 +313,27 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 		commit.Message = msgResult.Stdout
 	}
 
-	// Get diff with file stats
-	diffResult, err := s.executor.Execute(
+	// Get file changes with proper status detection using diff-tree
+	statusResult, err := s.executor.Execute(
+		s.ctx,
+		"diff-tree",
+		"--no-commit-id",
+		"--name-status",
+		"-r",
+		commitHash,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get changed files: %w", err)
+	}
+
+	// Parse file status first to get correct A/M/D/R/C status
+	fileChanges, err := git.ParseFileChanges(statusResult.Stdout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse file changes: %w", err)
+	}
+
+	// Get numstat for insertions/deletions counts
+	numstatResult, err := s.executor.Execute(
 		s.ctx,
 		"show",
 		"--pretty=format:",
@@ -293,9 +341,10 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 		commitHash,
 	)
 
-	files := []models.FileChange{}
-	if err == nil && diffResult.Stdout != "" {
-		lines := strings.Split(strings.TrimSpace(diffResult.Stdout), "\n")
+	// Build a map of file paths to insertion/deletion counts
+	statsMap := make(map[string]struct{ insertions, deletions int })
+	if err == nil && numstatResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(numstatResult.Stdout), "\n")
 		for _, line := range lines {
 			if line == "" {
 				continue
@@ -315,23 +364,26 @@ func (s *RepositoryService) GetCommitDetail(commitHash string) (*models.CommitDe
 			}
 
 			filePath := strings.Join(parts[2:], " ")
-			status := models.ChangeModified
-
-			// Check if it's a new file
-			if parts[1] == "0" && insertions > 0 {
-				status = models.ChangeAdded
-			} else if parts[0] == "0" && deletions > 0 {
-				status = models.ChangeDeleted
-			}
-
-			files = append(files, models.FileChange{
-				NewPath:    filePath,
-				OldPath:    filePath,
-				Status:     status,
-				Insertions: insertions,
-				Deletions:  deletions,
-			})
+			statsMap[filePath] = struct{ insertions, deletions int }{insertions, deletions}
 		}
+	}
+
+	// Combine status and stats
+	files := []models.FileChange{}
+	for _, fc := range fileChanges {
+		// Use newPath for lookups, fallback to oldPath for deleted files
+		lookupPath := fc.NewPath
+		if lookupPath == "" {
+			lookupPath = fc.OldPath
+		}
+
+		stats, ok := statsMap[lookupPath]
+		if ok {
+			fc.Insertions = stats.insertions
+			fc.Deletions = stats.deletions
+		}
+
+		files = append(files, fc)
 	}
 
 	// Get full diff
@@ -731,4 +783,66 @@ func (s *RepositoryService) GetAuthors() ([]string, error) {
 	}
 
 	return authors, nil
+}
+
+// GetFileHistory retrieves commit history for a specific file
+// Uses --follow to track renames
+func (s *RepositoryService) GetFileHistory(filePath string, limit, offset int) ([]models.Commit, error) {
+	if s.executor == nil {
+		return nil, fmt.Errorf("no repository opened")
+	}
+
+	// Git log format - same as GetCommits
+	format := "%H|%h|%an|%ae|%cn|%ce|%ad|%P|%d|%s"
+
+	args := []string{
+		"log",
+		"--follow", // Track file renames
+		fmt.Sprintf("--pretty=format:%s", format),
+		"--date=format:%Y-%m-%d %H:%M:%S %z",
+		fmt.Sprintf("--max-count=%d", limit),
+		fmt.Sprintf("--skip=%d", offset),
+		"--", // Separator before file path
+		filePath,
+	}
+
+	result, err := s.executor.Execute(s.ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file history: %w", err)
+	}
+
+	if result.Stdout == "" {
+		// File might be new (no commits yet)
+		return []models.Commit{}, nil
+	}
+
+	commits, err := git.ParseCommits(result.Stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	return commits, nil
+}
+
+// GetFileCommitDiff retrieves the diff for a specific file at a specific commit
+func (s *RepositoryService) GetFileCommitDiff(commitHash string, filePath string) (string, error) {
+	if s.executor == nil {
+		return "", fmt.Errorf("no repository opened")
+	}
+
+	// Use git show to get only the diff for the specific file at this commit
+	// Format: git show commit -- filepath
+	result, err := s.executor.Execute(
+		s.ctx,
+		"show",
+		"--pretty=format:",
+		commitHash,
+		"--",
+		filePath,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file commit diff: %w", err)
+	}
+
+	return result.Stdout, nil
 }

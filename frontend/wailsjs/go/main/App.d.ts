@@ -3,12 +3,26 @@
 import {services} from '../models';
 import {models} from '../models';
 
+export function GetAppConfigService():Promise<services.AppConfigService>;
+
+export function GetArchiveService():Promise<services.ArchiveService>;
+
+export function GetBlameService():Promise<services.BlameService>;
+
+export function GetChangelistService():Promise<services.ChangelistService>;
+
 export function GetCommitService():Promise<services.CommitService>;
+
+export function GetCredentialsService():Promise<services.CredentialsService>;
+
+export function GetDiffService():Promise<services.DiffService>;
 
 export function GetRepositoryService():Promise<services.RepositoryService>;
 
 export function GetStagingService():Promise<services.StagingService>;
 
 export function OpenDirectoryDialog():Promise<models.Repository>;
+
+export function SaveFileDialog(arg1:string):Promise<string>;
 
 export function SelectSaveDirectory():Promise<string>;
